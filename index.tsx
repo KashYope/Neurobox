@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Heart,
@@ -27,8 +27,7 @@ import {
   Lock,
   UserPlus,
   Menu,
-  X,
-  Coffee
+  X
 } from 'lucide-react';
 
 import { Button } from './components/Button';
@@ -125,6 +124,61 @@ const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onC
       </div>
     </div>
   );
+};
+
+const BuyMeACoffeeButton: React.FC<{ onSupport?: () => void }> = ({ onSupport }) => {
+  const buttonContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!buttonContainerRef.current) return;
+
+    buttonContainerRef.current.innerHTML = '';
+
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
+    script.dataset.name = 'bmc-button';
+    script.dataset.slug = 'K42H';
+    script.dataset.color = '#FFDD00';
+    script.dataset.emoji = '🦄';
+    script.dataset.font = 'Lato';
+    script.dataset.text = 'Feed the Unicorns';
+    script.dataset.outlineColor = '#000000';
+    script.dataset.fontColor = '#000000';
+    script.dataset.coffeeColor = '#ffffff';
+
+    buttonContainerRef.current.appendChild(script);
+
+    let buttonClickListener: ((event: Event) => void) | null = null;
+    const observer = new MutationObserver(() => {
+      const button = buttonContainerRef.current?.querySelector('a');
+      if (button) {
+        if (onSupport) {
+          buttonClickListener = () => onSupport();
+          button.addEventListener('click', buttonClickListener);
+        }
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(buttonContainerRef.current, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      if (buttonClickListener) {
+        const button = buttonContainerRef.current?.querySelector('a');
+        if (button) {
+          button.removeEventListener('click', buttonClickListener);
+        }
+      }
+      script.remove();
+      if (buttonContainerRef.current) {
+        buttonContainerRef.current.innerHTML = '';
+      }
+    };
+  }, [onSupport]);
+
+  return <div ref={buttonContainerRef} className="flex justify-center" />;
 };
 
 const TagBadge: React.FC<{ text: string }> = ({ text }) => (
@@ -1785,16 +1839,7 @@ const App: React.FC = () => {
             </div>
 
             <div className="p-4 border-t border-slate-100 space-y-3">
-              <a
-                href="https://www.buymeacoffee.com/K42H"
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => setIsAdminMenuOpen(false)}
-                className="inline-flex items-center justify-center w-full gap-2 rounded-lg bg-amber-500 text-white font-semibold py-2 px-4 hover:bg-amber-600 transition-colors shadow-sm"
-              >
-                <Coffee className="w-4 h-4" />
-                Soutenir NeuroSooth
-              </a>
+              <BuyMeACoffeeButton onSupport={() => setIsAdminMenuOpen(false)} />
               <p className="text-xs text-slate-400 text-center">Merci pour votre soutien à la régulation émotionnelle.</p>
             </div>
           </div>
