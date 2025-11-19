@@ -180,9 +180,27 @@ class SyncService {
     this.pendingMutations.push(mutation);
     this.persistQueue();
     this.updateStatus({ pendingMutations: this.pendingMutations.length });
+    this.requestBackgroundSync();
 
     if (this.status.isOnline) {
       this.flushQueue();
+    }
+  }
+
+  private async requestBackgroundSync(): Promise<void> {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if ('sync' in registration) {
+        await registration.sync.register('syncService');
+      } else {
+        registration.active?.postMessage('syncService');
+      }
+    } catch (error) {
+      console.warn('Background sync registration failed', error);
     }
   }
 

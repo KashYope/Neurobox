@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 1334">
+  <defs>
+    <linearGradient id="panel" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#14b8a6" />
+    </linearGradient>
+  </defs>
+  <rect width="750" height="1334" rx="64" fill="#0f172a" />
+  <rect x="48" y="120" width="654" height="260" rx="32" fill="url(#panel)" opacity="0.7" />
+  <rect x="48" y="420" width="654" height="720" rx="48" fill="#f8fafc" />
+  <text x="96" y="520" font-size="56" font-family="'Inter', sans-serif" fill="#0f172a">Onboarding</text>
+  <text x="96" y="600" font-size="32" font-family="'Inter', sans-serif" fill="#334155">Choisissez vos besoins, nous adaptons les exercices.</text>
+  <rect x="96" y="680" width="558" height="96" rx="20" fill="#e2e8f0" />
+  <rect x="96" y="804" width="558" height="96" rx="20" fill="#e2e8f0" />
+  <rect x="96" y="928" width="558" height="96" rx="20" fill="#0f172a" />
+</svg>

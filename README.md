@@ -74,3 +74,36 @@ Pour préparer une version de production, exécutez `npm run build` puis `npm ru
 - Liste en temps réel les contributions `isCommunitySubmitted` ayant le statut `pending` dans `syncService`.
 - Chaque entrée permet d’ajouter une note interne et de choisir **Valider** ou **Refuser**; un badge visuel apparaît sur les cartes validées/refusées dans l’historique.
 - `moderateExercise` met à jour les champs `moderationStatus`, `moderationNotes`, `moderatedAt` et `moderatedBy`, ce qui conditionne la visibilité publique (`approved` uniquement) et renseigne l’historique des décisions.
+
+## Progressive Web App
+- `vite-plugin-pwa` injecte automatiquement le service worker `src/sw.ts` (Workbox) et le manifeste (`public/manifest.webmanifest`).
+- `src/sw.ts` met en cache le shell (`StaleWhileRevalidate`), les réponses API `/api/*` (`NetworkFirst` + `BackgroundSyncPlugin`) et répond aux messages `syncService` pour planifier un `Background Sync` si disponible.
+- `services/syncService` déclenche cette synchronisation après chaque mutation pour garantir une reprise automatique même hors-ligne.
+
+### QA « Add to Home Screen »
+1. **Android / Chrome**
+   - Construire l’app (`npm run build`), déployer le dossier `dist` ou lancer `npm run preview`.
+   - Sur un appareil Android réel, ouvrir l’URL via Chrome.
+   - Vérifier le bandeau « Installer l’application » ou les trois points > *Installer l’application*.
+   - Après installation, ouvrir l’app depuis l’icône et couper le réseau : les écrans principaux doivent rester accessibles et les actions en file doivent se synchroniser dès le retour réseau.
+2. **iOS / Safari**
+   - Ouvrir l’URL dans Safari, appuyer sur **Partager > Sur l’écran d’accueil**.
+   - Confirmer l’icône et le nom, puis lancer l’app en mode standalone.
+   - Tester l’expérience hors-ligne (mode avion) : l’écran d’accueil et la bibliothèque doivent se charger depuis le cache.
+
+## Distribution mobile via Capacitor
+1. Vérifier/adapter `capacitor.config.ts` (App ID `com.neurosooth.app`, `webDir: dist`).
+2. Générer le build web :
+   ```bash
+   npm run build
+   ```
+3. Initialiser les plateformes :
+   ```bash
+   npx cap add ios
+   npx cap add android
+   ```
+4. Copier le build dans les shells natifs après chaque release :
+   ```bash
+   npx cap sync
+   ```
+5. Ouvrir les projets correspondants (`npx cap open ios` / `android`), configurer les certificats stores (App Store / Play Store), puis soumettre les binaires. Les assets PWA (manifest + icônes) sont réutilisés automatiquement.
