@@ -25,6 +25,8 @@ export interface UserProfile {
   completedOnboarding: boolean;
 }
 
+export type ModerationStatus = 'pending' | 'approved' | 'rejected';
+
 export interface Exercise {
   id: string;
   serverId?: string;
@@ -42,6 +44,10 @@ export interface Exercise {
   author?: string;
   createdAt?: string;
   updatedAt?: string;
+  moderationStatus?: ModerationStatus;
+  moderationNotes?: string;
+  moderatedAt?: string;
+  moderatedBy?: string;
 }
 
 export interface ServerExercise extends Exercise {

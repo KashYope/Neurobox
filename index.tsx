@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { 
-  Heart, 
-  Wind, 
-  Brain, 
-  Flame, 
-  Moon, 
-  Zap, 
-  AlertTriangle, 
-  ArrowLeft, 
-  Plus, 
-  User, 
+import {
+  Heart,
+  Wind,
+  Brain,
+  Flame,
+  Moon,
+  Zap,
+  AlertTriangle,
+  ArrowLeft,
+  Plus,
+  User,
   Check,
   Search,
   Activity,
-  Image as ImageIcon
+  Image as ImageIcon,
+  ShieldCheck,
+  ClipboardList,
+  CheckCircle2,
+  XCircle,
+  Clock
 } from 'lucide-react';
 
 import { Button } from './components/Button';
@@ -25,7 +30,8 @@ import {
   getExercises,
   getRecommendedExercises,
   saveExercise,
-  incrementThanks
+  incrementThanks,
+  moderateExercise
 } from './services/dataService';
 import { syncService, SyncStatus } from './services/syncService';
 
@@ -315,6 +321,7 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
       tags: ['Community'],
       thanksCount: 0,
       isCommunitySubmitted: true,
+      moderationStatus: 'pending',
       createdAt: timestamp,
       updatedAt: timestamp
     };
@@ -331,9 +338,16 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
         </div>
 
         <form onSubmit={doSubmit} className="p-6 space-y-6">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex gap-3">
+            <Clock className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <p>
+              Les contributions communautaires passent désormais par une revue humaine.
+              Votre proposition apparaîtra dans la grille une fois validée par l'équipe de modération.
+            </p>
+          </div>
           <div>
             <label className="block text-sm font-medium mb-1">Titre</label>
-            <input 
+            <input
               className="w-full border p-2 rounded-lg" 
               value={formData.title} 
               onChange={e => setFormData({...formData, title: e.target.value})} 
@@ -426,6 +440,148 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
   );
 };
 
+const ModerationPanel: React.FC<{
+  pendingExercises: Exercise[];
+  reviewedExercises: Exercise[];
+  onApprove: (exercise: Exercise, notes?: string) => void;
+  onReject: (exercise: Exercise, notes?: string) => void;
+  onBack: () => void;
+}> = ({ pendingExercises, reviewedExercises, onApprove, onReject, onBack }) => {
+  const [notesMap, setNotesMap] = useState<Record<string, string>>({});
+
+  const handleNoteChange = (id: string, value: string) => {
+    setNotesMap(prev => ({ ...prev, [id]: value }));
+  };
+
+  const renderStatusBadge = (status: string) => {
+    const base = 'px-2 py-0.5 rounded-full text-xs font-semibold';
+    if (status === 'approved') {
+      return <span className={`${base} bg-emerald-100 text-emerald-700`}>Validée</span>;
+    }
+    if (status === 'rejected') {
+      return <span className={`${base} bg-rose-100 text-rose-700`}>Refusée</span>;
+    }
+    return <span className={`${base} bg-amber-100 text-amber-700`}>En attente</span>;
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-20">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-8 h-8 text-teal-600" />
+            <div>
+              <p className="text-xs uppercase tracking-widest text-slate-500">Espace modération</p>
+              <h1 className="text-xl font-bold text-slate-900">Revue des propositions</h1>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={onBack}>
+            Retour à l'app
+          </Button>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-10">
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <ClipboardList className="w-5 h-5 text-slate-500" />
+            <h2 className="text-lg font-semibold text-slate-900">
+              {pendingExercises.length} proposition(s) à traiter
+            </h2>
+          </div>
+          {pendingExercises.length === 0 ? (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-6 flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6" />
+              <p>Toutes les contributions ont été modérées. Revenez plus tard !</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {pendingExercises.map(ex => (
+                <div key={ex.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Proposée le {new Date(ex.createdAt || '').toLocaleString()}</p>
+                      <h3 className="text-xl font-semibold text-slate-900">{ex.title}</h3>
+                      <p className="text-slate-600 mt-1">{ex.description}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {ex.situation.map(sit => (
+                        <TagBadge key={sit} text={sit} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Durée</p>
+                      <p className="text-sm text-slate-700">{ex.duration}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Tags</p>
+                      <p className="text-sm text-slate-700">{ex.tags.join(', ')}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="text-xs font-semibold text-slate-500">Note interne (optionnelle)</label>
+                    <textarea
+                      className="mt-1 w-full border border-slate-200 rounded-xl p-3 text-sm"
+                      placeholder="Feedback à partager avec l'auteur..."
+                      value={notesMap[ex.id] || ''}
+                      onChange={e => handleNoteChange(ex.id, e.target.value)}
+                    />
+                  </div>
+
+                  <div className="mt-4 flex flex-col md:flex-row justify-end gap-3">
+                    <Button
+                      variant="danger"
+                      onClick={() => onReject(ex, notesMap[ex.id])}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Refuser
+                    </Button>
+                    <Button
+                      onClick={() => onApprove(ex, notesMap[ex.id])}
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Valider et publier
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-slate-500" />
+            <h2 className="text-lg font-semibold text-slate-900">Historique récent</h2>
+          </div>
+          {reviewedExercises.length === 0 ? (
+            <p className="text-sm text-slate-500">Aucun historique de modération pour le moment.</p>
+          ) : (
+            <div className="space-y-3">
+              {reviewedExercises.map(ex => (
+                <div key={ex.id} className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{ex.title}</p>
+                    <p className="text-xs text-slate-500">{ex.moderatedBy || 'Admin'} • {ex.moderatedAt ? new Date(ex.moderatedAt).toLocaleString() : 'Date inconnue'}</p>
+                    {ex.moderationNotes && (
+                      <p className="text-sm text-slate-600 mt-1">Note: {ex.moderationNotes}</p>
+                    )}
+                  </div>
+                  {renderStatusBadge(ex.moderationStatus || 'pending')}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+};
+
 
 // --- Main App ---
 
@@ -435,7 +591,7 @@ const App: React.FC = () => {
   const [exercises, setExercises] = useState<Exercise[]>(() =>
     getRecommendedExercises(getExercises(), null, 'All')
   );
-  const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add'>('dashboard');
+  const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation'>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
@@ -497,7 +653,38 @@ const App: React.FC = () => {
   const showSyncStatus =
     !syncStatus.isOnline || syncStatus.pendingMutations > 0 || syncStatus.isSyncing;
 
+  const communityExercises = allExercises.filter(ex => ex.isCommunitySubmitted);
+  const parseTimestamp = (value?: string) => (value ? Date.parse(value) : 0);
+  const pendingExercises = communityExercises.filter(
+    ex => (ex.moderationStatus ?? 'approved') === 'pending'
+  );
+  const reviewedExercises = communityExercises
+    .filter(ex => (ex.moderationStatus && ex.moderationStatus !== 'pending') || ex.moderatedAt)
+    .sort((a, b) => {
+      const dateA = parseTimestamp(a.moderatedAt) || parseTimestamp(a.createdAt);
+      const dateB = parseTimestamp(b.moderatedAt) || parseTimestamp(b.createdAt);
+      return dateB - dateA;
+    })
+    .slice(0, 8);
+
+  const handleModerationDecision = (exercise: Exercise, status: 'approved' | 'rejected', notes?: string) => {
+    const moderator = user?.name || 'Équipe NeuroSooth';
+    moderateExercise(exercise.id, status, { moderator, notes });
+  };
+
   // Render Helpers
+  if (view === 'moderation') {
+    return (
+      <ModerationPanel
+        pendingExercises={pendingExercises}
+        reviewedExercises={reviewedExercises}
+        onApprove={(exercise, notes) => handleModerationDecision(exercise, 'approved', notes)}
+        onReject={(exercise, notes) => handleModerationDecision(exercise, 'rejected', notes)}
+        onBack={() => setView('dashboard')}
+      />
+    );
+  }
+
   if (view === 'onboarding') {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
@@ -561,6 +748,20 @@ const App: React.FC = () => {
                  )}
                </div>
              )}
+             <Button
+               variant="outline"
+               size="sm"
+               onClick={() => setView('moderation')}
+               className="relative"
+             >
+               <ShieldCheck className="w-4 h-4 md:mr-2" />
+               <span className="hidden md:inline">Modération</span>
+               {pendingExercises.length > 0 && (
+                 <span className="absolute -top-2 -right-2 bg-rose-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+                   {pendingExercises.length}
+                 </span>
+               )}
+             </Button>
              <Button variant="primary" size="sm" onClick={() => setView('add')}>
                <Plus className="w-4 h-4 md:mr-2" />
                <span className="hidden md:inline">Contribuer</span>

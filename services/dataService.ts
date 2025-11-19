@@ -1,4 +1,4 @@
-import { Exercise, UserProfile, NeuroType, Situation } from '../types';
+import { Exercise, UserProfile, NeuroType, Situation, ModerationStatus } from '../types';
 import { INITIAL_EXERCISES } from '../constants';
 import { syncService } from './syncService';
 
@@ -39,6 +39,9 @@ export const getRecommendedExercises = (
 ): Exercise[] => {
   let list = [...exercises];
 
+  // Hide exercises waiting for review or rejected for the public catalog
+  list = list.filter(ex => (ex.moderationStatus ?? 'approved') === 'approved');
+
   // 1. Filter by Situation
   if (situation !== 'All') {
     list = list.filter(ex => ex.situation.includes(situation));
@@ -75,4 +78,17 @@ export const getRecommendedExercises = (
   }
 
   return list;
+};
+
+export const moderateExercise = (
+  exerciseId: string,
+  status: ModerationStatus,
+  options?: { moderator?: string; notes?: string }
+): void => {
+  syncService.updateExercise(exerciseId, {
+    moderationStatus: status,
+    moderationNotes: options?.notes,
+    moderatedBy: options?.moderator,
+    moderatedAt: new Date().toISOString()
+  });
 };
