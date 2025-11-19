@@ -8,7 +8,7 @@ const LEGACY_KEYS = {
   USER: 'neurosooth_user'
 } as const;
 
-export type MutationType = 'createExercise' | 'thankExercise';
+export type MutationType = 'createExercise' | 'thankExercise' | 'moderateExercise';
 
 export type PendingMutationRecord =
   | {
@@ -23,6 +23,20 @@ export type PendingMutationRecord =
       id: string;
       type: 'thankExercise';
       payload: { exerciseId: string };
+      attempts: number;
+      createdAt: number;
+      lastAttemptAt?: number;
+    }
+  | {
+      id: string;
+      type: 'moderateExercise';
+      payload: {
+        exerciseId: string;
+        status: string;
+        notes?: string;
+        moderator?: string;
+        shouldDelete?: boolean;
+      };
       attempts: number;
       createdAt: number;
       lastAttemptAt?: number;

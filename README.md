@@ -50,6 +50,59 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
 
 Pour préparer une version de production, exécutez `npm run build` puis `npm run preview` pour tester le build statique.
 
+## API backend Express + PostgreSQL
+
+Une API REST Express vit dans `server/` afin de partager les exercices, remercier une pratique et suivre les décisions de modération.
+
+### Configuration
+- Copiez `.env.example` vers `.env` et renseignez au minimum `DATABASE_URL`, `JWT_SECRET` et `VITE_API_BASE_URL` (utilisé par le client React).
+- Lancez les migrations PostgreSQL :
+  ```bash
+  npm run server:migrate
+  ```
+- Démarrez l’API en mode développement (TypeScript + watch) :
+  ```bash
+  npm run server:dev
+  ```
+- En production, vous pouvez utiliser le Dockerfile fourni :
+  ```bash
+  docker build -t neurosooth-api .
+  docker run --env-file .env -p 4000:4000 neurosooth-api
+  ```
+
+L’API expose les routes suivantes (préfixe `/api` configurable via `VITE_API_BASE_URL`) :
+
+| Méthode | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/exercises` | Retourne toutes les pratiques (avec `serverId`, timestamps, métadonnées de modération et `thanksCount`). |
+| POST | `/api/exercises` | Crée un exercice communautaire (anonyme) ou partenaire (si jeton `partner`). |
+| POST | `/api/exercises/:id/thanks` | Incrémente le compteur `thanksCount` et renvoie l’exercice à jour. |
+| PATCH | `/api/exercises/:id/moderation` | Réservé aux modérateurs pour approuver/rejeter, ajouter des notes et éventuellement supprimer côté serveur. |
+| GET | `/api/moderation/queue` | File temps réel des propositions en attente + historique des dernières décisions (JWT `moderator` requis). |
+
+### Authentification JWT
+Les actions sensibles sont protégées via des Bearer tokens signés avec `JWT_SECRET`. Deux rôles sont supportés :
+
+- `partner` : nécessaire pour publier des contenus partenaires (accès direct au catalogue).
+- `moderator` : requis pour consulter la file `/api/moderation/queue` ou appliquer des décisions.
+
+Un utilitaire simplifie la génération locale de tokens :
+
+```bash
+# Jeton partenaire (subject facultatif)
+npm run server:token partner mon-equipe
+
+# Jeton modérateur
+npm run server:token moderator alice
+```
+
+Collez ensuite ces jetons dans le panneau administrateur (section « Jetons API »). Les valeurs sont stockées dans `localStorage` et injectées automatiquement dans `apiClient` via les en-têtes `Authorization`.
+
+### Synchronisation front/back
+- `services/syncService` continue de gérer la file des mutations (création, remerciements et maintenant modération) puis réconcilie les exercices renvoyés par l’API.
+- Les exercices marqués `deletedAt` côté serveur sont supprimés du cache et n’apparaissent plus dans les recommandations.
+- Le panel de modération interroge périodiquement `/api/moderation/queue` et se replie automatiquement sur les données locales lorsqu’aucun jeton modérateur n’est fourni ou que l’API est inaccessible.
+
 ## Ajouter un exercice manuellement
 1. Depuis le tableau de bord principal, cliquez sur **Contribuer** pour ouvrir `AddExerciseForm`.
 2. Renseignez au minimum le titre, la description et une situation cible.
