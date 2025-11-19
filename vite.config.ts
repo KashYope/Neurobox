@@ -78,10 +78,14 @@ export default defineConfig(({ mode }) => {
                   networkTimeoutSeconds: 10
                 }
               }
-            ]
+            ],
+            navigateFallback: null,
+            cleanupOutdatedCaches: true
           },
           injectManifest: {
-            globPatterns: ['**/*.{js,css,html,svg,png,ico,json,txt}']
+            globPatterns: ['**/*.{js,css,html,svg,png,ico,json,txt,woff,woff2}'],
+            globIgnores: ['**/node_modules/**/*'],
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5MB
           }
         })
       ],

@@ -158,19 +158,28 @@ Collez ensuite ces jetons dans la section « Jetons API » du tiroir administr
 
 ## Progressive Web App
 - `vite-plugin-pwa` injecte automatiquement le service worker `src/sw.ts` (Workbox) et le manifeste (`public/manifest.webmanifest`).
-- `src/sw.ts` met en cache le shell (`StaleWhileRevalidate`), les réponses API `/api/*` (`NetworkFirst` + `BackgroundSyncPlugin`) et répond aux messages `syncService` pour planifier un `Background Sync`.
-- `services/syncService` déclenche cette synchronisation après chaque mutation pour garantir une reprise automatique même hors-ligne.
+- `src/sw.ts` implémente une stratégie de cache complète pour une utilisation 100% hors-ligne :
+  - **App shell** : `StaleWhileRevalidate` pour HTML/JS/CSS avec mise en cache immédiate lors de l'installation.
+  - **API** : `NetworkFirst` avec fallback sur cache (timeout 10s) + `BackgroundSyncPlugin` pour rejouer les mutations.
+  - **Images** : `CacheFirst` avec expiration 30 jours (max 100 entrées).
+  - **CDN externes** : `StaleWhileRevalidate` pour fonts.googleapis.com, aistudiocdn.com, cdn.tailwindcss.com, etc. (max 60 entrées, 30 jours).
+  - **Fallback offline** : `setCatchHandler` redirige les requêtes échouées vers le cache ou une erreur appropriée.
+- `services/syncService` déclenche la synchronisation après chaque mutation pour garantir une reprise automatique dès le retour réseau.
 
-### QA « Add to Home Screen »
+### Installation sur mobile
 1. **Android / Chrome**
-   - Construire l’app (`npm run build`), déployer `dist` ou lancer `npm run preview`.
-   - Sur un appareil Android réel, ouvrir l’URL via Chrome.
-   - Vérifier le bandeau « Installer l’application » ou le menu ⋮ > *Installer l’application*.
-   - Après installation, couper le réseau : le shell et la bibliothèque doivent rester accessibles et les actions en file se synchroniser dès le retour réseau.
+   - Construire l'app de production : `npm run build`.
+   - Démarrer le serveur preview : `npm run preview`.
+   - Sur votre PC, identifier votre adresse IP locale (`ipconfig` sur Windows, `ifconfig` sur macOS/Linux).
+   - Sur votre appareil Android connecté au **même réseau Wi-Fi**, ouvrir Chrome et accéder à `http://VOTRE_IP:4173`.
+   - Chrome affichera un bandeau « Ajouter à l'écran d'accueil » ou accéder via ⋮ > *Installer l'application*.
+   - Après installation, l'app fonctionne **entièrement hors-ligne** : le shell, les exercices et les images sont mis en cache automatiquement.
+   - Les actions (remerciements, contributions) sont mises en file et synchronisées dès le retour réseau.
 2. **iOS / Safari**
-   - Ouvrir l’URL dans Safari, appuyer sur **Partager > Sur l’écran d’accueil**.
-   - Lancer l’app en mode standalone et activer le mode avion.
-   - Vérifier que l’écran d’accueil et la bibliothèque se chargent depuis le cache et que les actions sont rejouées une fois la connexion rétablie.
+   - Même procédure pour accéder à l'URL via Safari.
+   - Appuyer sur **Partager > Sur l'écran d'accueil**.
+   - Lancer l'app en mode standalone.
+   - Activer le mode avion pour vérifier que l'application reste pleinement fonctionnelle hors-ligne.
 
 ## Distribution mobile via Capacitor
 1. Vérifier/adapter `capacitor.config.ts` (App ID `com.neurosooth.app`, `webDir: dist`).
