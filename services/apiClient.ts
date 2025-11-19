@@ -15,11 +15,18 @@ export type MutationPayload =
   | { type: 'createExercise'; exercise: Exercise }
   | { type: 'thankExercise'; exerciseId: string };
 
+const defaultFetchImpl = (...args: Parameters<typeof fetch>) => {
+  if (typeof fetch !== 'function') {
+    throw new Error('Fetch API is not available in this environment');
+  }
+  return fetch(...args);
+};
+
 class ApiClient {
   private baseUrl: string;
   private fetchImpl: typeof fetch;
 
-  constructor({ baseUrl = DEFAULT_BASE_URL, fetchImpl = fetch }: ApiConfig = {}) {
+  constructor({ baseUrl = DEFAULT_BASE_URL, fetchImpl = defaultFetchImpl }: ApiConfig = {}) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.fetchImpl = fetchImpl;
   }
