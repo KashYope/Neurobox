@@ -25,7 +25,10 @@ import {
   FileSpreadsheet,
   LogOut,
   Lock,
-  UserPlus
+  UserPlus,
+  Menu,
+  X,
+  Coffee
 } from 'lucide-react';
 
 import { Button } from './components/Button';
@@ -707,6 +710,12 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [fileInputKey, setFileInputKey] = useState<number>(Date.now());
 
+  const emitSessionChange = (session: PartnerAccount | null) => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('partner-session-change', { detail: session }));
+    }
+  };
+
   const persistAccounts = (list: PartnerAccount[]) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(PARTNER_STORAGE_KEYS.ACCOUNTS, JSON.stringify(list));
@@ -718,6 +727,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       localStorage.setItem(PARTNER_STORAGE_KEYS.SESSION, account.id);
     }
     setActiveAccount(account);
+    emitSessionChange(account);
   };
 
   const clearSession = () => {
@@ -725,6 +735,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       localStorage.removeItem(PARTNER_STORAGE_KEYS.SESSION);
     }
     setActiveAccount(null);
+    emitSessionChange(null);
   };
 
   const handleRegister = (event: React.FormEvent) => {
@@ -1381,6 +1392,9 @@ const App: React.FC = () => {
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [partnerSession, setPartnerSession] = useState<PartnerAccount | null>(() => getStoredPartnerSession());
+  const [pendingAdminAction, setPendingAdminAction] = useState<'moderation' | null>(null);
 
   useEffect(() => {
     syncService.init();
@@ -1394,6 +1408,20 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleSessionEvent: EventListener = () => {
+      setPartnerSession(getStoredPartnerSession());
+    };
+    window.addEventListener('partner-session-change', handleSessionEvent);
+    window.addEventListener('storage', handleSessionEvent);
+
+    return () => {
+      window.removeEventListener('partner-session-change', handleSessionEvent);
+      window.removeEventListener('storage', handleSessionEvent);
+    };
+  }, []);
+
+  useEffect(() => {
     // Load initial data
     const loadedUser = getUser();
     if (loadedUser) {
@@ -1402,6 +1430,31 @@ const App: React.FC = () => {
       setView('onboarding');
     }
   }, []);
+
+  useEffect(() => {
+    if (pendingAdminAction === 'moderation' && partnerSession) {
+      setView('moderation');
+      setPendingAdminAction(null);
+    }
+  }, [pendingAdminAction, partnerSession]);
+
+  useEffect(() => {
+    if (view !== 'dashboard') {
+      setIsAdminMenuOpen(false);
+    }
+  }, [view]);
+
+  useEffect(() => {
+    if (!isAdminMenuOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsAdminMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAdminMenuOpen]);
 
   // Refresh recommendations when filters or user changes
   useEffect(() => {
@@ -1434,6 +1487,26 @@ const App: React.FC = () => {
 
   const handleThanks = (exId: string) => {
     incrementThanks(exId);
+  };
+
+  const handlePartnerAccess = () => {
+    setView('partner');
+    setIsAdminMenuOpen(false);
+  };
+
+  const handleModerationAccess = () => {
+    if (partnerSession) {
+      setView('moderation');
+    } else {
+      setPendingAdminAction('moderation');
+      setView('partner');
+    }
+    setIsAdminMenuOpen(false);
+  };
+
+  const handleContributionAccess = () => {
+    setView('add');
+    setIsAdminMenuOpen(false);
   };
 
   const showSyncStatus =
@@ -1510,60 +1583,24 @@ const App: React.FC = () => {
             </div>
             <span className="font-bold text-xl text-slate-800 hidden md:block">NeuroSooth</span>
           </div>
-          
-          <div className="flex items-center gap-4 flex-wrap justify-end text-right">
-             {user && (
-               <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
-                 <User className="w-4 h-4" />
-                 <span className="font-medium">{user.name}</span>
-               </div>
-             )}
-             {showSyncStatus && (
-               <div className="flex flex-col items-end gap-1 text-xs min-w-[140px]">
-                 {!syncStatus.isOnline && (
-                   <span className="text-amber-700 bg-amber-100 px-3 py-1 rounded-full font-semibold">
-                     Mode hors ligne
-                   </span>
-                 )}
-                 {syncStatus.pendingMutations > 0 && (
-                   <span className="text-slate-500">
-                     {syncStatus.pendingMutations} changement(s) en attente
-                   </span>
-                 )}
-                 {syncStatus.isSyncing && syncStatus.isOnline && (
-                   <span className="flex items-center gap-1 text-teal-700">
-                     <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                     Synchronisation…
-                   </span>
-                 )}
-               </div>
-             )}
-             <Button
-               variant="outline"
-               size="sm"
-               onClick={() => setView('partner')}
-             >
-               <Building2 className="w-4 h-4 md:mr-2" />
-               <span className="hidden md:inline">Espace Partenaires</span>
-             </Button>
-             <Button
-               variant="outline"
-               size="sm"
-               onClick={() => setView('moderation')}
-               className="relative"
-             >
-               <ShieldCheck className="w-4 h-4 md:mr-2" />
-               <span className="hidden md:inline">Modération</span>
-               {pendingExercises.length > 0 && (
-                 <span className="absolute -top-2 -right-2 bg-rose-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
-                   {pendingExercises.length}
-                 </span>
-               )}
-             </Button>
-             <Button variant="primary" size="sm" onClick={() => setView('add')}>
-               <Plus className="w-4 h-4 md:mr-2" />
-               <span className="hidden md:inline">Contribuer</span>
-             </Button>
+
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
+                <User className="w-4 h-4" />
+                <span className="font-medium">{user.name}</span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsAdminMenuOpen(true)}
+              aria-label="Ouvrir le menu administrateur"
+              aria-expanded={isAdminMenuOpen}
+              className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            >
+              <Menu className="w-5 h-5" />
+              <span className="sr-only">Ouvrir le menu administrateur</span>
+            </button>
           </div>
         </div>
 
@@ -1605,7 +1642,7 @@ const App: React.FC = () => {
             {situationFilter === 'All' ? 'Recommandé pour vous' : situationFilter}
           </h2>
           <p className="text-slate-500">
-            {situationFilter === 'All' 
+            {situationFilter === 'All'
               ? `Basé sur votre profil ${user?.neurotypes.join(', ') || ''}`
               : `Techniques de régulation spécifiques`
             }
@@ -1641,6 +1678,128 @@ const App: React.FC = () => {
           </div>
         )}
       </main>
+
+      {isAdminMenuOpen && (
+        <div className="fixed inset-0 z-40 flex" aria-modal="true" role="dialog">
+          <div
+            className="flex-1 bg-slate-900/40 backdrop-blur-sm"
+            onClick={() => setIsAdminMenuOpen(false)}
+          />
+          <div
+            id="admin-menu"
+            className="w-full max-w-xs bg-white h-full shadow-2xl border-l border-slate-100 flex flex-col"
+          >
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-slate-400">Espace admin</p>
+                <h2 className="text-lg font-semibold text-slate-900">Actions rapides</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAdminMenuOpen(false)}
+                className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                aria-label="Fermer le menu administrateur"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Synchronisation</p>
+                {showSyncStatus ? (
+                  <div className="space-y-1">
+                    {!syncStatus.isOnline && (
+                      <p className="text-amber-700 font-semibold">Mode hors ligne</p>
+                    )}
+                    {syncStatus.pendingMutations > 0 && (
+                      <p>{syncStatus.pendingMutations} changement(s) en attente</p>
+                    )}
+                    {syncStatus.isSyncing && syncStatus.isOnline && (
+                      <p className="flex items-center gap-2 text-teal-700">
+                        <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+                        Synchronisation…
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="flex items-center gap-2 text-emerald-600">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Données parfaitement synchronisées
+                  </p>
+                )}
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Compte sécurisé</p>
+                {partnerSession ? (
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{partnerSession.organization}</p>
+                    <p className="text-xs text-slate-500">{partnerSession.email}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-600">
+                    Connectez-vous via l'espace partenaires pour débloquer les accès sensibles.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={handlePartnerAccess}
+                >
+                  <Building2 className="w-4 h-4" />
+                  Espace partenaires
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between gap-2"
+                  onClick={handleModerationAccess}
+                >
+                  <span className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" />
+                    Modération
+                  </span>
+                  {pendingExercises.length > 0 && (
+                    <span className="text-xs font-bold bg-rose-50 text-rose-600 rounded-full px-2 py-0.5">
+                      {pendingExercises.length}
+                    </span>
+                  )}
+                </Button>
+                {!partnerSession && (
+                  <p className="text-xs text-slate-500 pl-8 -mt-2">
+                    Accès restreint aux comptes partenaires.
+                  </p>
+                )}
+                <Button
+                  variant="primary"
+                  className="w-full justify-center gap-2"
+                  onClick={handleContributionAccess}
+                >
+                  <Plus className="w-4 h-4" />
+                  Ajouter une technique
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 space-y-3">
+              <a
+                href="https://www.buymeacoffee.com/K42H"
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setIsAdminMenuOpen(false)}
+                className="inline-flex items-center justify-center w-full gap-2 rounded-lg bg-amber-500 text-white font-semibold py-2 px-4 hover:bg-amber-600 transition-colors shadow-sm"
+              >
+                <Coffee className="w-4 h-4" />
+                Soutenir NeuroSooth
+              </a>
+              <p className="text-xs text-slate-400 text-center">Merci pour votre soutien à la régulation émotionnelle.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
