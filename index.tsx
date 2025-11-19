@@ -43,6 +43,8 @@ import {
   moderateExercise
 } from './services/dataService';
 import { syncService, SyncStatus } from './services/syncService';
+import { apiClient } from './services/apiClient';
+import { loadStoredTokens, persistToken } from './services/tokenStore';
 
 if (typeof window !== 'undefined') {
   registerSW({
@@ -1307,7 +1309,8 @@ const ModerationPanel: React.FC<{
   onApprove: (exercise: Exercise, notes?: string) => void;
   onReject: (exercise: Exercise, notes?: string) => void;
   onBack: () => void;
-}> = ({ pendingExercises, reviewedExercises, onApprove, onReject, onBack }) => {
+  statusNote?: string | null;
+}> = ({ pendingExercises, reviewedExercises, onApprove, onReject, onBack, statusNote }) => {
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
 
   const handleNoteChange = (id: string, value: string) => {
@@ -1343,6 +1346,11 @@ const ModerationPanel: React.FC<{
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-10">
+        {statusNote && (
+          <div className="bg-slate-100 border border-slate-200 text-slate-600 rounded-2xl p-4">
+            {statusNote}
+          </div>
+        )}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList className="w-5 h-5 text-slate-500" />
@@ -1459,6 +1467,19 @@ const App: React.FC = () => {
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [partnerSession, setPartnerSession] = useState<PartnerAccount | null>(() => getStoredPartnerSession());
   const [pendingAdminAction, setPendingAdminAction] = useState<'moderation' | null>(null);
+  const [tokenDrafts, setTokenDrafts] = useState(() => {
+    const tokens = loadStoredTokens();
+    return {
+      partner: tokens.partnerToken ?? '',
+      moderator: tokens.moderatorToken ?? ''
+    };
+  });
+  const [tokenFeedback, setTokenFeedback] = useState<string | null>(null);
+  const [serverModerationData, setServerModerationData] = useState<{
+    queue: Exercise[];
+    reviewed: Exercise[];
+  } | null>(null);
+  const [moderationStatusMessage, setModerationStatusMessage] = useState<string | null>(null);
 
   useEffect(() => {
     syncService.init();
@@ -1473,9 +1494,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const handleSessionEvent: EventListener = () => {
+    const refreshSession = () => {
       setPartnerSession(getStoredPartnerSession());
+      const tokens = loadStoredTokens();
+      setTokenDrafts({
+        partner: tokens.partnerToken ?? '',
+        moderator: tokens.moderatorToken ?? ''
+      });
     };
+    const handleSessionEvent: EventListener = () => {
+      refreshSession();
+    };
+    refreshSession();
     window.addEventListener('partner-session-change', handleSessionEvent);
     window.addEventListener('storage', handleSessionEvent);
 
@@ -1503,6 +1533,41 @@ const App: React.FC = () => {
   }, [pendingAdminAction, partnerSession]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (view !== 'moderation') {
+      setServerModerationData(null);
+      setModerationStatusMessage(null);
+      return;
+    }
+
+    let isCancelled = false;
+    const loadQueue = async () => {
+      try {
+        const response = await apiClient.fetchModerationQueue();
+        if (!isCancelled) {
+          setServerModerationData({ queue: response.queue, reviewed: response.recent });
+          setModerationStatusMessage('File synchronisée avec le serveur sécurisé.');
+        }
+      } catch (error) {
+        if (isCancelled) return;
+        const message =
+          error instanceof Error && /auth/i.test(error.message)
+            ? 'Jeton modérateur requis pour charger la file serveur.'
+            : 'Serveur indisponible. Affichage des données locales.';
+        setModerationStatusMessage(message);
+        setServerModerationData(null);
+      }
+    };
+
+    loadQueue();
+    const interval = window.setInterval(loadQueue, 45000);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [view]);
+
+  useEffect(() => {
     if (view !== 'dashboard') {
       setIsAdminMenuOpen(false);
     }
@@ -1519,6 +1584,24 @@ const App: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAdminMenuOpen]);
+
+  const handleTokenInputChange = (role: 'partner' | 'moderator', value: string) => {
+    setTokenDrafts(prev => ({ ...prev, [role]: value }));
+  };
+
+  const handleTokenSave = (role: 'partner' | 'moderator') => {
+    const trimmed = tokenDrafts[role].trim();
+    persistToken(role, trimmed || undefined);
+    const message = trimmed
+      ? role === 'partner'
+        ? 'Jeton partenaire enregistré.'
+        : 'Jeton modérateur enregistré.'
+      : 'Jeton supprimé.';
+    setTokenFeedback(message);
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => setTokenFeedback(null), 4000);
+    }
+  };
 
   // Refresh recommendations when filters or user changes
   useEffect(() => {
@@ -1578,10 +1661,10 @@ const App: React.FC = () => {
 
   const communityExercises = allExercises.filter(ex => ex.isCommunitySubmitted);
   const parseTimestamp = (value?: string) => (value ? Date.parse(value) : 0);
-  const pendingExercises = communityExercises.filter(
+  const localPendingExercises = communityExercises.filter(
     ex => (ex.moderationStatus ?? 'approved') === 'pending'
   );
-  const reviewedExercises = communityExercises
+  const localReviewedExercises = communityExercises
     .filter(ex => (ex.moderationStatus && ex.moderationStatus !== 'pending') || ex.moderatedAt)
     .sort((a, b) => {
       const dateA = parseTimestamp(a.moderatedAt) || parseTimestamp(a.createdAt);
@@ -1589,10 +1672,18 @@ const App: React.FC = () => {
       return dateB - dateA;
     })
     .slice(0, 8);
+  const effectivePendingExercises = serverModerationData?.queue ?? localPendingExercises;
+  const effectiveReviewedExercises = serverModerationData?.reviewed ?? localReviewedExercises;
+  const displayPendingCount = effectivePendingExercises.length;
 
   const handleModerationDecision = (exercise: Exercise, status: 'approved' | 'rejected', notes?: string) => {
     const moderator = user?.name || 'Équipe NeuroSooth';
-    moderateExercise(exercise.id, status, { moderator, notes });
+    const targetId = exercise.serverId ?? exercise.id;
+    moderateExercise(targetId, status, {
+      moderator,
+      notes,
+      shouldDelete: status === 'rejected'
+    });
   };
 
   // Render Helpers
@@ -1603,11 +1694,12 @@ const App: React.FC = () => {
   if (view === 'moderation') {
     return (
       <ModerationPanel
-        pendingExercises={pendingExercises}
-        reviewedExercises={reviewedExercises}
+        pendingExercises={effectivePendingExercises}
+        reviewedExercises={effectiveReviewedExercises}
         onApprove={(exercise, notes) => handleModerationDecision(exercise, 'approved', notes)}
         onReject={(exercise, notes) => handleModerationDecision(exercise, 'rejected', notes)}
         onBack={() => setView('dashboard')}
+        statusNote={moderationStatusMessage}
       />
     );
   }
@@ -1808,6 +1900,48 @@ const App: React.FC = () => {
                 )}
               </div>
 
+              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Jetons API</p>
+                  {tokenFeedback && <span className="text-xs text-emerald-600">{tokenFeedback}</span>}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Collez les tokens signés fournis par NeuroSooth pour publier et modérer via le backend sécurisé.
+                </p>
+                <label className="text-xs font-medium text-slate-500" htmlFor="partner-token-input">
+                  Jeton partenaire
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="partner-token-input"
+                    type="password"
+                    value={tokenDrafts.partner}
+                    onChange={event => handleTokenInputChange('partner', event.target.value)}
+                    className="flex-1 border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Bearer token"
+                  />
+                  <Button size="sm" variant="outline" onClick={() => handleTokenSave('partner')}>
+                    Sauver
+                  </Button>
+                </div>
+                <label className="text-xs font-medium text-slate-500" htmlFor="moderator-token-input">
+                  Jeton modérateur
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="moderator-token-input"
+                    type="password"
+                    value={tokenDrafts.moderator}
+                    onChange={event => handleTokenInputChange('moderator', event.target.value)}
+                    className="flex-1 border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="Bearer token"
+                  />
+                  <Button size="sm" variant="outline" onClick={() => handleTokenSave('moderator')}>
+                    Sauver
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <Button
                   variant="outline"
@@ -1826,9 +1960,9 @@ const App: React.FC = () => {
                     <ShieldCheck className="w-4 h-4" />
                     Modération
                   </span>
-                  {pendingExercises.length > 0 && (
+                  {displayPendingCount > 0 && (
                     <span className="text-xs font-bold bg-rose-50 text-rose-600 rounded-full px-2 py-0.5">
-                      {pendingExercises.length}
+                      {displayPendingCount}
                     </span>
                   )}
                 </Button>

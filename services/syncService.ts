@@ -1,5 +1,5 @@
 import { INITIAL_EXERCISES } from '../constants';
-import { Exercise, ServerExercise } from '../types';
+import { Exercise, ModerationStatus, ServerExercise } from '../types';
 import { apiClient, ApiClientType } from './apiClient';
 import {
   getInitialSnapshot,
@@ -12,11 +12,21 @@ const defaultStorageAdapter = snapshot.adapter;
 const defaultExercises = snapshot.exercises.length ? snapshot.exercises : [...INITIAL_EXERCISES];
 const defaultMutations = snapshot.pendingMutations;
 
-type SyncApi = Pick<ApiClientType, 'fetchExercises' | 'createExercise' | 'thankExercise'>;
+type SyncApi = Pick<ApiClientType, 'fetchExercises' | 'createExercise' | 'thankExercise' | 'moderateExercise'>;
 
 export type PendingMutationInput =
   | { type: 'createExercise'; payload: { exercise: Exercise } }
-  | { type: 'thankExercise'; payload: { exerciseId: string } };
+  | { type: 'thankExercise'; payload: { exerciseId: string } }
+  | {
+      type: 'moderateExercise';
+      payload: {
+        exerciseId: string;
+        status: ModerationStatus;
+        notes?: string;
+        moderator?: string;
+        shouldDelete?: boolean;
+      };
+    };
 
 export type PendingMutation = PendingMutationRecord;
 
@@ -191,6 +201,36 @@ export class SyncService {
     });
   }
 
+  async moderateExercise(
+    exerciseId: string,
+    status: ModerationStatus,
+    options?: { moderator?: string; notes?: string; shouldDelete?: boolean }
+  ): Promise<void> {
+    const timestamp = nowIso();
+    const patch: Partial<Exercise> = {
+      moderationStatus: status,
+      moderationNotes: options?.notes,
+      moderatedBy: options?.moderator,
+      moderatedAt: timestamp
+    };
+
+    if (options?.shouldDelete) {
+      patch.deletedAt = timestamp;
+    }
+
+    this.updateExercise(exerciseId, patch);
+    this.enqueueMutation({
+      type: 'moderateExercise',
+      payload: {
+        exerciseId,
+        status,
+        notes: options?.notes,
+        moderator: options?.moderator,
+        shouldDelete: options?.shouldDelete
+      }
+    });
+  }
+
   updateExercise(exerciseId: string, patch: Partial<Exercise>): void {
     const timestamp = patch.updatedAt || nowIso();
     let updatedExercise: Exercise | null = null;
@@ -252,7 +292,21 @@ export class SyncService {
       return { ...base, type: 'createExercise', payload: { exercise: input.payload.exercise } };
     }
 
-    return { ...base, type: 'thankExercise', payload: { exerciseId: input.payload.exerciseId } };
+    if (input.type === 'thankExercise') {
+      return { ...base, type: 'thankExercise', payload: { exerciseId: input.payload.exerciseId } };
+    }
+
+    return {
+      ...base,
+      type: 'moderateExercise',
+      payload: {
+        exerciseId: input.payload.exerciseId,
+        status: input.payload.status,
+        notes: input.payload.notes,
+        moderator: input.payload.moderator,
+        shouldDelete: input.payload.shouldDelete
+      }
+    };
   }
 
   async flushQueue(): Promise<void> {
@@ -304,6 +358,16 @@ export class SyncService {
     if (mutation.type === 'thankExercise') {
       const serverExercise = await this.api.thankExercise(mutation.payload.exerciseId);
       await this.applyServerExercise(serverExercise);
+      return;
+    }
+
+    if (mutation.type === 'moderateExercise') {
+      const serverExercise = await this.api.moderateExercise(mutation.payload.exerciseId, {
+        status: mutation.payload.status,
+        notes: mutation.payload.notes,
+        shouldDelete: mutation.payload.shouldDelete
+      });
+      await this.applyServerExercise(serverExercise);
     }
   }
 
@@ -337,6 +401,11 @@ export class SyncService {
 
     serverExercises.forEach(serverEx => {
       const key = this.getExerciseKey(serverEx);
+      if (serverEx.deletedAt) {
+        mergedMap.delete(key);
+        return;
+      }
+
       if (mergedMap.has(key)) {
         const resolved = this.resolveConflict(mergedMap.get(key)!, serverEx);
         mergedMap.set(key, resolved);
@@ -351,6 +420,10 @@ export class SyncService {
   private resolveConflict(localExercise: Exercise, serverExercise: ServerExercise): Exercise {
     const localUpdated = localExercise.updatedAt ? Date.parse(localExercise.updatedAt) : 0;
     const serverUpdated = serverExercise.updatedAt ? Date.parse(serverExercise.updatedAt) : Date.now();
+
+    if (serverExercise.deletedAt) {
+      return { ...localExercise, ...serverExercise };
+    }
 
     const preferred = serverUpdated >= localUpdated ? serverExercise : localExercise;
     const secondary = preferred === serverExercise ? localExercise : serverExercise;
@@ -382,6 +455,11 @@ export class SyncService {
 
   private async applyServerExercise(serverExercise: ServerExercise): Promise<void> {
     const key = this.getExerciseKey(serverExercise);
+    if (serverExercise.deletedAt) {
+      await this.removeExercise(key);
+      return;
+    }
+
     let matched = false;
     let updated: Exercise | null = null;
 
@@ -404,6 +482,15 @@ export class SyncService {
       await this.storage.bulkUpsertExercises([updated]);
     }
     this.notifyCache();
+  }
+
+  private async removeExercise(serverKey: string): Promise<void> {
+    const originalLength = this.cache.length;
+    this.cache = this.cache.filter(ex => this.getExerciseKey(ex) !== serverKey && ex.serverId !== serverKey);
+    if (this.cache.length !== originalLength) {
+      await this.storage.replaceExercises(this.cache);
+      this.notifyCache();
+    }
   }
 
   private getExerciseKey(exercise: Exercise): string {

@@ -57,6 +57,7 @@ export interface Exercise {
   moderationNotes?: string;
   moderatedAt?: string;
   moderatedBy?: string;
+  deletedAt?: string;
 }
 
 export interface ServerExercise extends Exercise {

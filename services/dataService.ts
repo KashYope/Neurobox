@@ -20,12 +20,14 @@ export const saveUser = (user: UserProfile): void => {
 
 export const getUser = (): UserProfile | null => userCache;
 
+const filterDeleted = (list: Exercise[]): Exercise[] => list.filter(ex => !ex.deletedAt);
+
 export const getExercises = (): Exercise[] => {
   const cache = syncService.getCachedExercises();
   if (cache.length === 0) {
-    return INITIAL_EXERCISES;
+    return filterDeleted(INITIAL_EXERCISES);
   }
-  return cache;
+  return filterDeleted(cache);
 };
 
 export const saveExercise = (exercise: Exercise): void => {
@@ -42,7 +44,7 @@ export const getRecommendedExercises = (
   user: UserProfile | null,
   situation: Situation | 'All'
 ): Exercise[] => {
-  let list = [...exercises];
+  let list = filterDeleted(exercises);
 
   // Hide exercises waiting for review or rejected for the public catalog
   list = list.filter(ex => (ex.moderationStatus ?? 'approved') === 'approved');
@@ -88,14 +90,9 @@ export const getRecommendedExercises = (
 export const moderateExercise = (
   exerciseId: string,
   status: ModerationStatus,
-  options?: { moderator?: string; notes?: string }
+  options?: { moderator?: string; notes?: string; shouldDelete?: boolean }
 ): void => {
-  syncService.updateExercise(exerciseId, {
-    moderationStatus: status,
-    moderationNotes: options?.notes,
-    moderatedBy: options?.moderator,
-    moderatedAt: new Date().toISOString()
-  });
+  void syncService.moderateExercise(exerciseId, status, options);
 };
 
 export const cacheExerciseImage = async (
