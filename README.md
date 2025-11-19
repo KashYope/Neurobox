@@ -9,6 +9,8 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
 - **Dire merci** – Bouton « Dire Merci » avec mise à jour optimiste : `incrementThanks` pousse la mutation dans `syncService` qui flush la file d’attente vers l’API en arrière-plan.
 - **Contribution communautaire** – Formulaire complet pour publier un nouvel exercice (`AddExerciseForm`) avec image, étapes et situations ciblées.
 - **Synchronisation hors-ligne** – Profil en `localStorage`, cache d’exercices hydraté par `syncService` (localStorage par défaut, prêt pour IndexedDB) et file `pendingMutations` pour re-jouer les actions dès que `navigator.onLine` repasse à `true`.
+- **Backoffice Partenaires** – Espace sécurisé pour créer/connexion d’organisations, publier manuellement ou importer des exercices via CSV/JSON (mappage automatique des colonnes vers `PartnerPortal`).
+- **Panel de modération** – Vue dédiée pour valider/refuser les contributions communautaires, avec notes internes et badges de statut qui conditionnent l’apparition publique des exercices.
 
 ## Stack & Architecture
 - **Framework** : React 19 avec Vite 6 et TypeScript 5.8.
@@ -32,30 +34,43 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
 
 ## Guide de démarrage
 ### Prérequis
-- Node.js (LTS conseillé)
+- Node.js (version LTS conseillée)
+- npm 10+
 
 ### Installation & exécution
 1. Installer les dépendances :
    ```bash
    npm install
    ```
-2. Configurer votre clé Gemini pour les éventuels appels IA :
-   ```
-   cp .env.local.example .env.local  # si le fichier existe
-   ```
-   Ajoutez ensuite `GEMINI_API_KEY=...`.
-3. Lancer l’appli :
+2. Démarrer le serveur de développement Vite :
    ```bash
    npm run dev
    ```
-4. Ouvrez [http://localhost:5173](http://localhost:5173) et complétez l’onboarding pour accéder aux recommandations.
+3. Ouvrez [http://localhost:5173](http://localhost:5173) et complétez l’onboarding pour accéder aux recommandations personnalisées.
+
+Pour préparer une version de production, exécutez `npm run build` puis `npm run preview` pour tester le build statique.
 
 ## Ajouter un exercice manuellement
-1. Depuis l’interface, cliquez sur **Contribuer** pour ouvrir `AddExerciseForm`.
+1. Depuis le tableau de bord principal, cliquez sur **Contribuer** pour ouvrir `AddExerciseForm`.
 2. Renseignez au minimum le titre, la description et une situation cible.
 3. Indiquez chaque étape dans l’ordre; des URL d’images/GIF optionnelles peuvent améliorer la carte.
-4. Publiez : l’exercice est stocké en local, tagué « Community » et visible dans la grille.
+4. Validez : la contribution est stockée localement, passe en statut « pending » et attend la validation du panel de modération.
 
 ## Dire merci et suivi d’impact
 - Le bouton « Dire Merci » (vue détail) appelle `incrementThanks`, incrémente le compteur et déclenche un rerender des cartes afin que les techniques les plus utiles montent naturellement dans les recommandations.
 - Ces remerciements persistent localement pour favoriser vos techniques favorites lors de vos prochaines visites.
+
+## Espaces d’administration
+
+### Backoffice Partenaires
+- Accédez-y via le bouton **Espace Partenaires** (icône Building) depuis la barre supérieure de l’application.
+- Les organisations peuvent créer un compte local (stocké dans `localStorage`), se connecter puis :
+  - Publier manuellement des techniques via un formulaire complet (`PartnerPortal`).
+  - Importer un fichier CSV ou JSON pour créer plusieurs exercices d’un coup. Les colonnes `title`, `description`, `situations`, `steps`, `tags`, `warning`, `imageUrl` sont reconnues automatiquement; les listes peuvent être séparées par `|`, `;` ou `,`.
+- Les exercices créés via ce portail sont immédiatement marqués comme « Partenaire » et ajoutés à la grille utilisateur avec un `thanksCount` initialisé à 0.
+
+### Panel de modération
+- Accessible via le bouton **Modération** (bouclier) affiché à droite de la barre supérieure.
+- Liste en temps réel les contributions `isCommunitySubmitted` ayant le statut `pending` dans `syncService`.
+- Chaque entrée permet d’ajouter une note interne et de choisir **Valider** ou **Refuser**; un badge visuel apparaît sur les cartes validées/refusées dans l’historique.
+- `moderateExercise` met à jour les champs `moderationStatus`, `moderationNotes`, `moderatedAt` et `moderatedBy`, ce qui conditionne la visibilité publique (`approved` uniquement) et renseigne l’historique des décisions.
