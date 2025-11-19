@@ -19,11 +19,17 @@ import {
   ClipboardList,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  Building2,
+  UploadCloud,
+  FileSpreadsheet,
+  LogOut,
+  Lock,
+  UserPlus
 } from 'lucide-react';
 
 import { Button } from './components/Button';
-import { Exercise, NeuroType, Situation, UserProfile } from './types';
+import { Exercise, NeuroType, Situation, UserProfile, PartnerAccount } from './types';
 import {
   getUser,
   saveUser,
@@ -440,6 +446,786 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
   );
 };
 
+// --- Partner Portal Helpers ---
+const PARTNER_STORAGE_KEYS = {
+  ACCOUNTS: 'neurosooth_partner_accounts',
+  SESSION: 'neurosooth_partner_session'
+};
+
+const getStoredPartnerAccounts = (): PartnerAccount[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(PARTNER_STORAGE_KEYS.ACCOUNTS);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const getStoredPartnerSession = (): PartnerAccount | null => {
+  if (typeof window === 'undefined') return null;
+  const sessionId = localStorage.getItem(PARTNER_STORAGE_KEYS.SESSION);
+  if (!sessionId) return null;
+  const accounts = getStoredPartnerAccounts();
+  return accounts.find(acc => acc.id === sessionId) || null;
+};
+
+interface PartnerExerciseDraft {
+  title: string;
+  description: string;
+  duration?: string;
+  steps?: string[];
+  tags?: string[];
+  situation?: Situation[];
+  neurotypes?: NeuroType[];
+  warning?: string;
+  imageUrl?: string;
+}
+
+const splitToList = (value: unknown, pattern: RegExp = /[,;|]/): string[] => {
+  if (Array.isArray(value)) {
+    return value.map(item => `${item}`.trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(pattern)
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+  if (value === undefined || value === null) return [];
+  const asString = `${value}`.trim();
+  return asString ? [asString] : [];
+};
+
+const splitStepsInput = (value: unknown): string[] => {
+  return splitToList(value, /\r?\n|\|/);
+};
+
+const mapStringsToSituations = (values: string[]): Situation[] => {
+  const lowerValues = values.map(value => value.toLowerCase());
+  const matches = lowerValues
+    .map(value =>
+      Object.values(Situation).find(option =>
+        option.toLowerCase() === value || option.toLowerCase().includes(value)
+      )
+    )
+    .filter((value): value is Situation => Boolean(value));
+  return matches;
+};
+
+const mapStringsToNeurotypes = (values: string[]): NeuroType[] => {
+  const lowerValues = values.map(value => value.toLowerCase());
+  const matches = lowerValues
+    .map(value =>
+      Object.values(NeuroType).find(option =>
+        option.toLowerCase() === value || option.toLowerCase().includes(value)
+      )
+    )
+    .filter((value): value is NeuroType => Boolean(value));
+  return matches;
+};
+
+const createPartnerExercise = (draft: PartnerExerciseDraft, author?: string): Exercise => {
+  const timestamp = new Date().toISOString();
+  const steps = (draft.steps || []).map(step => step.trim()).filter(Boolean);
+  const tags = (draft.tags || []).map(tag => tag.trim()).filter(Boolean);
+  const situation = draft.situation && draft.situation.length > 0 ? draft.situation : [Situation.Stress];
+
+  return {
+    id: `partner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title: draft.title,
+    description: draft.description,
+    duration: draft.duration && draft.duration.trim() ? draft.duration : '5 min',
+    steps: steps.length ? steps : ['Respiration consciente pendant 60 secondes'],
+    tags: tags.length ? tags : ['Partenaire'],
+    situation,
+    neurotypes: draft.neurotypes || [],
+    warning: draft.warning,
+    imageUrl: draft.imageUrl && draft.imageUrl.trim()
+      ? draft.imageUrl
+      : 'https://placehold.co/600x400/0f172a/ffffff?text=Espace+Partenaire',
+    thanksCount: 0,
+    author,
+    isPartnerContent: true,
+    moderationStatus: 'approved',
+    createdAt: timestamp,
+    updatedAt: timestamp
+  };
+};
+
+const parseCsvLine = (line: string): string[] => {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+};
+
+const mapRowToDraft = (row: Record<string, string>): PartnerExerciseDraft => {
+  const title = row['title'] || row['nom'] || '';
+  const description = row['description'] || row['desc'] || row['details'] || '';
+  const duration = row['duration'] || row['duree'];
+  const steps = splitStepsInput(row['steps'] || row['etapes']);
+  const tags = splitToList(row['tags'] || row['motscles']);
+  const situationStrings = splitToList(row['situations'] || row['situation']);
+  const neuroStrings = splitToList(row['neurotypes']);
+
+  return {
+    title: title.trim(),
+    description: description.trim(),
+    duration: duration?.trim(),
+    steps,
+    tags,
+    situation: mapStringsToSituations(situationStrings),
+    neurotypes: mapStringsToNeurotypes(neuroStrings),
+    warning: (row['warning'] || row['alerte'])?.trim(),
+    imageUrl: (row['imageurl'] || row['image'])?.trim()
+  };
+};
+
+const parseCsvDrafts = (content: string): PartnerExerciseDraft[] => {
+  const lines = content
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
+
+  if (lines.length < 2) {
+    throw new Error('Le fichier CSV doit contenir un en-tête et au moins une ligne.');
+  }
+
+  const headers = parseCsvLine(lines[0]).map(header => header.toLowerCase());
+  const drafts = lines.slice(1).map(line => {
+    const values = parseCsvLine(line);
+    if (values.every(value => value.trim().length === 0)) {
+      return null;
+    }
+
+    const row: Record<string, string> = {};
+    headers.forEach((header, idx) => {
+      row[header] = values[idx] ?? '';
+    });
+
+    return mapRowToDraft(row);
+  })
+  .filter((draft): draft is PartnerExerciseDraft => Boolean(draft && draft.title && draft.description));
+
+  return drafts;
+};
+
+const parseJsonDrafts = (content: string): PartnerExerciseDraft[] => {
+  let data: unknown;
+  try {
+    data = JSON.parse(content);
+  } catch {
+    throw new Error('JSON invalide. Veuillez vérifier la structure du fichier.');
+  }
+
+  const entries = Array.isArray(data) ? data : [data];
+  const drafts = entries.map((entry) => {
+    if (typeof entry !== 'object' || entry === null) {
+      return null;
+    }
+
+    const obj = entry as Record<string, unknown>;
+    const title = typeof obj.title === 'string' ? obj.title : '';
+    const description = typeof obj.description === 'string' ? obj.description : '';
+
+    return {
+      title: title.trim(),
+      description: description.trim(),
+      duration: typeof obj.duration === 'string' ? obj.duration : undefined,
+      steps: splitStepsInput(obj.steps),
+      tags: splitToList(obj.tags),
+      situation: mapStringsToSituations(splitToList(obj.situations ?? obj.situation)),
+      neurotypes: mapStringsToNeurotypes(splitToList(obj.neurotypes ?? obj.neurotype)),
+      warning: typeof obj.warning === 'string' ? obj.warning.trim() : undefined,
+      imageUrl: typeof obj.imageUrl === 'string'
+        ? obj.imageUrl
+        : typeof obj.image === 'string'
+          ? obj.image
+          : undefined,
+    } as PartnerExerciseDraft;
+  }).filter((draft): draft is PartnerExerciseDraft => Boolean(draft && draft.title && draft.description));
+
+  return drafts;
+};
+
+interface PartnerFormState {
+  title: string;
+  description: string;
+  duration: string;
+  warning: string;
+  imageUrl: string;
+  situation: Situation[];
+  steps: string[];
+  tagsText: string;
+  neurotypes: NeuroType[];
+}
+
+const createEmptyPartnerForm = (): PartnerFormState => ({
+  title: '',
+  description: '',
+  duration: '5 min',
+  warning: '',
+  imageUrl: '',
+  situation: [Situation.Stress],
+  steps: [''],
+  tagsText: 'Partenaire',
+  neurotypes: []
+});
+
+const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const [accounts, setAccounts] = useState<PartnerAccount[]>(() => getStoredPartnerAccounts());
+  const [activeAccount, setActiveAccount] = useState<PartnerAccount | null>(() => getStoredPartnerSession());
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authForm, setAuthForm] = useState({
+    organization: '',
+    contactName: '',
+    email: '',
+    password: ''
+  });
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState<PartnerFormState>(createEmptyPartnerForm());
+  const [manualFeedback, setManualFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [fileInputKey, setFileInputKey] = useState<number>(Date.now());
+
+  const persistAccounts = (list: PartnerAccount[]) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(PARTNER_STORAGE_KEYS.ACCOUNTS, JSON.stringify(list));
+    }
+  };
+
+  const startSession = (account: PartnerAccount) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(PARTNER_STORAGE_KEYS.SESSION, account.id);
+    }
+    setActiveAccount(account);
+  };
+
+  const clearSession = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(PARTNER_STORAGE_KEYS.SESSION);
+    }
+    setActiveAccount(null);
+  };
+
+  const handleRegister = (event: React.FormEvent) => {
+    event.preventDefault();
+    setAuthError(null);
+
+    if (!authForm.organization || !authForm.contactName || !authForm.email || !authForm.password) {
+      setAuthError('Tous les champs sont requis pour créer un compte.');
+      return;
+    }
+
+    if (accounts.some(account => account.email.toLowerCase() === authForm.email.toLowerCase())) {
+      setAuthError('Cette adresse e-mail est déjà enregistrée.');
+      return;
+    }
+
+    const newAccount: PartnerAccount = {
+      id: `partner-${Date.now()}`,
+      organization: authForm.organization.trim(),
+      contactName: authForm.contactName.trim(),
+      email: authForm.email.trim(),
+      password: authForm.password
+    };
+
+    const updatedAccounts = [...accounts, newAccount];
+    setAccounts(updatedAccounts);
+    persistAccounts(updatedAccounts);
+    startSession(newAccount);
+    setAuthForm({ organization: '', contactName: '', email: '', password: '' });
+  };
+
+  const handleLogin = (event: React.FormEvent) => {
+    event.preventDefault();
+    setAuthError(null);
+
+    if (!authForm.email || !authForm.password) {
+      setAuthError('Veuillez renseigner votre e-mail et votre mot de passe.');
+      return;
+    }
+
+    const account = accounts.find(
+      acc => acc.email.toLowerCase() === authForm.email.toLowerCase() && acc.password === authForm.password
+    );
+
+    if (!account) {
+      setAuthError('Identifiants incorrects.');
+      return;
+    }
+
+    startSession(account);
+    setAuthForm({ organization: '', contactName: '', email: '', password: '' });
+  };
+
+  const handleManualSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setManualFeedback(null);
+
+    if (!activeAccount) {
+      setManualFeedback({ type: 'error', text: 'Connectez-vous pour publier un exercice.' });
+      return;
+    }
+
+    if (!manualForm.title.trim() || !manualForm.description.trim()) {
+      setManualFeedback({ type: 'error', text: 'Le titre et la description sont obligatoires.' });
+      return;
+    }
+
+    const tagsList = splitToList(manualForm.tagsText, /[,;|]/);
+
+    const draft: PartnerExerciseDraft = {
+      title: manualForm.title.trim(),
+      description: manualForm.description.trim(),
+      duration: manualForm.duration.trim(),
+      warning: manualForm.warning.trim() || undefined,
+      imageUrl: manualForm.imageUrl.trim() || undefined,
+      steps: manualForm.steps.map(step => step.trim()).filter(Boolean),
+      tags: tagsList,
+      situation: manualForm.situation.length ? manualForm.situation : [Situation.Stress],
+      neurotypes: manualForm.neurotypes,
+    };
+
+    const exercise = createPartnerExercise(draft, `${activeAccount.organization} • ${activeAccount.contactName}`);
+    saveExercise(exercise);
+    setManualFeedback({ type: 'success', text: 'Technique publiée immédiatement pour les utilisateurs.' });
+    setManualForm(createEmptyPartnerForm());
+  };
+
+  const toggleSituation = (value: Situation) => {
+    setManualForm(prev => {
+      const exists = prev.situation.includes(value);
+      const situation = exists ? prev.situation.filter(item => item !== value) : [...prev.situation, value];
+      return { ...prev, situation };
+    });
+  };
+
+  const toggleNeurotype = (value: NeuroType) => {
+    setManualForm(prev => {
+      const exists = prev.neurotypes.includes(value);
+      const neurotypes = exists ? prev.neurotypes.filter(item => item !== value) : [...prev.neurotypes, value];
+      return { ...prev, neurotypes };
+    });
+  };
+
+  const handleStepChange = (index: number, value: string) => {
+    setManualForm(prev => {
+      const steps = [...prev.steps];
+      steps[index] = value;
+      return { ...prev, steps };
+    });
+  };
+
+  const addStepField = () => {
+    setManualForm(prev => ({ ...prev, steps: [...prev.steps, ''] }));
+  };
+
+  const removeStepField = (index: number) => {
+    setManualForm(prev => ({ ...prev, steps: prev.steps.filter((_, idx) => idx !== index) }));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!activeAccount) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const content = reader.result ? String(reader.result) : '';
+        const drafts = file.name.toLowerCase().endsWith('.json')
+          ? parseJsonDrafts(content)
+          : parseCsvDrafts(content);
+
+        if (drafts.length === 0) {
+          setImportFeedback({ type: 'error', text: 'Aucun exercice valide trouvé dans le fichier.' });
+          setFileInputKey(Date.now());
+          return;
+        }
+
+        drafts.forEach(draft => {
+          const exercise = createPartnerExercise(draft, activeAccount.organization);
+          saveExercise(exercise);
+        });
+
+        setImportFeedback({
+          type: 'success',
+          text: `${drafts.length} exercice(s) importé(s) depuis ${file.name}.`
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Import impossible. Vérifiez votre fichier.';
+        setImportFeedback({ type: 'error', text: message });
+      } finally {
+        setFileInputKey(Date.now());
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  const renderAuthForm = () => (
+    <div className="max-w-xl mx-auto">
+      <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <Lock className="w-8 h-8 text-slate-600" />
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900">
+              {authMode === 'login' ? 'Connexion partenaire' : 'Créer un compte partenaire'}
+            </h2>
+            <p className="text-sm text-slate-500">L'accès est réservé aux établissements accompagnés.</p>
+          </div>
+        </div>
+
+        <form onSubmit={authMode === 'login' ? handleLogin : handleRegister} className="space-y-4">
+          {authMode === 'register' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">Organisation</label>
+                <input
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
+                  value={authForm.organization}
+                  onChange={e => setAuthForm(prev => ({ ...prev, organization: e.target.value }))}
+                  placeholder="Centre hospitalier, association..."
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Référent</label>
+                <input
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
+                  value={authForm.contactName}
+                  onChange={e => setAuthForm(prev => ({ ...prev, contactName: e.target.value }))}
+                  placeholder="Nom et prénom"
+                  required
+                />
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Email professionnel</label>
+            <input
+              type="email"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2"
+              value={authForm.email}
+              onChange={e => setAuthForm(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="contact@organisation.fr"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Mot de passe</label>
+            <input
+              type="password"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2"
+              value={authForm.password}
+              onChange={e => setAuthForm(prev => ({ ...prev, password: e.target.value }))}
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          {authError && (
+            <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3">
+              {authError}
+            </div>
+          )}
+
+          <Button type="submit" className="w-full" size="lg">
+            {authMode === 'login' ? 'Se connecter' : 'Créer mon accès'}
+          </Button>
+        </form>
+
+        <div className="text-center text-sm text-slate-500">
+          {authMode === 'login' ? (
+            <button
+              type="button"
+              className="text-teal-600 font-medium"
+              onClick={() => { setAuthMode('register'); setAuthError(null); }}
+            >
+              <UserPlus className="inline w-4 h-4 mr-1" /> Créer un compte partenaire
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="text-teal-600 font-medium"
+              onClick={() => { setAuthMode('login'); setAuthError(null); }}
+            >
+              <User className="inline w-4 h-4 mr-1" /> J'ai déjà un accès
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderWorkspace = () => (
+    <div className="space-y-8">
+      {activeAccount && (
+        <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-wide text-slate-400">Compte vérifié</p>
+            <h2 className="text-2xl font-semibold text-slate-900">{activeAccount.organization}</h2>
+            <p className="text-sm text-slate-500">Référent : {activeAccount.contactName}</p>
+            <p className="text-sm text-slate-500">Email : {activeAccount.email}</p>
+          </div>
+          <Button variant="ghost" onClick={clearSession}>
+            <LogOut className="w-4 h-4 mr-2" /> Déconnexion
+          </Button>
+        </div>
+      )}
+
+      <section className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <ClipboardList className="w-6 h-6 text-teal-600" />
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Créer une technique manuellement</h3>
+            <p className="text-sm text-slate-500">Publiez instantanément une nouvelle fiche validée par votre équipe.</p>
+          </div>
+        </div>
+
+        {manualFeedback && (
+          <div className={`text-sm rounded-xl border px-4 py-3 ${
+            manualFeedback.type === 'success'
+              ? 'bg-teal-50 border-teal-200 text-teal-700'
+              : 'bg-rose-50 border-rose-200 text-rose-700'
+          }`}>
+            {manualFeedback.text}
+          </div>
+        )}
+
+        <form onSubmit={handleManualSubmit} className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Titre</label>
+              <input
+                className="w-full border border-slate-200 rounded-lg px-3 py-2"
+                value={manualForm.title}
+                onChange={e => setManualForm(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Ex: Respiration alternée"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Durée</label>
+              <input
+                className="w-full border border-slate-200 rounded-lg px-3 py-2"
+                value={manualForm.duration}
+                onChange={e => setManualForm(prev => ({ ...prev, duration: e.target.value }))}
+                placeholder="5 minutes"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              className="w-full border border-slate-200 rounded-lg px-3 py-2"
+              value={manualForm.description}
+              onChange={e => setManualForm(prev => ({ ...prev, description: e.target.value }))}
+              rows={4}
+              placeholder="Objectif de l'exercice et contexte thérapeutique"
+              required
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Image / GIF (URL)</label>
+              <input
+                className="w-full border border-slate-200 rounded-lg px-3 py-2"
+                value={manualForm.imageUrl}
+                onChange={e => setManualForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Avertissement clinique</label>
+              <input
+                className="w-full border border-slate-200 rounded-lg px-3 py-2"
+                value={manualForm.warning}
+                onChange={e => setManualForm(prev => ({ ...prev, warning: e.target.value }))}
+                placeholder="Contre-indications..."
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Tags (séparés par des virgules)</label>
+            <input
+              className="w-full border border-slate-200 rounded-lg px-3 py-2"
+              value={manualForm.tagsText}
+              onChange={e => setManualForm(prev => ({ ...prev, tagsText: e.target.value }))}
+              placeholder="Somatique, Respiration, TCC"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Situations ciblées</label>
+            <div className="flex flex-wrap gap-2">
+              {Object.values(Situation).map(item => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => toggleSituation(item)}
+                  className={`px-3 py-1 rounded-full text-xs border ${manualForm.situation.includes(item)
+                    ? 'bg-teal-600 text-white border-teal-600'
+                    : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Profils neuro-atypiques concernés</label>
+            <div className="flex flex-wrap gap-2">
+              {Object.values(NeuroType).filter(type => type !== NeuroType.None).map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => toggleNeurotype(type)}
+                  className={`px-3 py-1 rounded-full text-xs border ${manualForm.neurotypes.includes(type)
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white border-slate-200 text-slate-600'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Étapes détaillées</label>
+            <div className="space-y-2">
+              {manualForm.steps.map((step, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2"
+                    value={step}
+                    onChange={e => handleStepChange(index, e.target.value)}
+                    placeholder={`Étape ${index + 1}`}
+                  />
+                  {manualForm.steps.length > 1 && (
+                    <Button type="button" variant="ghost" onClick={() => removeStepField(index)}>
+                      Supprimer
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={addStepField}>
+              + Ajouter une étape
+            </Button>
+          </div>
+
+          <div className="pt-4">
+            <Button type="submit" size="lg" className="w-full">Publier directement</Button>
+          </div>
+        </form>
+      </section>
+
+      <section className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <UploadCloud className="w-6 h-6 text-teal-600" />
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900">Importer un fichier CSV ou JSON</h3>
+            <p className="text-sm text-slate-500">Créez plusieurs techniques d'un coup. Chaque entrée est publiée automatiquement.</p>
+          </div>
+        </div>
+
+        {importFeedback && (
+          <div className={`text-sm rounded-xl border px-4 py-3 ${
+            importFeedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-rose-50 border-rose-200 text-rose-700'
+          }`}>
+            {importFeedback.text}
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="border border-dashed border-slate-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
+              <FileSpreadsheet className="w-4 h-4" /> Format CSV
+            </div>
+            <p className="text-sm text-slate-500 mb-2">En-têtes conseillés : title, description, duration, situations, steps, tags, warning, imageUrl.</p>
+            <p className="text-xs text-slate-400">Séparez les situations, étapes et tags avec le symbole |</p>
+          </div>
+          <div className="border border-dashed border-slate-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
+              <FileSpreadsheet className="w-4 h-4" /> Format JSON
+            </div>
+            <p className="text-sm text-slate-500 mb-2">Structure attendue : tableau d'objets avec les mêmes champs que ci-dessus.</p>
+            <p className="text-xs text-slate-400">Exemple : [{{"title":"Routine vagale","situations":["Stress / Anxiété"]}}]</p>
+          </div>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+          <p className="text-sm text-slate-600">Choisissez un fichier (.csv ou .json). Le traitement peut prendre quelques secondes selon la taille.</p>
+          <input
+            key={fileInputKey}
+            type="file"
+            accept=".csv,.json,application/json,text/csv"
+            onChange={handleFileUpload}
+            className="w-full text-sm"
+          />
+        </div>
+      </section>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-white border-b border-slate-100">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-teal-600 text-white rounded-xl p-2">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-400">Backoffice</p>
+              <h1 className="text-2xl font-semibold text-slate-900">Espace Partenaires</h1>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onBack}>
+              <ArrowLeft className="w-4 h-4 mr-2" /> Retour au catalogue
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        {activeAccount ? renderWorkspace() : renderAuthForm()}
+      </main>
+    </div>
+  );
+};
+
 const ModerationPanel: React.FC<{
   pendingExercises: Exercise[];
   reviewedExercises: Exercise[];
@@ -591,7 +1377,7 @@ const App: React.FC = () => {
   const [exercises, setExercises] = useState<Exercise[]>(() =>
     getRecommendedExercises(getExercises(), null, 'All')
   );
-  const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation'>('dashboard');
+  const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation' | 'partner'>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
@@ -673,6 +1459,10 @@ const App: React.FC = () => {
   };
 
   // Render Helpers
+  if (view === 'partner') {
+    return <PartnerPortal onBack={() => setView('dashboard')} />;
+  }
+
   if (view === 'moderation') {
     return (
       <ModerationPanel
@@ -748,6 +1538,14 @@ const App: React.FC = () => {
                  )}
                </div>
              )}
+             <Button
+               variant="outline"
+               size="sm"
+               onClick={() => setView('partner')}
+             >
+               <Building2 className="w-4 h-4 md:mr-2" />
+               <span className="hidden md:inline">Espace Partenaires</span>
+             </Button>
              <Button
                variant="outline"
                size="sm"
