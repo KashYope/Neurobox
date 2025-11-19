@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "npm run test:build && node --test dist-test",
+    "test:build": "tsc -p tsconfig.test.json && node scripts/fix-test-imports.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.554.0",
