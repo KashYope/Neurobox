@@ -1,35 +1,43 @@
 # NeuroSooth – Boîte à outils somatique pour profils neurodivergents
 
-NeuroSooth est une application Vite + React pensée comme une boîte à outils pour les personnes neuro-atypiques. Les exercices somatiques sont présentés sous forme de cartes triables par situation émotionnelle (crise, stress, sommeil, etc.). Chaque carte ouvre un parcours détaillé étape par étape et les membres de la communauté peuvent ajouter leurs propres pratiques ou remercier celles qui les ont aidés.
+NeuroSooth est une application Vite + React pensée comme une boîte à outils pour les personnes neuro-atypiques. Les exercices somatiques sont présentés sous forme de cartes triables par situation émotionnelle (crise, stress, sommeil, etc.). Chaque carte ouvre un parcours détaillé étape par étape et les membres de la communauté peuvent ajouter leurs propres pratiques, remercier celles qui les ont aidés ou — côté pros — injecter des fiches partenaires validées.
 
 ## Fonctionnalités principales
-- **Onboarding personnalisé** – Collecte du prénom et des neuroprofils (`NeuroType`) pour adapter les recommandations.
-- **Filtrage par situations** – Barre de filtres (`Situation`) pour ne voir que les exercices adaptés à une crise, une insomnie, une colère, etc.
-- **Cartes interactives** – Aperçu visuel avec tags, durée et compteur de remerciements; clic = vue détaillée avec avertissements et instructions.
-- **Dire merci** – Bouton « Dire Merci » avec mise à jour optimiste : `incrementThanks` pousse la mutation dans `syncService` qui flush la file d’attente vers l’API en arrière-plan.
-- **Contribution communautaire** – Formulaire complet pour publier un nouvel exercice (`AddExerciseForm`) avec image, étapes et situations ciblées.
-- **Synchronisation hors-ligne** – Profil en `localStorage`, cache d’exercices hydraté par `syncService` (localStorage par défaut, prêt pour IndexedDB) et file `pendingMutations` pour re-jouer les actions dès que `navigator.onLine` repasse à `true`.
-- **Backoffice Partenaires** – Espace sécurisé pour créer/connexion d’organisations, publier manuellement ou importer des exercices via CSV/JSON (mappage automatique des colonnes vers `PartnerPortal`).
-- **Panel de modération** – Vue dédiée pour valider/refuser les contributions communautaires, avec notes internes et badges de statut qui conditionnent l’apparition publique des exercices.
+- **Onboarding personnalisé** – Collecte du prénom et des neuroprofils (`NeuroType`) pour adapter les recommandations via `getRecommendedExercises`.
+- **Filtrage par situations** – Barre de filtres (`Situation`) pour ne voir que les exercices pertinents dans le tableau de bord.
+- **Cartes interactives** – Aperçu visuel avec tags, durée, compteur de remerciements et états de modération; clic = vue détaillée avec avertissements et instructions chronologiques.
+- **Dire merci** – Bouton « Dire Merci » (`incrementThanks`) avec mise à jour optimiste; la mutation est poussée dans `syncService` puis synchronisée avec l’API quand le réseau revient.
+- **Contribution communautaire** – `AddExerciseForm` permet de soumettre une technique (image, étapes, situations) qui reste en statut « pending » jusqu’à modération.
+- **Backoffice Partenaires** – `PartnerPortal` offre l’inscription/connexion locale de comptes, la publication immédiate de fiches partenaires et l’import CSV/JSON (mappage automatique des colonnes usuelles).
+- **Panel de modération** – Vue dédiée pour approuver/refuser les contributions (locales ou issues de l’API), ajouter des notes et suivre les décisions récentes.
+- **Synchronisation hors-ligne** – Cache persistant Dexie (IndexedDB) via `services/storage/offlineDb`, service de synchronisation (`syncService`) et service worker Workbox (`src/sw.ts`) avec Background Sync pour rejouer les mutations.
+- **Accès administrateur** – Le tiroir supérieur droit regroupe l’état réseau, la session partenaire en cours, la saisie des jetons JWT (`services/tokenStore`) et l’accès rapide aux vues Partenaires/Modération/Contribution.
 
 ## Stack & Architecture
-- **Framework** : React 19 avec Vite 6 et TypeScript 5.8.
-- **UI** : composants maison (ex. `components/Button.tsx`) + utilitaires Tailwind via classes CSS.
-- **Données** : `INITIAL_EXERCISES` dans `constants.ts`, types partagés dans `types.ts`, client HTTP typé (`services/apiClient.ts`) et orchestration hors-ligne dans `services/syncService.ts` (cache local + queue). `services/dataService.ts` expose désormais les helpers de scoring en s’appuyant sur cette couche.
-- **Entrée principale** : `index.tsx` orchestre l’onboarding, le tableau de bord, la vue détaillée et le formulaire d’ajout.
+- **Framework** : React 19 + Vite 6 + TypeScript 5.8.
+- **UI** : composants maison (ex. `components/Button.tsx`) et classes utilitaires (Tailwind-like).
+- **Données** : `INITIAL_EXERCISES` dans `constants.ts`, types partagés dans `types.ts`, `services/dataService.ts` centralise lecture/écriture et scoring, `services/syncService.ts` orchestre cache + mutations offline, et `services/apiClient.ts` pilote les appels REST authentifiés.
+- **Stockage offline** : `services/storage/offlineDb.ts` encapsule Dexie + attachments (images encodées) avec migration depuis l’ancien `localStorage`.
+- **Tests** : `tests/syncService.test.ts` vérifie l’hydratation offline, la relecture de file et la résolution de conflits via `node:test`.
+- **Backend** : Express + PostgreSQL (`server/`) avec routes `exercises` et `moderation`, validation Zod (`utils/validation`), JWT (`auth.ts`) et migrations SQL (`server/migrations`).
 
 ```
 .
 ├── components/
 │   └── Button.tsx
-├── constants.ts          # Exercices préchargés
+├── constants.ts                # Exercices préchargés
+├── index.tsx                   # Arbre React principal (dashboard, formulaires, panels)
 ├── services/
-│   ├── apiClient.ts      # Client HTTP typé (fetch, create, thank)
-│   ├── dataService.ts    # Scoring + persistance profil
-│   └── syncService.ts    # Cache, queue offline/online
-├── types.ts              # Enums et interfaces partagées
-├── index.tsx             # Arbre React principal
-└── index.html            # Point d’ancrage Vite
+│   ├── apiClient.ts            # Client HTTP + gestion des tokens
+│   ├── dataService.ts          # Accès données + algorithme de recommandation
+│   ├── syncService.ts          # Cache offline, file de mutations, background sync
+│   └── storage/offlineDb.ts    # Adaptateur Dexie + migration depuis localStorage
+├── tests/
+│   └── syncService.test.ts     # Tests node:test des scénarios offline/online
+├── server/
+│   ├── src/                    # API Express (routes, auth, db, validation)
+│   └── migrations/001_init.sql
+└── src/sw.ts                   # Service worker Workbox + BackgroundSync
 ```
 
 ## Guide de démarrage
@@ -46,16 +54,31 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
    ```bash
    npm run dev
    ```
-3. Ouvrez [http://localhost:5173](http://localhost:5173) et complétez l’onboarding pour accéder aux recommandations personnalisées.
+3. Ouvrir [http://localhost:5173](http://localhost:5173), compléter l’onboarding et explorer les filtres/suggestions.
 
-Pour préparer une version de production, exécutez `npm run build` puis `npm run preview` pour tester le build statique.
+Pour préparer une version de production, exécutez `npm run build` puis `npm run preview` afin de vérifier le bundle statique.
+
+### Tests automatisés
+Le dépôt inclut une suite `node:test` focalisée sur `syncService` (hydratation offline, replay des mutations, résolution de conflits).
+
+```bash
+npm test
+```
+
+La commande compile les tests TypeScript (`tsconfig.test.json` + `scripts/fix-test-imports.mjs`) avant d’exécuter `node --test dist-test`.
+
+## Synchronisation & stockage hors-ligne
+- `services/storage/offlineDb` utilise Dexie/IndexedDB pour stocker exercices, profil utilisateur, pièces jointes et file `PendingMutationRecord`.
+- `syncService` garde le cache en mémoire, notifie l’UI (`subscribe`/`subscribeStatus`) et met en file les mutations (`createExercise`, `incrementThanks`, `moderateExercise`).
+- Les mutations sont rejouées quand `navigator.onLine` redevient `true` ou lorsqu’un `background sync` est déclenché par `src/sw.ts`.
+- `services/dataService` expose des helpers (enregistrement utilisateur, scoring personnalisé via neurotypes, modération locale) et délègue la persistance à `syncService`.
 
 ## API backend Express + PostgreSQL
 
 Une API REST Express vit dans `server/` afin de partager les exercices, remercier une pratique et suivre les décisions de modération.
 
 ### Configuration
-- Copiez `.env.example` vers `.env` et renseignez au minimum `DATABASE_URL`, `JWT_SECRET` et `VITE_API_BASE_URL` (utilisé par le client React).
+- Copiez `.env.example` vers `.env` et renseignez au minimum `DATABASE_URL`, `JWT_SECRET`, `PORT` et `VITE_API_BASE_URL` (utilisé par le client React).
 - Lancez les migrations PostgreSQL :
   ```bash
   npm run server:migrate
@@ -64,27 +87,32 @@ Une API REST Express vit dans `server/` afin de partager les exercices, remercie
   ```bash
   npm run server:dev
   ```
-- En production, vous pouvez utiliser le Dockerfile fourni :
+- Pour un build JS :
+  ```bash
+  npm run server:build
+  npm run server:start
+  ```
+- En production, vous pouvez utiliser le Dockerfile racine :
   ```bash
   docker build -t neurosooth-api .
   docker run --env-file .env -p 4000:4000 neurosooth-api
   ```
 
-L’API expose les routes suivantes (préfixe `/api` configurable via `VITE_API_BASE_URL`) :
+### Routes exposées (préfixe `/api`)
 
 | Méthode | Endpoint | Description |
 | --- | --- | --- |
 | GET | `/api/exercises` | Retourne toutes les pratiques (avec `serverId`, timestamps, métadonnées de modération et `thanksCount`). |
-| POST | `/api/exercises` | Crée un exercice communautaire (anonyme) ou partenaire (si jeton `partner`). |
-| POST | `/api/exercises/:id/thanks` | Incrémente le compteur `thanksCount` et renvoie l’exercice à jour. |
-| PATCH | `/api/exercises/:id/moderation` | Réservé aux modérateurs pour approuver/rejeter, ajouter des notes et éventuellement supprimer côté serveur. |
-| GET | `/api/moderation/queue` | File temps réel des propositions en attente + historique des dernières décisions (JWT `moderator` requis). |
+| POST | `/api/exercises` | Crée un exercice communautaire ou partenaire (jeton `partner` optionnel). |
+| POST | `/api/exercises/:id/thanks` | Incrémente le compteur `thanksCount`. |
+| PATCH | `/api/exercises/:id/moderation` | Approuve/rejette une contribution et peut la marquer comme supprimée (`shouldDelete`). |
+| GET | `/api/moderation/queue` | File des contributions en attente + dernières décisions (JWT `moderator` requis). |
 
 ### Authentification JWT
 Les actions sensibles sont protégées via des Bearer tokens signés avec `JWT_SECRET`. Deux rôles sont supportés :
 
-- `partner` : nécessaire pour publier des contenus partenaires (accès direct au catalogue).
-- `moderator` : requis pour consulter la file `/api/moderation/queue` ou appliquer des décisions.
+- `partner` : publier du contenu directement approuvé et accéder au backoffice.
+- `moderator` : charger la file `/api/moderation/queue` et appliquer des décisions.
 
 Un utilitaire simplifie la génération locale de tokens :
 
@@ -96,53 +124,53 @@ npm run server:token partner mon-equipe
 npm run server:token moderator alice
 ```
 
-Collez ensuite ces jetons dans le panneau administrateur (section « Jetons API »). Les valeurs sont stockées dans `localStorage` et injectées automatiquement dans `apiClient` via les en-têtes `Authorization`.
+Collez ensuite ces jetons dans la section « Jetons API » du tiroir administrateur. Les valeurs sont stockées dans `localStorage` via `services/tokenStore` et injectées automatiquement dans `apiClient`.
 
 ### Synchronisation front/back
-- `services/syncService` continue de gérer la file des mutations (création, remerciements et maintenant modération) puis réconcilie les exercices renvoyés par l’API.
+- `services/syncService` gère la file des mutations (création, remerciements, modération) puis réconcilie les exercices renvoyés par l’API.
 - Les exercices marqués `deletedAt` côté serveur sont supprimés du cache et n’apparaissent plus dans les recommandations.
-- Le panel de modération interroge périodiquement `/api/moderation/queue` et se replie automatiquement sur les données locales lorsqu’aucun jeton modérateur n’est fourni ou que l’API est inaccessible.
+- Le panel de modération interroge périodiquement `/api/moderation/queue`; en cas d’erreur réseau ou de jeton manquant il bascule automatiquement sur les données locales.
 
 ## Ajouter un exercice manuellement
-1. Depuis le tableau de bord principal, cliquez sur **Contribuer** pour ouvrir `AddExerciseForm`.
+1. Depuis le tableau de bord principal, cliquez sur **Ajouter une technique** pour ouvrir `AddExerciseForm`.
 2. Renseignez au minimum le titre, la description et une situation cible.
 3. Indiquez chaque étape dans l’ordre; des URL d’images/GIF optionnelles peuvent améliorer la carte.
 4. Validez : la contribution est stockée localement, passe en statut « pending » et attend la validation du panel de modération.
 
 ## Dire merci et suivi d’impact
 - Le bouton « Dire Merci » (vue détail) appelle `incrementThanks`, incrémente le compteur et déclenche un rerender des cartes afin que les techniques les plus utiles montent naturellement dans les recommandations.
-- Ces remerciements persistent localement pour favoriser vos techniques favorites lors de vos prochaines visites.
+- Ces remerciements sont mis en file dans `syncService` afin d’être persistés côté serveur dès que possible.
 
 ## Espaces d’administration
 
-### Backoffice Partenaires
-- Accédez-y via le bouton **Espace Partenaires** (icône Building) depuis la barre supérieure de l’application.
-- Les organisations peuvent créer un compte local (stocké dans `localStorage`), se connecter puis :
-  - Publier manuellement des techniques via un formulaire complet (`PartnerPortal`).
-  - Importer un fichier CSV ou JSON pour créer plusieurs exercices d’un coup. Les colonnes `title`, `description`, `situations`, `steps`, `tags`, `warning`, `imageUrl` sont reconnues automatiquement; les listes peuvent être séparées par `|`, `;` ou `,`.
-- Les exercices créés via ce portail sont immédiatement marqués comme « Partenaire » et ajoutés à la grille utilisateur avec un `thanksCount` initialisé à 0.
+### Backoffice Partenaires (`PartnerPortal`)
+- Accédez-y via le tiroir administrateur (**Espace Partenaires**).
+- Les organisations créent un compte local (stocké dans `localStorage`) ou se connectent à un compte existant.
+- Deux workflows sont proposés :
+  - **Création manuelle** : formulaire complet (tags, étapes dynamiques, profils ciblés) publié instantanément et marqué « Partenaire ».
+  - **Import CSV/JSON** : parsing tolérant (`mapRowToDraft`) avec auto-détection des colonnes (`title`, `description`, `situations`, `steps`, `tags`, `warning`, `imageUrl`). Les listes acceptent `|`, `;` ou `,`.
 
 ### Panel de modération
-- Accessible via le bouton **Modération** (bouclier) affiché à droite de la barre supérieure.
-- Liste en temps réel les contributions `isCommunitySubmitted` ayant le statut `pending` dans `syncService`.
-- Chaque entrée permet d’ajouter une note interne et de choisir **Valider** ou **Refuser**; un badge visuel apparaît sur les cartes validées/refusées dans l’historique.
-- `moderateExercise` met à jour les champs `moderationStatus`, `moderationNotes`, `moderatedAt` et `moderatedBy`, ce qui conditionne la visibilité publique (`approved` uniquement) et renseigne l’historique des décisions.
+- Accessible via le tiroir administrateur (**Modération**). Sans session partenaire, l’utilisateur est redirigé vers l’espace partenaires pour s’authentifier.
+- Affiche les contributions `isCommunitySubmitted` en attente et un historique des décisions approuvées/refusées (8 derniers items).
+- Les modérateurs peuvent saisir une note, appliquer **Valider** ou **Refuser** (`moderateExercise`). Les décisions mettent à jour `moderationStatus`, `moderationNotes`, `moderatedAt`, `moderatedBy` et peuvent supprimer l’entrée (`shouldDelete`).
+- Si un jeton `moderator` valide est stocké, la file serveur est chargée toutes les 45 s; sinon l’interface reste fonctionnelle avec les données locales.
 
 ## Progressive Web App
 - `vite-plugin-pwa` injecte automatiquement le service worker `src/sw.ts` (Workbox) et le manifeste (`public/manifest.webmanifest`).
-- `src/sw.ts` met en cache le shell (`StaleWhileRevalidate`), les réponses API `/api/*` (`NetworkFirst` + `BackgroundSyncPlugin`) et répond aux messages `syncService` pour planifier un `Background Sync` si disponible.
+- `src/sw.ts` met en cache le shell (`StaleWhileRevalidate`), les réponses API `/api/*` (`NetworkFirst` + `BackgroundSyncPlugin`) et répond aux messages `syncService` pour planifier un `Background Sync`.
 - `services/syncService` déclenche cette synchronisation après chaque mutation pour garantir une reprise automatique même hors-ligne.
 
 ### QA « Add to Home Screen »
 1. **Android / Chrome**
-   - Construire l’app (`npm run build`), déployer le dossier `dist` ou lancer `npm run preview`.
+   - Construire l’app (`npm run build`), déployer `dist` ou lancer `npm run preview`.
    - Sur un appareil Android réel, ouvrir l’URL via Chrome.
-   - Vérifier le bandeau « Installer l’application » ou les trois points > *Installer l’application*.
-   - Après installation, ouvrir l’app depuis l’icône et couper le réseau : les écrans principaux doivent rester accessibles et les actions en file doivent se synchroniser dès le retour réseau.
+   - Vérifier le bandeau « Installer l’application » ou le menu ⋮ > *Installer l’application*.
+   - Après installation, couper le réseau : le shell et la bibliothèque doivent rester accessibles et les actions en file se synchroniser dès le retour réseau.
 2. **iOS / Safari**
    - Ouvrir l’URL dans Safari, appuyer sur **Partager > Sur l’écran d’accueil**.
-   - Confirmer l’icône et le nom, puis lancer l’app en mode standalone.
-   - Tester l’expérience hors-ligne (mode avion) : l’écran d’accueil et la bibliothèque doivent se charger depuis le cache.
+   - Lancer l’app en mode standalone et activer le mode avion.
+   - Vérifier que l’écran d’accueil et la bibliothèque se chargent depuis le cache et que les actions sont rejouées une fois la connexion rétablie.
 
 ## Distribution mobile via Capacitor
 1. Vérifier/adapter `capacitor.config.ts` (App ID `com.neurosooth.app`, `webDir: dist`).
