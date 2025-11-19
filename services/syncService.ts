@@ -1,32 +1,24 @@
 import { INITIAL_EXERCISES } from '../constants';
 import { Exercise, ServerExercise } from '../types';
-import { apiClient } from './apiClient';
+import { apiClient, ApiClientType } from './apiClient';
+import {
+  getInitialSnapshot,
+  PendingMutationRecord,
+  StorageAdapter
+} from './storage/offlineDb';
 
-const CACHE_KEY = 'neurosooth_exercises_cache_v2';
-const QUEUE_KEY = 'neurosooth_pending_mutations_v1';
-const INITIAL_MERGE_KEY = 'neurosooth_initial_merge_done';
+const snapshot = await getInitialSnapshot();
+const defaultStorageAdapter = snapshot.adapter;
+const defaultExercises = snapshot.exercises.length ? snapshot.exercises : [...INITIAL_EXERCISES];
+const defaultMutations = snapshot.pendingMutations;
 
-type PendingMutationInput =
+type SyncApi = Pick<ApiClientType, 'fetchExercises' | 'createExercise' | 'thankExercise'>;
+
+export type PendingMutationInput =
   | { type: 'createExercise'; payload: { exercise: Exercise } }
   | { type: 'thankExercise'; payload: { exerciseId: string } };
 
-type PendingMutation =
-  | {
-      id: string;
-      type: 'createExercise';
-      payload: { exercise: Exercise };
-      attempts: number;
-      createdAt: number;
-      lastAttemptAt?: number;
-    }
-  | {
-      id: string;
-      type: 'thankExercise';
-      payload: { exerciseId: string };
-      attempts: number;
-      createdAt: number;
-      lastAttemptAt?: number;
-    };
+export type PendingMutation = PendingMutationRecord;
 
 export interface SyncStatus {
   isOnline: boolean;
@@ -44,26 +36,39 @@ const generateId = () =>
   (typeof crypto !== 'undefined' && 'randomUUID' in crypto && crypto.randomUUID()) ||
   `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-class SyncService {
-  private cache: Exercise[] = [];
-  private pendingMutations: PendingMutation[] = [];
+export interface SyncServiceOptions {
+  storage?: StorageAdapter;
+  apiClient?: SyncApi;
+  initialExercises?: Exercise[];
+  initialMutations?: PendingMutation[];
+}
+
+export class SyncService {
+  private storage: StorageAdapter;
+  private api: SyncApi;
+  private cache: Exercise[];
+  private pendingMutations: PendingMutation[];
   private readyResolver: (() => void) | null = null;
   private initialized = false;
   private listeners = new Set<CacheListener>();
   private statusListeners = new Set<StatusListener>();
-  private status: SyncStatus = {
-    isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
-    isSyncing: false,
-    pendingMutations: 0
-  };
+  private status: SyncStatus;
   private isFlushing = false;
   private activeSyncs = 0;
   public ready: Promise<void>;
 
-  constructor() {
-    this.ready = new Promise(resolve => {
-      this.readyResolver = resolve;
-    });
+  constructor(options: SyncServiceOptions = {}) {
+    this.storage = options.storage ?? defaultStorageAdapter;
+    this.api = options.apiClient ?? apiClient;
+    this.cache = options.initialExercises?.length ? [...options.initialExercises] : [...defaultExercises];
+    this.pendingMutations = [...(options.initialMutations ?? defaultMutations)];
+    const isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
+    this.status = {
+      isOnline,
+      isSyncing: false,
+      pendingMutations: this.pendingMutations.length
+    };
+    this.ready = Promise.resolve();
   }
 
   init(): Promise<void> {
@@ -72,25 +77,47 @@ class SyncService {
     }
 
     this.initialized = true;
-    this.cache = this.loadCache();
-    this.pendingMutations = this.loadPendingMutations();
-    this.updateStatus({ pendingMutations: this.pendingMutations.length });
-    this.notifyCache();
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', this.handleOnline);
-      window.addEventListener('offline', this.handleOffline);
-    }
-
-    this.hydrateFromServer().finally(() => {
-      this.readyResolver?.();
+    this.ready = new Promise(resolve => {
+      this.readyResolver = resolve;
     });
 
-    if (this.status.isOnline) {
-      this.flushQueue();
-    }
+    this.bootstrapFromStorage();
 
     return this.ready;
+  }
+
+  private async bootstrapFromStorage(): Promise<void> {
+    try {
+      this.cache = await this.storage.getExercises();
+      if (this.cache.length === 0) {
+        this.cache = [...INITIAL_EXERCISES];
+        await this.storage.replaceExercises(this.cache);
+      }
+
+      this.pendingMutations = await this.storage.getPendingMutations();
+      this.updateStatus({ pendingMutations: this.pendingMutations.length });
+      this.notifyCache();
+
+      if (typeof window !== 'undefined') {
+        window.addEventListener('online', this.handleOnline);
+        window.addEventListener('offline', this.handleOffline);
+      }
+
+      this.hydrateFromServer()
+        .catch(error => {
+          console.warn('Failed to hydrate exercises', error);
+        })
+        .finally(() => {
+          this.readyResolver?.();
+        });
+
+      if (this.status.isOnline) {
+        this.flushQueue();
+      }
+    } catch (error) {
+      console.warn('Failed to load offline cache', error);
+      this.readyResolver?.();
+    }
   }
 
   getCachedExercises(): Exercise[] {
@@ -122,6 +149,7 @@ class SyncService {
     };
 
     this.upsertExercise(exerciseWithMeta);
+    await this.storage.bulkUpsertExercises([exerciseWithMeta]);
     this.enqueueMutation({
       type: 'createExercise',
       payload: { exercise: exerciseWithMeta }
@@ -131,6 +159,7 @@ class SyncService {
   async incrementThanks(exerciseId: string): Promise<void> {
     const timestamp = nowIso();
     let resolvedId = exerciseId;
+    let updatedExercise: Exercise | null = null;
 
     this.cache = this.cache.map(ex => {
       const isTarget = ex.id === exerciseId || ex.serverId === exerciseId;
@@ -138,16 +167,23 @@ class SyncService {
         resolvedId = ex.serverId;
       }
 
-      return isTarget
-        ? {
-            ...ex,
-            thanksCount: ex.thanksCount + 1,
-            updatedAt: timestamp
-          }
-        : ex;
+      if (!isTarget) {
+        return ex;
+      }
+
+      const next = {
+        ...ex,
+        thanksCount: ex.thanksCount + 1,
+        updatedAt: timestamp
+      };
+      updatedExercise = next;
+      return next;
     });
-    this.persistCache();
-    this.notifyCache();
+
+    if (updatedExercise) {
+      await this.storage.bulkUpsertExercises([updatedExercise]);
+      this.notifyCache();
+    }
 
     this.enqueueMutation({
       type: 'thankExercise',
@@ -157,7 +193,7 @@ class SyncService {
 
   updateExercise(exerciseId: string, patch: Partial<Exercise>): void {
     const timestamp = patch.updatedAt || nowIso();
-    let updated = false;
+    let updatedExercise: Exercise | null = null;
 
     this.cache = this.cache.map(ex => {
       const matches = ex.id === exerciseId || ex.serverId === exerciseId;
@@ -165,12 +201,13 @@ class SyncService {
         return ex;
       }
 
-      updated = true;
-      return { ...ex, ...patch, updatedAt: timestamp };
+      const next = { ...ex, ...patch, updatedAt: timestamp };
+      updatedExercise = next;
+      return next;
     });
 
-    if (updated) {
-      this.persistCache();
+    if (updatedExercise) {
+      void this.storage.bulkUpsertExercises([updatedExercise]);
       this.notifyCache();
     }
   }
@@ -178,7 +215,7 @@ class SyncService {
   enqueueMutation(input: PendingMutationInput): void {
     const mutation = this.buildPendingMutation(input);
     this.pendingMutations.push(mutation);
-    this.persistQueue();
+    void this.storage.setPendingMutations(this.pendingMutations);
     this.updateStatus({ pendingMutations: this.pendingMutations.length });
 
     if (this.status.isOnline) {
@@ -194,10 +231,10 @@ class SyncService {
     };
 
     if (input.type === 'createExercise') {
-      return { ...base, type: 'createExercise', payload: input.payload };
+      return { ...base, type: 'createExercise', payload: { exercise: input.payload.exercise } };
     }
 
-    return { ...base, type: 'thankExercise', payload: input.payload };
+    return { ...base, type: 'thankExercise', payload: { exerciseId: input.payload.exerciseId } };
   }
 
   async flushQueue(): Promise<void> {
@@ -216,19 +253,21 @@ class SyncService {
         try {
           await this.dispatchMutation(mutation);
           this.pendingMutations.splice(index, 1);
-          this.persistQueue();
+          await this.storage.setPendingMutations(this.pendingMutations);
           this.updateStatus({ pendingMutations: this.pendingMutations.length });
           processedAny = true;
         } catch (error) {
           mutation.attempts += 1;
           mutation.lastAttemptAt = Date.now();
-          this.persistQueue();
+          await this.storage.setPendingMutations(this.pendingMutations);
           const delay = Math.min(2 ** mutation.attempts * 1000, 30000);
           await this.delay(delay);
 
           if (!this.status.isOnline) {
             break;
           }
+
+          index += 1;
         }
       }
     } finally {
@@ -239,14 +278,14 @@ class SyncService {
 
   private async dispatchMutation(mutation: PendingMutation): Promise<void> {
     if (mutation.type === 'createExercise') {
-      const serverExercise = await apiClient.createExercise(mutation.payload.exercise);
-      this.applyServerExercise(serverExercise);
+      const serverExercise = await this.api.createExercise(mutation.payload.exercise);
+      await this.applyServerExercise(serverExercise);
       return;
     }
 
     if (mutation.type === 'thankExercise') {
-      const serverExercise = await apiClient.thankExercise(mutation.payload.exerciseId);
-      this.applyServerExercise(serverExercise);
+      const serverExercise = await this.api.thankExercise(mutation.payload.exerciseId);
+      await this.applyServerExercise(serverExercise);
     }
   }
 
@@ -255,10 +294,10 @@ class SyncService {
     let didSync = false;
 
     try {
-      const serverExercises = await apiClient.fetchExercises();
+      const serverExercises = await this.api.fetchExercises();
       if (serverExercises && serverExercises.length > 0) {
         this.cache = this.mergeServerAndLocal(serverExercises);
-        this.persistCache();
+        await this.storage.replaceExercises(this.cache);
         this.notifyCache();
       }
       didSync = true;
@@ -272,10 +311,10 @@ class SyncService {
   private mergeServerAndLocal(serverExercises: ServerExercise[]): Exercise[] {
     const mergedMap = new Map<string, Exercise>();
     const addOrUpdate = (exercise: Exercise) => {
-      mergedMap.set(this.getExerciseKey(exercise), exercise);
+      mergedMap.set(this.getExerciseKey(exercise), structuredClone(exercise));
     };
 
-    const seed = this.ensureInitialSeed(this.cache);
+    const seed = this.cache.length > 0 ? this.cache : INITIAL_EXERCISES;
     seed.forEach(ex => addOrUpdate(ex));
 
     serverExercises.forEach(serverEx => {
@@ -288,30 +327,7 @@ class SyncService {
       }
     });
 
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(INITIAL_MERGE_KEY, 'true');
-    }
-
     return Array.from(mergedMap.values());
-  }
-
-  private ensureInitialSeed(current: Exercise[]): Exercise[] {
-    if (current.length > 0) {
-      return current;
-    }
-
-    const cachedInitialMerge =
-      typeof localStorage !== 'undefined' && localStorage.getItem(INITIAL_MERGE_KEY) === 'true';
-
-    if (cachedInitialMerge) {
-      return current;
-    }
-
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(INITIAL_EXERCISES));
-    }
-
-    return [...INITIAL_EXERCISES];
   }
 
   private resolveConflict(localExercise: Exercise, serverExercise: ServerExercise): Exercise {
@@ -343,72 +359,33 @@ class SyncService {
       this.cache = [...this.cache, exercise];
     }
 
-    this.persistCache();
     this.notifyCache();
   }
 
-  private applyServerExercise(serverExercise: ServerExercise): void {
+  private async applyServerExercise(serverExercise: ServerExercise): Promise<void> {
     const key = this.getExerciseKey(serverExercise);
     let matched = false;
+    let updated: Exercise | null = null;
 
     this.cache = this.cache.map(ex => {
       if (this.getExerciseKey(ex) === key || ex.id === serverExercise.id) {
         matched = true;
-        return this.resolveConflict(ex, serverExercise);
+        const resolved = this.resolveConflict(ex, serverExercise);
+        updated = resolved;
+        return resolved;
       }
       return ex;
     });
 
     if (!matched) {
       this.cache = [...this.cache, serverExercise];
+      updated = serverExercise;
     }
 
-    this.persistCache();
+    if (updated) {
+      await this.storage.bulkUpsertExercises([updated]);
+    }
     this.notifyCache();
-  }
-
-  private loadCache(): Exercise[] {
-    if (typeof localStorage === 'undefined') {
-      return [...INITIAL_EXERCISES];
-    }
-
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (!cached) {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(INITIAL_EXERCISES));
-        return [...INITIAL_EXERCISES];
-      }
-
-      const parsed = JSON.parse(cached) as Exercise[];
-      return parsed.length ? parsed : [...INITIAL_EXERCISES];
-    } catch (error) {
-      console.warn('Failed to parse exercise cache', error);
-      return [...INITIAL_EXERCISES];
-    }
-  }
-
-  private persistCache(): void {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(CACHE_KEY, JSON.stringify(this.cache));
-  }
-
-  private loadPendingMutations(): PendingMutation[] {
-    if (typeof localStorage === 'undefined') {
-      return [];
-    }
-
-    try {
-      const cached = localStorage.getItem(QUEUE_KEY);
-      return cached ? (JSON.parse(cached) as PendingMutation[]) : [];
-    } catch (error) {
-      console.warn('Failed to parse pending mutations', error);
-      return [];
-    }
-  }
-
-  private persistQueue(): void {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(this.pendingMutations));
   }
 
   private getExerciseKey(exercise: Exercise): string {

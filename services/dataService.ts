@@ -1,19 +1,24 @@
 import { Exercise, UserProfile, NeuroType, Situation, ModerationStatus } from '../types';
 import { INITIAL_EXERCISES } from '../constants';
 import { syncService } from './syncService';
+import {
+  AttachmentData,
+  attachmentKeyForExerciseImage,
+  getInitialSnapshot,
+  readAttachment,
+  removeAttachment,
+  saveAttachment
+} from './storage/offlineDb';
 
-const STORAGE_KEYS = {
-  USER: 'neurosooth_user'
-};
+const { adapter: storageAdapter, user: initialUser } = await getInitialSnapshot();
+let userCache: UserProfile | null = initialUser;
 
 export const saveUser = (user: UserProfile): void => {
-  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  userCache = user;
+  void storageAdapter.saveUser(user);
 };
 
-export const getUser = (): UserProfile | null => {
-  const data = localStorage.getItem(STORAGE_KEYS.USER);
-  return data ? JSON.parse(data) : null;
-};
+export const getUser = (): UserProfile | null => userCache;
 
 export const getExercises = (): Exercise[] => {
   const cache = syncService.getCachedExercises();
@@ -91,4 +96,23 @@ export const moderateExercise = (
     moderatedBy: options?.moderator,
     moderatedAt: new Date().toISOString()
   });
+};
+
+export const cacheExerciseImage = async (
+  exerciseId: string,
+  data: AttachmentData,
+  mimeType?: string
+): Promise<void> => {
+  await saveAttachment(attachmentKeyForExerciseImage(exerciseId), data, mimeType);
+};
+
+export const getCachedExerciseImage = async (
+  exerciseId: string
+): Promise<string | undefined> => {
+  const record = await readAttachment(attachmentKeyForExerciseImage(exerciseId));
+  return record?.data;
+};
+
+export const clearCachedExerciseImage = async (exerciseId: string): Promise<void> => {
+  await removeAttachment(attachmentKeyForExerciseImage(exerciseId));
 };

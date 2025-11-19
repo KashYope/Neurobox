@@ -1,8 +1,20 @@
 import { Exercise, ServerExercise } from '../types';
 
-const DEFAULT_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
-  '/api';
+type ImportMetaWithEnv = ImportMeta & { env?: Record<string, string | undefined> };
+
+const resolveBaseUrl = (): string | undefined => {
+  try {
+    if (typeof import.meta !== 'undefined') {
+      const meta = import.meta as ImportMetaWithEnv;
+      return meta.env?.VITE_API_BASE_URL;
+    }
+  } catch {
+    // ignore when running outside of a bundler context
+  }
+  return undefined;
+};
+
+const DEFAULT_BASE_URL = resolveBaseUrl() || '/api';
 
 interface ApiConfig {
   baseUrl?: string;
