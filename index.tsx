@@ -14,20 +14,20 @@ import {
   Check,
   Search,
   Activity,
-  Shield,
   Image as ImageIcon
 } from 'lucide-react';
 
 import { Button } from './components/Button';
-import { AppState, Exercise, NeuroType, Situation, UserProfile } from './types';
-import { INITIAL_EXERCISES } from './constants';
-import { 
-  getUser, 
-  saveUser, 
-  getRecommendedExercises, 
-  saveExercise, 
-  incrementThanks 
+import { Exercise, NeuroType, Situation, UserProfile } from './types';
+import {
+  getUser,
+  saveUser,
+  getExercises,
+  getRecommendedExercises,
+  saveExercise,
+  incrementThanks
 } from './services/dataService';
+import { syncService, SyncStatus } from './services/syncService';
 
 // --- Components ---
 
@@ -302,6 +302,7 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
     e.preventDefault();
     if (!formData.title || !formData.description) return;
 
+    const timestamp = new Date().toISOString();
     const newEx: Exercise = {
       id: Date.now().toString(),
       title: formData.title!,
@@ -313,7 +314,9 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
       imageUrl: formData.imageUrl || 'https://placehold.co/600x400/94a3b8/ffffff?text=Community+Content',
       tags: ['Community'],
       thanksCount: 0,
-      isCommunitySubmitted: true
+      isCommunitySubmitted: true,
+      createdAt: timestamp,
+      updatedAt: timestamp
     };
 
     onSubmit(newEx);
@@ -428,10 +431,25 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [allExercises, setAllExercises] = useState<Exercise[]>(() => getExercises());
+  const [exercises, setExercises] = useState<Exercise[]>(() =>
+    getRecommendedExercises(getExercises(), null, 'All')
+  );
   const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add'>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
+
+  useEffect(() => {
+    syncService.init();
+    const unsubscribeCache = syncService.subscribe(setAllExercises);
+    const unsubscribeStatus = syncService.subscribeStatus(setSyncStatus);
+
+    return () => {
+      unsubscribeCache();
+      unsubscribeStatus();
+    };
+  }, []);
 
   useEffect(() => {
     // Load initial data
@@ -445,9 +463,17 @@ const App: React.FC = () => {
 
   // Refresh recommendations when filters or user changes
   useEffect(() => {
-    const recs = getRecommendedExercises(user, situationFilter);
+    const recs = getRecommendedExercises(allExercises, user, situationFilter);
     setExercises(recs);
-  }, [user, situationFilter, view]); // Re-run when view changes to refresh counts if updated
+  }, [allExercises, user, situationFilter]);
+
+  useEffect(() => {
+    if (!selectedExercise) return;
+    const fresh = allExercises.find(ex => ex.id === selectedExercise.id);
+    if (fresh && fresh !== selectedExercise) {
+      setSelectedExercise(fresh);
+    }
+  }, [allExercises, selectedExercise]);
 
   const handleOnboardingComplete = (newUser: UserProfile) => {
     setUser(newUser);
@@ -466,9 +492,10 @@ const App: React.FC = () => {
 
   const handleThanks = (exId: string) => {
     incrementThanks(exId);
-    // Update local state to reflect change immediately in list
-    setExercises(prev => prev.map(e => e.id === exId ? {...e, thanksCount: e.thanksCount + 1} : e));
   };
+
+  const showSyncStatus =
+    !syncStatus.isOnline || syncStatus.pendingMutations > 0 || syncStatus.isSyncing;
 
   // Render Helpers
   if (view === 'onboarding') {
@@ -507,11 +534,31 @@ const App: React.FC = () => {
             <span className="font-bold text-xl text-slate-800 hidden md:block">NeuroSooth</span>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap justify-end text-right">
              {user && (
                <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
                  <User className="w-4 h-4" />
                  <span className="font-medium">{user.name}</span>
+               </div>
+             )}
+             {showSyncStatus && (
+               <div className="flex flex-col items-end gap-1 text-xs min-w-[140px]">
+                 {!syncStatus.isOnline && (
+                   <span className="text-amber-700 bg-amber-100 px-3 py-1 rounded-full font-semibold">
+                     Mode hors ligne
+                   </span>
+                 )}
+                 {syncStatus.pendingMutations > 0 && (
+                   <span className="text-slate-500">
+                     {syncStatus.pendingMutations} changement(s) en attente
+                   </span>
+                 )}
+                 {syncStatus.isSyncing && syncStatus.isOnline && (
+                   <span className="flex items-center gap-1 text-teal-700">
+                     <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+                     Synchronisation…
+                   </span>
+                 )}
                </div>
              )}
              <Button variant="primary" size="sm" onClick={() => setView('add')}>

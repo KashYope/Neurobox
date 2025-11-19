@@ -1,9 +1,9 @@
 import { Exercise, UserProfile, NeuroType, Situation } from '../types';
 import { INITIAL_EXERCISES } from '../constants';
+import { syncService } from './syncService';
 
 const STORAGE_KEYS = {
-  USER: 'neurosooth_user',
-  EXERCISES: 'neurosooth_exercises',
+  USER: 'neurosooth_user'
 };
 
 export const saveUser = (user: UserProfile): void => {
@@ -16,39 +16,32 @@ export const getUser = (): UserProfile | null => {
 };
 
 export const getExercises = (): Exercise[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.EXERCISES);
-  if (!data) {
-    // Initialize with defaults if empty
-    localStorage.setItem(STORAGE_KEYS.EXERCISES, JSON.stringify(INITIAL_EXERCISES));
+  const cache = syncService.getCachedExercises();
+  if (cache.length === 0) {
     return INITIAL_EXERCISES;
   }
-  return JSON.parse(data);
+  return cache;
 };
 
 export const saveExercise = (exercise: Exercise): void => {
-  const current = getExercises();
-  const updated = [...current, exercise];
-  localStorage.setItem(STORAGE_KEYS.EXERCISES, JSON.stringify(updated));
+  syncService.createExercise(exercise);
 };
 
 export const incrementThanks = (exerciseId: string): void => {
-  const current = getExercises();
-  const updated = current.map(ex => 
-    ex.id === exerciseId ? { ...ex, thanksCount: ex.thanksCount + 1 } : ex
-  );
-  localStorage.setItem(STORAGE_KEYS.EXERCISES, JSON.stringify(updated));
+  syncService.incrementThanks(exerciseId);
 };
 
 // The Recommendation Algorithm
 export const getRecommendedExercises = (
-  user: UserProfile | null, 
+  exercises: Exercise[],
+  user: UserProfile | null,
   situation: Situation | 'All'
 ): Exercise[] => {
-  let exercises = getExercises();
+  let list = [...exercises];
 
   // 1. Filter by Situation
   if (situation !== 'All') {
-    exercises = exercises.filter(ex => ex.situation.includes(situation));
+    list = list.filter(ex => ex.situation.includes(situation));
   }
 
   // 2. Score based on User Profile (Neurotype match) and Community Thanks
@@ -57,7 +50,7 @@ export const getRecommendedExercises = (
       _tempScore: number;
     }
 
-    exercises = exercises.map(ex => {
+    list = list.map(ex => {
       let score = ex.thanksCount; // Base score is popularity
 
       // Boost if neurotype matches
@@ -78,8 +71,8 @@ export const getRecommendedExercises = (
     .map(({ _tempScore, ...ex }: ScoredExercise) => ex);
   } else {
     // Just sort by popularity if no user
-    exercises.sort((a, b) => b.thanksCount - a.thanksCount);
+    list.sort((a, b) => b.thanksCount - a.thanksCount);
   }
 
-  return exercises;
+  return list;
 };

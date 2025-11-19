@@ -27,6 +27,7 @@ export interface UserProfile {
 
 export interface Exercise {
   id: string;
+  serverId?: string;
   title: string;
   description: string;
   situation: Situation[];
@@ -39,6 +40,14 @@ export interface Exercise {
   thanksCount: number;
   isCommunitySubmitted?: boolean;
   author?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ServerExercise extends Exercise {
+  serverId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AppState {
