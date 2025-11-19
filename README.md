@@ -6,14 +6,14 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
 - **Onboarding personnalisé** – Collecte du prénom et des neuroprofils (`NeuroType`) pour adapter les recommandations.
 - **Filtrage par situations** – Barre de filtres (`Situation`) pour ne voir que les exercices adaptés à une crise, une insomnie, une colère, etc.
 - **Cartes interactives** – Aperçu visuel avec tags, durée et compteur de remerciements; clic = vue détaillée avec avertissements et instructions.
-- **Dire merci** – Bouton « Dire Merci » qui incrémente `thanksCount` via `incrementThanks` dans `services/dataService.ts` et renforce le tri par popularité.
+- **Dire merci** – Bouton « Dire Merci » avec mise à jour optimiste : `incrementThanks` pousse la mutation dans `syncService` qui flush la file d’attente vers l’API en arrière-plan.
 - **Contribution communautaire** – Formulaire complet pour publier un nouvel exercice (`AddExerciseForm`) avec image, étapes et situations ciblées.
-- **Persistance locale** – Profil, exercices ajoutés et remerciements sont sauvegardés dans `localStorage` via `dataService` pour rester disponibles entre les sessions.
+- **Synchronisation hors-ligne** – Profil en `localStorage`, cache d’exercices hydraté par `syncService` (localStorage par défaut, prêt pour IndexedDB) et file `pendingMutations` pour re-jouer les actions dès que `navigator.onLine` repasse à `true`.
 
 ## Stack & Architecture
 - **Framework** : React 19 avec Vite 6 et TypeScript 5.8.
 - **UI** : composants maison (ex. `components/Button.tsx`) + utilitaires Tailwind via classes CSS.
-- **Données** : `INITIAL_EXERCISES` dans `constants.ts`, types partagés dans `types.ts`, et couche de persistance + scoring dans `services/dataService.ts` (filtrage par `Situation` puis scoring par `NeuroType` et `thanksCount`).
+- **Données** : `INITIAL_EXERCISES` dans `constants.ts`, types partagés dans `types.ts`, client HTTP typé (`services/apiClient.ts`) et orchestration hors-ligne dans `services/syncService.ts` (cache local + queue). `services/dataService.ts` expose désormais les helpers de scoring en s’appuyant sur cette couche.
 - **Entrée principale** : `index.tsx` orchestre l’onboarding, le tableau de bord, la vue détaillée et le formulaire d’ajout.
 
 ```
@@ -22,7 +22,9 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
 │   └── Button.tsx
 ├── constants.ts          # Exercices préchargés
 ├── services/
-│   └── dataService.ts    # LocalStorage + recommandations
+│   ├── apiClient.ts      # Client HTTP typé (fetch, create, thank)
+│   ├── dataService.ts    # Scoring + persistance profil
+│   └── syncService.ts    # Cache, queue offline/online
 ├── types.ts              # Enums et interfaces partagées
 ├── index.tsx             # Arbre React principal
 └── index.html            # Point d’ancrage Vite
