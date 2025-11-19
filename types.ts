@@ -25,6 +25,14 @@ export interface UserProfile {
   completedOnboarding: boolean;
 }
 
+export interface PartnerAccount {
+  id: string;
+  organization: string;
+  contactName: string;
+  email: string;
+  password: string;
+}
+
 export type ModerationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Exercise {
@@ -41,6 +49,7 @@ export interface Exercise {
   tags: string[];
   thanksCount: number;
   isCommunitySubmitted?: boolean;
+  isPartnerContent?: boolean;
   author?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -59,7 +68,7 @@ export interface ServerExercise extends Exercise {
 export interface AppState {
   user: UserProfile | null;
   exercises: Exercise[];
-  view: 'onboarding' | 'dashboard' | 'detail' | 'add';
+  view: 'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation' | 'partner';
   selectedExerciseId: string | null;
   filterSituation: Situation | 'All';
 }
