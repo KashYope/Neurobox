@@ -155,6 +155,26 @@ class SyncService {
     });
   }
 
+  updateExercise(exerciseId: string, patch: Partial<Exercise>): void {
+    const timestamp = patch.updatedAt || nowIso();
+    let updated = false;
+
+    this.cache = this.cache.map(ex => {
+      const matches = ex.id === exerciseId || ex.serverId === exerciseId;
+      if (!matches) {
+        return ex;
+      }
+
+      updated = true;
+      return { ...ex, ...patch, updatedAt: timestamp };
+    });
+
+    if (updated) {
+      this.persistCache();
+      this.notifyCache();
+    }
+  }
+
   enqueueMutation(input: PendingMutationInput): void {
     const mutation = this.buildPendingMutation(input);
     this.pendingMutations.push(mutation);

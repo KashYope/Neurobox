@@ -16,7 +16,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/2dd4bf/ffffff?text=Respiration+4-7-8',
     tags: ['Respiration', 'Vagal', 'Sommeil'],
-    thanksCount: 120
+    thanksCount: 120,
+    moderationStatus: 'approved'
   },
   {
     id: 'ice-dive',
@@ -35,7 +36,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Attention si vous avez des problèmes cardiaques préexistants.',
     imageUrl: 'https://placehold.co/600x400/3b82f6/ffffff?text=Reflexe+Plongee',
     tags: ['Urgence', 'Bio-hack', 'Froid'],
-    thanksCount: 85
+    thanksCount: 85,
+    moderationStatus: 'approved'
   },
   {
     id: 'wall-push',
@@ -53,7 +55,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/f43f5e/ffffff?text=Poussee+Murale',
     tags: ['Décharge', 'Colère', 'Proprioception'],
-    thanksCount: 64
+    thanksCount: 64,
+    moderationStatus: 'approved'
   },
   {
     id: 'butterfly-hug',
@@ -71,7 +74,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/d946ef/ffffff?text=Calin+Papillon',
     tags: ['EMDR', 'Sécurité', 'Toucher'],
-    thanksCount: 143
+    thanksCount: 143,
+    moderationStatus: 'approved'
   },
   {
     id: 'shaking',
@@ -90,7 +94,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'En cas de trauma complexe, ne pratiquez pas le tremblement au sol seul trop longtemps. Arrêtez si submergé.',
     imageUrl: 'https://placehold.co/600x400/eab308/ffffff?text=Shaking',
     tags: ['Somatic', 'TRE', 'Mouvement'],
-    thanksCount: 92
+    thanksCount: 92,
+    moderationStatus: 'approved'
   },
   {
     id: 'physio-sigh',
@@ -107,7 +112,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/14b8a6/ffffff?text=Soupir+Physio',
     tags: ['Respiration', 'Science', 'Rapide'],
-    thanksCount: 110
+    thanksCount: 110,
+    moderationStatus: 'approved'
   },
   {
     id: '54321',
@@ -125,7 +131,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/a855f7/ffffff?text=Grounding+54321',
     tags: ['Cognitif', 'Sensoriel', 'Dissociation'],
-    thanksCount: 150
+    thanksCount: 150,
+    moderationStatus: 'approved'
   },
   {
     id: 'voo-sound',
@@ -143,7 +150,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/6366f1/ffffff?text=Son+Voo',
     tags: ['Vagal', 'Son', 'Vibration'],
-    thanksCount: 45
+    thanksCount: 45,
+    moderationStatus: 'approved'
   },
   {
     id: 'psoas-release',
@@ -161,7 +169,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/10b981/ffffff?text=Repos+Constructif',
     tags: ['Douleur', 'Posture', 'Détente'],
-    thanksCount: 78
+    thanksCount: 78,
+    moderationStatus: 'approved'
   },
   {
     id: 'brain-dump',
@@ -178,7 +187,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/64748b/ffffff?text=Brain+Dump',
     tags: ['Cognitif', 'Organisation', 'Ecriture'],
-    thanksCount: 112
+    thanksCount: 112,
+    moderationStatus: 'approved'
   },
   {
     id: 'visual-countdown',
@@ -196,7 +206,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Compte+Rebours',
     tags: ['Visualisation', 'Sommeil', 'Mental'],
-    thanksCount: 56
+    thanksCount: 56,
+    moderationStatus: 'approved'
   },
   {
     id: 'self-hug',
@@ -214,7 +225,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/ec4899/ffffff?text=Self+Hug',
     tags: ['Proprioception', 'Sécurité', 'Toucher'],
-    thanksCount: 88
+    thanksCount: 88,
+    moderationStatus: 'approved'
   },
   {
     id: 'pmr-jacobson',
@@ -231,6 +243,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: 'https://placehold.co/600x400/8b5cf6/ffffff?text=Relaxation+Musculaire',
     tags: ['Corps', 'Détente', 'Sommeil'],
-    thanksCount: 72
+    thanksCount: 72,
+    moderationStatus: 'approved'
   }
 ];
