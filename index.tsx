@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
+import { registerSW } from 'virtual:pwa-register';
 import {
   Heart,
   Wind,
@@ -42,6 +43,15 @@ import {
   moderateExercise
 } from './services/dataService';
 import { syncService, SyncStatus } from './services/syncService';
+
+if (typeof window !== 'undefined') {
+  registerSW({
+    immediate: true,
+    onRegisterError(error) {
+      console.error('Service worker registration failed', error);
+    }
+  });
+}
 
 // --- Components ---
 

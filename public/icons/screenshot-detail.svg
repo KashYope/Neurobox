@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 1334">
+  <rect width="750" height="1334" rx="64" fill="#0f172a" />
+  <rect x="56" y="120" width="638" height="320" rx="48" fill="#14b8a6" opacity="0.8" />
+  <rect x="56" y="472" width="638" height="744" rx="48" fill="#f8fafc" />
+  <text x="104" y="560" font-size="54" font-family="'Inter', sans-serif" fill="#0f172a">Respiration box</text>
+  <text x="104" y="624" font-size="32" font-family="'Inter', sans-serif" fill="#475569">4 temps d’inspiration, 4 temps de pause.</text>
+  <rect x="104" y="700" width="558" height="80" rx="16" fill="#e2e8f0" />
+  <rect x="104" y="804" width="558" height="80" rx="16" fill="#e2e8f0" />
+  <rect x="104" y="908" width="558" height="80" rx="16" fill="#e2e8f0" />
+  <rect x="104" y="1080" width="558" height="96" rx="24" fill="#0f172a" />
+  <text x="140" y="1144" font-size="36" font-family="'Inter', sans-serif" fill="#f8fafc">Dire merci</text>
+</svg>

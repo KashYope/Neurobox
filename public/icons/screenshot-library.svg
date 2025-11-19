@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 1334">
+  <rect width="750" height="1334" rx="64" fill="#f8fafc" />
+  <text x="72" y="180" font-family="'Inter', sans-serif" font-size="56" fill="#0f172a">Bibliothèque</text>
+  <text x="72" y="240" font-size="28" font-family="'Inter', sans-serif" fill="#475569">Respiration, somatique, ancrage.</text>
+  <rect x="72" y="320" width="606" height="220" rx="32" fill="#cbd5f5" />
+  <rect x="72" y="560" width="606" height="220" rx="32" fill="#fecdd3" />
+  <rect x="72" y="800" width="606" height="220" rx="32" fill="#bbf7d0" />
+  <rect x="72" y="1040" width="606" height="220" rx="32" fill="#fde68a" />
+  <text x="110" y="390" font-size="40" font-family="'Inter', sans-serif" fill="#0f172a">Routine d’ancrage</text>
+  <text x="110" y="630" font-size="40" font-family="'Inter', sans-serif" fill="#0f172a">Cohérence cardiaque</text>
+  <text x="110" y="870" font-size="40" font-family="'Inter', sans-serif" fill="#0f172a">Scan corporel</text>
+  <text x="110" y="1110" font-size="40" font-family="'Inter', sans-serif" fill="#0f172a">Stimulation tactile</text>
+</svg>
