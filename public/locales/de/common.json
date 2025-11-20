@@ -1,0 +1,114 @@
+{
+  "app": {
+    "name": "NeuroSooth",
+    "tagline": "Somatische Regulation"
+  },
+  "buttons": {
+    "submit": "Bestätigen",
+    "cancel": "Abbrechen",
+    "back": "Zurück",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "add": "Hinzufügen",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "logout": "Abmelden",
+    "login": "Anmelden",
+    "register": "Konto erstellen",
+    "close": "Schließen",
+    "viewAll": "Alles anzeigen",
+    "addTechnique": "Technik hinzufügen",
+    "publishDirectly": "Direkt veröffentlichen",
+    "publish": "Technik veröffentlichen",
+    "addStep": "Schritt hinzufügen",
+    "sendThanks": "Danke sagen",
+    "thanksSent": "Danke gesendet!",
+    "start": "Reise beginnen"
+  },
+  "labels": {
+    "name": "Name",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "organization": "Organisation",
+    "duration": "Dauer",
+    "title": "Titel",
+    "description": "Beschreibung",
+    "steps": "Schritte",
+    "tags": "Tags",
+    "warning": "Warnung",
+    "situations": "Situationen",
+    "neurotypes": "Neuroatypische Profile",
+    "image": "Bild / GIF",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "all": "Alle"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "syncing": "Synchronisierung…",
+    "synced": "Daten perfekt synchronisiert",
+    "pending": "ausstehend",
+    "approved": "Genehmigt",
+    "rejected": "Abgelehnt"
+  },
+  "menu": {
+    "adminSpace": "Admin-Bereich",
+    "quickActions": "Schnellaktionen",
+    "sync": "Synchronisierung",
+    "offlineMode": "Offline-Modus",
+    "pendingChanges": "{{count}} Änderung(en) ausstehend",
+    "apiTokens": "API-Tokens",
+    "partnerToken": "Partner-Token",
+    "moderatorToken": "Moderator-Token"
+  },
+  "messages": {
+    "noResults": "Keine Technik gefunden",
+    "tryChangeFilter": "Versuchen Sie, den Filter zu ändern oder fügen Sie Ihre eigene Technik hinzu.",
+    "loading": "Lädt...",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Erfolg",
+    "tokenSaved": "Token gespeichert.",
+    "tokenRemoved": "Token entfernt.",
+    "helpedPeople": "{{count}} Menschen geholfen"
+  },
+  "neuroTypes": {
+    "ADHD": "ADHS",
+    "ASD": "ASS (Autismus)",
+    "Trauma": "Trauma/CPTSD",
+    "HighSensitivity": "Hochsensibel/Hochbegabt",
+    "None": "Neurotypisch"
+  },
+  "dashboard": {
+    "recommendedForYou": "Empfohlen für Sie",
+    "basedOnProfile": "Basierend auf Ihrem Profil {{neurotypes}}",
+    "specificTechniques": "Spezifische Regulationstechniken",
+    "noTechniquesFound": "Keine Technik gefunden",
+    "tryChangeFilter": "Versuchen Sie, den Filter zu ändern oder fügen Sie Ihre eigene Technik hinzu."
+  },
+  "adminMenu": {
+    "adminSpace": "Admin-Bereich",
+    "quickActions": "Schnellaktionen",
+    "addTechnique": "Technik hinzufügen",
+    "synchronization": "Synchronisierung",
+    "offlineMode": "Offline-Modus",
+    "pendingChanges": "{{count}} Änderung(en) ausstehend",
+    "syncing": "Synchronisierung…",
+    "dataSynced": "Daten perfekt synchronisiert",
+    "apiTokens": "API-Tokens",
+    "apiTokensDesc": "Fügen Sie die von NeuroSooth bereitgestellten signierten Token ein, um über das sichere Backend zu veröffentlichen und zu moderieren.",
+    "partnerToken": "Partner-Token",
+    "moderatorToken": "Moderator-Token"
+  },
+  "situations": {
+    "Crisis": "Krise / Panik",
+    "Rumination": "Gedankenkreisen",
+    "Freeze": "Erstarren / Dissoziation",
+    "Stress": "Stress / Angst",
+    "Anger": "Wut / Meltdown",
+    "Sleep": "Schlaf / Schlaflosigkeit",
+    "Pain": "Schmerz / Spannung",
+    "Focus": "Konzentration",
+    "Trauma": "Trauma / Flashback"
+  }
+}

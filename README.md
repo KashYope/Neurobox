@@ -31,13 +31,23 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
 │   ├── apiClient.ts            # Client HTTP + gestion des tokens
 │   ├── dataService.ts          # Accès données + algorithme de recommandation
 │   ├── syncService.ts          # Cache offline, file de mutations, background sync
+│   ├── languageService.ts      # Gestion préférences langues + chargement lazy
+│   ├── translationService.ts   # Traduction dynamique via Google Translate API
 │   └── storage/offlineDb.ts    # Adaptateur Dexie + migration depuis localStorage
+├── src/
+│   ├── i18n.ts                 # Configuration i18next (lazy loading)
+│   └── sw.ts                   # Service worker Workbox + BackgroundSync
+├── public/
+│   └── locales/
+│       ├── fr/
+│       │   ├── common.json
+│       │   └── onboarding.json
+│       ├── en/, de/, es/, nl/  # Mêmes namespaces
 ├── tests/
 │   └── syncService.test.ts     # Tests node:test des scénarios offline/online
-├── server/
-│   ├── src/                    # API Express (routes, auth, db, validation)
-│   └── migrations/001_init.sql
-└── src/sw.ts                   # Service worker Workbox + BackgroundSync
+└── server/
+    ├── src/                    # API Express (routes, auth, db, validation)
+    └── migrations/001_init.sql
 ```
 
 ## Guide de démarrage
@@ -67,11 +77,69 @@ npm test
 
 La commande compile les tests TypeScript (`tsconfig.test.json` + `scripts/fix-test-imports.mjs`) avant d’exécuter `node --test dist-test`.
 
+## Support multi-langues (i18n)
+
+L'application supporte 5 langues avec chargement lazy (optimisé pour réduire le transfert initial de ~80%) :
+
+- **Français** (par défaut)
+- **English**
+- **Deutsch** (Allemand)
+- **Español** (Espagnol)
+- **Nederlands** (Néerlandais)
+
+### Architecture
+- **Bibliothèque** : `react-i18next` + `i18next` pour les traductions statiques UI
+- **Lazy loading** : Seule la langue sélectionnée est chargée (2 fichiers JSON au lieu de 10)
+- **Stockage prioritaire** : `localStorage.neurobox_user_language` avec timestamp
+- **Cache service worker** : `StaleWhileRevalidate` pour les fichiers `/locales/*` (7 jours, max 10 entrées)
+- **Traduction dynamique** : `services/translationService.ts` pour contenu généré (exercices) via Google Cloud Translation API
+
+### Configuration utilisateur
+1. **À l'onboarding** : 5 boutons de sélection en haut de l'écran permettent de choisir la langue avant même de commencer
+2. **Post-onboarding** : Le sélecteur dans le tiroir administrateur permet de basculer à tout moment
+3. **Détection automatique** : Si aucune préférence n'est stockée, l'app détecte la langue du navigateur puis bascule sur le français en fallback
+
+### Fichiers de traduction
+```
+public/locales/
+├── fr/
+│   ├── common.json       # Labels UI, boutons, filtres, menu admin
+│   └── onboarding.json   # Écran d'accueil
+├── en/, de/, es/, nl/    # Mêmes namespaces
+```
+
+Tout le contenu statique (boutons, filtres, états de modération, menus) est traduit. Pour ajouter une clé, éditez les 5 fichiers `common.json` puis utilisez `t('cle')` dans les composants React.
+
+### Traduction de contenu dynamique (optionnel)
+Pour traduire les exercices (titres, descriptions, étapes) créés par la communauté :
+
+1. Obtenir une clé API Google Cloud Translation
+2. L'ajouter dans `.env` :
+   ```bash
+   VITE_GOOGLE_TRANSLATE_API_KEY=votre_cle_ici
+   ```
+3. Le service `translationService.ts` traduit automatiquement à la demande avec cache IndexedDB + mémoire (coût estimé : 3-6$/mois pour 1000 utilisateurs)
+
+Sans clé API, le contenu dynamique reste en français (langue originale).
+
+### Tests & débogage
+Un script de validation est fourni dans `test-lazy-loading.js` :
+
+```js
+// Dans la console navigateur, coller le contenu du fichier puis :
+testLazyLoading.inspectCache()        // Voir les langues en cache
+testLazyLoading.simulateSwitch('de')  // Tester le switch allemand
+testLazyLoading.clearStorage()        // Réinitialiser les préférences
+```
+
+Voir `LAZY_LOADING_TEST.md` pour le guide complet et `LANGUAGE_OPTIMIZATION_COMPLETE.md` pour les détails d'implémentation.
+
 ## Synchronisation & stockage hors-ligne
-- `services/storage/offlineDb` utilise Dexie/IndexedDB pour stocker exercices, profil utilisateur, pièces jointes et file `PendingMutationRecord`.
-- `syncService` garde le cache en mémoire, notifie l’UI (`subscribe`/`subscribeStatus`) et met en file les mutations (`createExercise`, `incrementThanks`, `moderateExercise`).
-- Les mutations sont rejouées quand `navigator.onLine` redevient `true` ou lorsqu’un `background sync` est déclenché par `src/sw.ts`.
+- `services/storage/offlineDb` utilise Dexie/IndexedDB pour stocker exercices, profil utilisateur, pièces jointes, traductions et file `PendingMutationRecord`.
+- `syncService` garde le cache en mémoire, notifie l'UI (`subscribe`/`subscribeStatus`) et met en file les mutations (`createExercise`, `incrementThanks`, `moderateExercise`).
+- Les mutations sont rejouées quand `navigator.onLine` redevient `true` ou lorsqu'un `background sync` est déclenché par `src/sw.ts`.
 - `services/dataService` expose des helpers (enregistrement utilisateur, scoring personnalisé via neurotypes, modération locale) et délègue la persistance à `syncService`.
+- `services/languageService` gère les préférences linguistiques avec chargement lazy pour optimiser les performances.
 
 ## API backend Express + PostgreSQL
 
@@ -172,6 +240,7 @@ Collez ensuite ces jetons dans la section « Jetons API » du tiroir administr
 - `src/sw.ts` implémente une stratégie de cache complète pour une utilisation 100% hors-ligne :
   - **App shell** : `StaleWhileRevalidate` pour HTML/JS/CSS avec mise en cache immédiate lors de l'installation.
   - **API** : `NetworkFirst` avec fallback sur cache (timeout 10s) + `BackgroundSyncPlugin` pour rejouer les mutations.
+  - **Locales** : `StaleWhileRevalidate` pour fichiers `/locales/*` (7 jours, max 10 entrées) permettant le changement de langue hors-ligne.
   - **Images** : `CacheFirst` avec expiration 30 jours (max 100 entrées).
   - **CDN externes** : `StaleWhileRevalidate` pour fonts.googleapis.com, aistudiocdn.com, cdn.tailwindcss.com, etc. (max 60 entrées, 30 jours).
   - **Fallback offline** : `setCatchHandler` redirige les requêtes échouées vers le cache ou une erreur appropriée.

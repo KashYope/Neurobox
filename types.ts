@@ -1,21 +1,21 @@
 export enum NeuroType {
-  ADHD = 'TDAH',
-  ASD = 'TSA (Autisme)',
-  Trauma = 'Trauma/CPTSD',
-  HighSensitivity = 'HPE/HPI',
-  None = 'Neurotypique'
+  ADHD = 'ADHD',
+  ASD = 'ASD',
+  Trauma = 'Trauma',
+  HighSensitivity = 'HighSensitivity',
+  None = 'None'
 }
 
 export enum Situation {
-  Crisis = 'Crise / Panique',
-  Rumination = 'Ruminations Mentales',
-  Freeze = 'Figement / Dissociation',
-  Stress = 'Stress / Anxiété',
-  Anger = 'Colère / Meltdown',
-  Sleep = 'Sommeil / Insomnie',
-  Pain = 'Douleurs / Tensions',
-  Focus = 'Concentration',
-  Trauma = 'Trauma / Flashback'
+  Crisis = 'Crisis',
+  Rumination = 'Rumination',
+  Freeze = 'Freeze',
+  Stress = 'Stress',
+  Anger = 'Anger',
+  Sleep = 'Sleep',
+  Pain = 'Pain',
+  Focus = 'Focus',
+  Trauma = 'Trauma'
 }
 
 export interface UserProfile {
@@ -38,13 +38,23 @@ export type ModerationStatus = 'pending' | 'approved' | 'rejected';
 export interface Exercise {
   id: string;
   serverId?: string;
+  
+  // Content fields (legacy - kept for backward compatibility)
   title: string;
   description: string;
+  steps: string[];
+  warning?: string; // Critical clinical warnings from PDFs
+  
+  // String ID fields for translation system (new)
+  titleStringId?: string;        // e.g., 'exercise.resp_478.title'
+  descriptionStringId?: string;  // e.g., 'exercise.resp_478.description'
+  stepsStringIds?: string[];     // e.g., ['exercise.resp_478.step_1', 'exercise.resp_478.step_2', ...]
+  warningStringId?: string;      // e.g., 'exercise.resp_478.warning'
+  
+  // Metadata
   situation: Situation[];
   neurotypes: NeuroType[]; // Who is this best for?
   duration: string;
-  steps: string[];
-  warning?: string; // Critical clinical warnings from PDFs
   imageUrl: string; // Placeholder for GIF
   tags: string[];
   thanksCount: number;

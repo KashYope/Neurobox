@@ -128,6 +128,73 @@ class ApiClient {
   async fetchModerationQueue(): Promise<ModerationQueueResponse> {
     return this.request<ModerationQueueResponse>('/moderation/queue', {}, 'moderator');
   }
+
+  // Exercise string translation methods
+  async fetchExerciseStrings(context?: string): Promise<ExerciseStringRecord[]> {
+    const url = context ? `/strings?context=${encodeURIComponent(context)}` : '/strings';
+    return this.request<ExerciseStringRecord[]>(url);
+  }
+
+  async fetchExerciseStringTranslations(lang: string): Promise<ExerciseStringTranslationRecord[]> {
+    return this.request<ExerciseStringTranslationRecord[]>(`/strings/translations/${lang}`);
+  }
+
+  async createExerciseString(data: ExerciseStringPayload): Promise<ExerciseStringRecord> {
+    return this.request<ExerciseStringRecord>(
+      '/strings',
+      {
+        method: 'POST',
+        body: JSON.stringify(data)
+      },
+      'partner'
+    );
+  }
+
+  async createExerciseStringTranslation(
+    stringId: string,
+    data: ExerciseStringTranslationPayload
+  ): Promise<ExerciseStringTranslationRecord> {
+    return this.request<ExerciseStringTranslationRecord>(
+      `/strings/${stringId}/translations`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data)
+      },
+      'partner'
+    );
+  }
+}
+
+export interface ExerciseStringRecord {
+  id: string;
+  context: string | null;
+  source_text: string;
+  source_lang: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExerciseStringTranslationRecord {
+  string_id: string;
+  lang: string;
+  translated_text: string;
+  translation_method: string;
+  translated_at: string;
+  updated_at: string;
+}
+
+export interface ExerciseStringPayload {
+  id: string;
+  context?: string;
+  sourceText: string;
+  sourceLang?: string;
+}
+
+export interface ExerciseStringTranslationPayload {
+  stringId: string;
+  lang: string;
+  translatedText: string;
+  translationMethod?: string;
 }
 
 export const apiClient = new ApiClient();

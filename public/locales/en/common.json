@@ -1,0 +1,114 @@
+{
+  "app": {
+    "name": "NeuroSooth",
+    "tagline": "Somatic Regulation"
+  },
+  "buttons": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "back": "Back",
+    "save": "Save",
+    "delete": "Delete",
+    "add": "Add",
+    "approve": "Approve",
+    "reject": "Reject",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Create Account",
+    "close": "Close",
+    "viewAll": "View All",
+    "addTechnique": "Add Technique",
+    "publishDirectly": "Publish Directly",
+    "publish": "Publish Technique",
+    "addStep": "Add Step",
+    "sendThanks": "Say Thanks",
+    "thanksSent": "Thanks Sent!",
+    "start": "Start the Journey"
+  },
+  "labels": {
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "organization": "Organization",
+    "duration": "Duration",
+    "title": "Title",
+    "description": "Description",
+    "steps": "Steps",
+    "tags": "Tags",
+    "warning": "Warning",
+    "situations": "Situations",
+    "neurotypes": "Neuro-atypical Profiles",
+    "image": "Image / GIF",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "syncing": "Synchronizing…",
+    "synced": "Data perfectly synchronized",
+    "pending": "pending",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "menu": {
+    "adminSpace": "Admin Space",
+    "quickActions": "Quick Actions",
+    "sync": "Synchronization",
+    "offlineMode": "Offline Mode",
+    "pendingChanges": "{{count}} change(s) pending",
+    "apiTokens": "API Tokens",
+    "partnerToken": "Partner Token",
+    "moderatorToken": "Moderator Token"
+  },
+  "messages": {
+    "noResults": "No technique found",
+    "tryChangeFilter": "Try changing the filter or add your own technique.",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "tokenSaved": "Token saved.",
+    "tokenRemoved": "Token removed.",
+    "helpedPeople": "{{count}} people helped"
+  },
+  "neuroTypes": {
+    "ADHD": "ADHD",
+    "ASD": "ASD (Autism)",
+    "Trauma": "Trauma/CPTSD",
+    "HighSensitivity": "Highly Sensitive/Gifted",
+    "None": "Neurotypical"
+  },
+  "dashboard": {
+    "recommendedForYou": "Recommended for you",
+    "basedOnProfile": "Based on your profile {{neurotypes}}",
+    "specificTechniques": "Specific regulation techniques",
+    "noTechniquesFound": "No technique found",
+    "tryChangeFilter": "Try changing the filter or add your own technique."
+  },
+  "adminMenu": {
+    "adminSpace": "Admin Space",
+    "quickActions": "Quick Actions",
+    "addTechnique": "Add Technique",
+    "synchronization": "Synchronization",
+    "offlineMode": "Offline Mode",
+    "pendingChanges": "{{count}} change(s) pending",
+    "syncing": "Synchronizing…",
+    "dataSynced": "Data perfectly synchronized",
+    "apiTokens": "API Tokens",
+    "apiTokensDesc": "Paste the signed tokens provided by NeuroSooth to publish and moderate via the secure backend.",
+    "partnerToken": "Partner Token",
+    "moderatorToken": "Moderator Token"
+  },
+  "situations": {
+    "Crisis": "Crisis / Panic",
+    "Rumination": "Mental Rumination",
+    "Freeze": "Freeze / Dissociation",
+    "Stress": "Stress / Anxiety",
+    "Anger": "Anger / Meltdown",
+    "Sleep": "Sleep / Insomnia",
+    "Pain": "Pain / Tension",
+    "Focus": "Focus",
+    "Trauma": "Trauma / Flashback"
+  }
+}

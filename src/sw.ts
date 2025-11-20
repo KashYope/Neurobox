@@ -91,6 +91,24 @@ registerRoute(
   })
 );
 
+// Cache locale files with stale-while-revalidate for instant language switching
+// Only caches files that are actually requested (lazy loading)
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/locales/'),
+  new StaleWhileRevalidate({
+    cacheName: 'locale-cache',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200]
+      }),
+      new ExpirationPlugin({
+        maxEntries: 10, // 5 languages × 2 namespaces
+        maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
+      })
+    ]
+  })
+);
+
 // Fallback handler for offline scenarios
 setCatchHandler(async ({ event }) => {
   // For navigation requests, return the cached index page

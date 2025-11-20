@@ -1,6 +1,7 @@
 import { Exercise, UserProfile, NeuroType, Situation, ModerationStatus } from '../types';
 import { INITIAL_EXERCISES } from '../constants';
 import { syncService } from './syncService';
+import { contentResolver } from './contentResolver';
 import {
   AttachmentData,
   attachmentKeyForExerciseImage,
@@ -112,4 +113,26 @@ export const getCachedExerciseImage = async (
 
 export const clearCachedExerciseImage = async (exerciseId: string): Promise<void> => {
   await removeAttachment(attachmentKeyForExerciseImage(exerciseId));
+};
+
+/**
+ * Get exercises with content resolved to the current user's language
+ * This applies translation if string IDs are present
+ */
+export const getResolvedExercises = async (lang?: string): Promise<Exercise[]> => {
+  const exercises = getExercises();
+  return contentResolver.resolveExercises(exercises, lang);
+};
+
+/**
+ * Get recommended exercises with content resolved to the current user's language
+ */
+export const getResolvedRecommendedExercises = async (
+  exercises: Exercise[],
+  user: UserProfile | null,
+  situation: Situation | 'All',
+  lang?: string
+): Promise<Exercise[]> => {
+  const recommended = getRecommendedExercises(exercises, user, situation);
+  return contentResolver.resolveExercises(recommended, lang);
 };

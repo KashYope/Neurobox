@@ -37,6 +37,24 @@ export type ModerationActionRow = {
   created_at: Date;
 };
 
+export type ExerciseStringRow = {
+  id: string;
+  context: string | null;
+  source_text: string;
+  source_lang: string;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type ExerciseTranslationRow = {
+  string_id: string;
+  lang: string;
+  translated_text: string;
+  translation_method: string;
+  translated_at: Date;
+  updated_at: Date;
+};
+
 export const withClient = async <T>(fn: (client: Pool) => Promise<T>): Promise<T> => {
   return fn(pool);
 };

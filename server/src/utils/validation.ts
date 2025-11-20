@@ -30,3 +30,27 @@ export const moderationSchema = z.object({
 
 export type ExercisePayload = z.infer<typeof exercisePayloadSchema>;
 export type ModerationPayload = z.infer<typeof moderationSchema>;
+
+// Exercise string validation schemas
+export const exerciseStringSchema = z.object({
+  id: z.string().min(3),
+  context: z.string().optional(),
+  sourceText: z.string().min(1),
+  sourceLang: z.string().length(2).default('fr')
+});
+
+export const exerciseStringTranslationSchema = z.object({
+  stringId: z.string().min(3),
+  lang: z.enum(['en', 'de', 'es', 'nl']),
+  translatedText: z.string().min(1),
+  translationMethod: z.enum(['manual', 'google_api', 'deepl']).default('manual')
+});
+
+export const bulkStringImportSchema = z.object({
+  strings: z.array(exerciseStringSchema).min(1),
+  translations: z.array(exerciseStringTranslationSchema).optional()
+});
+
+export type ExerciseStringPayload = z.infer<typeof exerciseStringSchema>;
+export type ExerciseStringTranslationPayload = z.infer<typeof exerciseStringTranslationSchema>;
+export type BulkStringImportPayload = z.infer<typeof bulkStringImportSchema>;

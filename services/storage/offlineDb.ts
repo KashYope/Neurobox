@@ -56,6 +56,33 @@ export interface AttachmentRecord {
 
 export type AttachmentData = string | ArrayBuffer | Uint8Array | Blob;
 
+export interface TranslationRecord {
+  key: string;
+  sourceText: string;
+  sourceLang: string;
+  targetLang: string;
+  translatedText: string;
+  createdAt: string;
+}
+
+export interface ExerciseStringRecord {
+  id: string;              // e.g., 'exercise.resp_478.title'
+  context: string;         // e.g., 'exercise', 'tag'
+  sourceText: string;      // Original French text
+  sourceLang: string;      // 'fr'
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExerciseStringTranslationRecord {
+  stringId: string;        // References ExerciseStringRecord.id
+  lang: string;            // Target language: 'en', 'de', 'es', 'nl'
+  translatedText: string;  // Translated content
+  translationMethod: string; // 'manual', 'google_api', etc.
+  translatedAt: string;
+  updatedAt: string;
+}
+
 type DexieTable<T> = {
   bulkPut(values: T[]): Promise<void>;
   bulkAdd(values: T[]): Promise<void>;
@@ -80,6 +107,15 @@ export interface StorageAdapter {
   saveAttachment(record: AttachmentRecord): Promise<void>;
   getAttachment(key: string): Promise<AttachmentRecord | undefined>;
   deleteAttachment(key: string): Promise<void>;
+  saveTranslation(record: TranslationRecord): Promise<void>;
+  getTranslation(key: string): Promise<TranslationRecord | undefined>;
+  
+  // Exercise string translations
+  getExerciseStrings(): Promise<ExerciseStringRecord[]>;
+  bulkUpsertExerciseStrings(strings: ExerciseStringRecord[]): Promise<void>;
+  getExerciseStringTranslations(lang: string): Promise<ExerciseStringTranslationRecord[]>;
+  bulkUpsertExerciseStringTranslations(translations: ExerciseStringTranslationRecord[]): Promise<void>;
+  getTranslationForString(stringId: string, lang: string): Promise<ExerciseStringTranslationRecord | undefined>;
 }
 
 export interface StorageSnapshot {
@@ -94,6 +130,9 @@ class OfflineDexieDB extends Dexie {
   users: DexieTable<UserRow>;
   pendingMutations: DexieTable<PendingMutationRecord>;
   attachments: DexieTable<AttachmentRecord>;
+  translations: DexieTable<TranslationRecord>;
+  exerciseStrings: DexieTable<ExerciseStringRecord>;
+  exerciseStringTranslations: DexieTable<ExerciseStringTranslationRecord>;
 
   constructor() {
     super('neurobox_offline');
@@ -103,11 +142,34 @@ class OfflineDexieDB extends Dexie {
       pendingMutations: '&id, createdAt',
       attachments: '&key, updatedAt'
     });
+    
+    // Add translations table in version 2
+    this.version(2).stores({
+      exercises: '&id, serverId, updatedAt',
+      users: '&id',
+      pendingMutations: '&id, createdAt',
+      attachments: '&key, updatedAt',
+      translations: '&key, targetLang, createdAt'
+    });
+    
+    // Add exercise string translations in version 3
+    this.version(3).stores({
+      exercises: '&id, serverId, updatedAt',
+      users: '&id',
+      pendingMutations: '&id, createdAt',
+      attachments: '&key, updatedAt',
+      translations: '&key, targetLang, createdAt',
+      exerciseStrings: '&id, context, updatedAt',
+      exerciseStringTranslations: '[stringId+lang], stringId, lang'
+    });
 
     this.exercises = this.table<Exercise>('exercises');
     this.users = this.table<UserRow>('users');
     this.pendingMutations = this.table<PendingMutationRecord>('pendingMutations');
     this.attachments = this.table<AttachmentRecord>('attachments');
+    this.translations = this.table<TranslationRecord>('translations');
+    this.exerciseStrings = this.table<ExerciseStringRecord>('exerciseStrings');
+    this.exerciseStringTranslations = this.table<ExerciseStringTranslationRecord>('exerciseStringTranslations');
   }
 }
 
@@ -190,6 +252,45 @@ class DexieStorageAdapter implements StorageAdapter {
   async deleteAttachment(key: string): Promise<void> {
     await this.ensureOpen();
     await this.db.attachments.delete(key);
+  }
+
+  async saveTranslation(record: TranslationRecord): Promise<void> {
+    await this.ensureOpen();
+    await this.db.translations.put(record);
+  }
+
+  async getTranslation(key: string): Promise<TranslationRecord | undefined> {
+    await this.ensureOpen();
+    return this.db.translations.get(key);
+  }
+
+  async getExerciseStrings(): Promise<ExerciseStringRecord[]> {
+    await this.ensureOpen();
+    return this.db.exerciseStrings.toArray();
+  }
+
+  async bulkUpsertExerciseStrings(strings: ExerciseStringRecord[]): Promise<void> {
+    if (!strings.length) return;
+    await this.ensureOpen();
+    await this.db.exerciseStrings.bulkPut(strings);
+  }
+
+  async getExerciseStringTranslations(lang: string): Promise<ExerciseStringTranslationRecord[]> {
+    await this.ensureOpen();
+    const all = await this.db.exerciseStringTranslations.toArray();
+    return all.filter(t => t.lang === lang);
+  }
+
+  async bulkUpsertExerciseStringTranslations(translations: ExerciseStringTranslationRecord[]): Promise<void> {
+    if (!translations.length) return;
+    await this.ensureOpen();
+    await this.db.exerciseStringTranslations.bulkPut(translations);
+  }
+
+  async getTranslationForString(stringId: string, lang: string): Promise<ExerciseStringTranslationRecord | undefined> {
+    await this.ensureOpen();
+    const all = await this.db.exerciseStringTranslations.toArray();
+    return all.find(t => t.stringId === stringId && t.lang === lang);
   }
 }
 

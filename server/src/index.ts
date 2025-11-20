@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { exercisesRouter } from './routes/exercises.js';
 import { moderationRouter } from './routes/moderation.js';
+import { stringsRouter } from './routes/strings.js';
 import { env } from './env.js';
 import { optionalAuth } from './auth.js';
 
@@ -21,6 +22,7 @@ app.get('/healthz', (_req, res) => {
 
 app.use('/api/exercises', exercisesRouter);
 app.use('/api/moderation', moderationRouter);
+app.use('/api/strings', stringsRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import './src/i18n';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
+import { useTranslation } from 'react-i18next';
 import {
   Heart,
   Wind,
@@ -28,7 +30,8 @@ import {
   Lock,
   UserPlus,
   Menu,
-  X
+  X,
+  Globe
 } from 'lucide-react';
 
 import { Button } from './components/Button';
@@ -45,6 +48,7 @@ import {
 import { syncService, SyncStatus } from './services/syncService';
 import { apiClient } from './services/apiClient';
 import { loadStoredTokens, persistToken } from './services/tokenStore';
+import { loadLanguageTranslations, getSupportedLanguages, type SupportedLanguage } from './services/languageService';
 
 if (typeof window !== 'undefined') {
   registerSW({
@@ -57,9 +61,59 @@ if (typeof window !== 'undefined') {
 
 // --- Components ---
 
+const LanguageSelector: React.FC = () => {
+  const { i18n } = useTranslation();
+  const currentLang = i18n.language;
+  const languages = getSupportedLanguages();
+
+  const changeLanguage = async (lang: string) => {
+    try {
+      await loadLanguageTranslations(lang as SupportedLanguage);
+    } catch (error) {
+      console.error('Failed to change language:', error);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <Globe className="w-4 h-4" />
+        <span>Language / Langue</span>
+      </div>
+      <div className="space-y-1">
+        {Object.entries(languages).map(([code, name]) => (
+          <button
+            key={code}
+            onClick={() => changeLanguage(code)}
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+              currentLang === code
+                ? 'bg-teal-50 text-teal-700 font-medium border border-teal-200'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onComplete }) => {
+  const { t, i18n } = useTranslation(['common', 'onboarding']);
   const [name, setName] = useState('');
   const [selectedNeurotypes, setSelectedNeurotypes] = useState<NeuroType[]>([]);
+  const [currentLang, setCurrentLang] = useState(i18n.language);
+  const languages = getSupportedLanguages();
+
+  const handleLanguageChange = async (lang: string) => {
+    try {
+      await loadLanguageTranslations(lang as SupportedLanguage);
+      setCurrentLang(lang);
+    } catch (error) {
+      console.error('Failed to change language:', error);
+    }
+  };
 
   const toggleNeurotype = (type: NeuroType) => {
     if (selectedNeurotypes.includes(type)) {
@@ -87,31 +141,50 @@ const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onC
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+        {/* Language Selector */}
+        <div className="mb-6">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {Object.entries(languages).map(([code, name]) => (
+              <button
+                key={code}
+                onClick={() => handleLanguageChange(code)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  currentLang === code
+                    ? 'bg-teal-600 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="text-center mb-8">
           <div className="mx-auto bg-teal-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
             <Brain className="w-8 h-8 text-teal-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Bienvenue sur NeuroSooth</h1>
-          <p className="text-slate-600 mt-2">Personnalisons votre expérience pour trouver les meilleures techniques de régulation.</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t('onboarding:title')}</h1>
+          <p className="text-slate-600 mt-2">{t('onboarding:subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Comment vous appelez-vous ?</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('onboarding:nameQuestion')}</label>
             <input 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-              placeholder="Votre prénom"
+              placeholder={t('onboarding:namePlaceholder')}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">Profil Neuro-Atypique (Optionnel)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-3">{t('onboarding:neuroProfile')}</label>
             <div className="grid grid-cols-1 gap-2">
-              {Object.values(NeuroType).filter(t => t !== NeuroType.None).map((type) => (
+              {Object.values(NeuroType).filter(nt => nt !== NeuroType.None).map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -122,7 +195,7 @@ const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onC
                       : 'border-gray-200 hover:bg-gray-50 text-slate-600'
                   }`}
                 >
-                  <span>{type}</span>
+                  <span>{t(`neuroTypes.${type}`)}</span>
                   {selectedNeurotypes.includes(type) && <Check className="w-4 h-4" />}
                 </button>
               ))}
@@ -130,7 +203,7 @@ const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onC
           </div>
 
           <Button type="submit" className="w-full" size="lg">
-            Commencer l'aventure
+            {t('buttons.start')}
           </Button>
         </form>
       </div>
@@ -1455,6 +1528,7 @@ const ModerationPanel: React.FC<{
 // --- Main App ---
 
 const App: React.FC = () => {
+  const { t } = useTranslation();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [allExercises, setAllExercises] = useState<Exercise[]>(() => getExercises());
   const [exercises, setExercises] = useState<Exercise[]>(() =>
@@ -1771,7 +1845,7 @@ const App: React.FC = () => {
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
-              Tout
+              {t('labels.all')}
             </button>
             {Object.values(Situation).map((sit) => (
               <button
@@ -1783,7 +1857,7 @@ const App: React.FC = () => {
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                {sit}
+                {t(`situations.${sit}`)}
               </button>
             ))}
           </div>
@@ -1795,12 +1869,12 @@ const App: React.FC = () => {
         {/* Context Header */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-slate-900">
-            {situationFilter === 'All' ? 'Recommandé pour vous' : situationFilter}
+            {situationFilter === 'All' ? t('dashboard.recommendedForYou') : t(`situations.${situationFilter}`)}
           </h2>
           <p className="text-slate-500">
             {situationFilter === 'All'
-              ? `Basé sur votre profil ${user?.neurotypes.join(', ') || ''}`
-              : `Techniques de régulation spécifiques`
+              ? t('dashboard.basedOnProfile', { neurotypes: user?.neurotypes.map(nt => t(`neuroTypes.${nt}`)).join(', ') || '' })
+              : t('dashboard.specificTechniques')
             }
           </p>
         </div>
@@ -1821,14 +1895,14 @@ const App: React.FC = () => {
             <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900">Aucune technique trouvée</h3>
-            <p className="text-slate-500 mb-6">Essayez de changer de filtre ou ajoutez votre propre technique.</p>
+            <h3 className="text-lg font-medium text-slate-900">{t('dashboard.noTechniquesFound')}</h3>
+            <p className="text-slate-500 mb-6">{t('dashboard.tryChangeFilter')}</p>
             <div className="flex justify-center gap-4">
               <Button variant="outline" onClick={() => setSituationFilter('All')}>
-                Voir tout
+                {t('buttons.viewAll')}
               </Button>
               <Button variant="primary" onClick={() => setView('add')}>
-                Ajouter une technique
+                {t('buttons.addTechnique')}
               </Button>
             </div>
           </div>
@@ -1847,8 +1921,8 @@ const App: React.FC = () => {
           >
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-widest text-slate-400">Espace admin</p>
-                <h2 className="text-lg font-semibold text-slate-900">Actions rapides</h2>
+                <p className="text-xs uppercase tracking-widest text-slate-400">{t('adminMenu.adminSpace')}</p>
+                <h2 className="text-lg font-semibold text-slate-900">{t('adminMenu.quickActions')}</h2>
               </div>
               <button
                 type="button"
@@ -1867,44 +1941,46 @@ const App: React.FC = () => {
                 onClick={handleContributionAccess}
               >
                 <Plus className="w-4 h-4" />
-                Ajouter une technique
+                {t('adminMenu.addTechnique')}
               </Button>
 
+              <LanguageSelector />
+
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Synchronisation</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.synchronization')}</p>
                 {showSyncStatus ? (
                   <div className="space-y-1">
                     {!syncStatus.isOnline && (
-                      <p className="text-amber-700 font-semibold">Mode hors ligne</p>
+                      <p className="text-amber-700 font-semibold">{t('adminMenu.offlineMode')}</p>
                     )}
                     {syncStatus.pendingMutations > 0 && (
-                      <p>{syncStatus.pendingMutations} changement(s) en attente</p>
+                      <p>{t('adminMenu.pendingChanges', { count: syncStatus.pendingMutations })}</p>
                     )}
                     {syncStatus.isSyncing && syncStatus.isOnline && (
                       <p className="flex items-center gap-2 text-teal-700">
                         <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                        Synchronisation…
+                        {t('adminMenu.syncing')}
                       </p>
                     )}
                   </div>
                 ) : (
                   <p className="flex items-center gap-2 text-emerald-600">
                     <CheckCircle2 className="w-4 h-4" />
-                    Données parfaitement synchronisées
+                    {t('adminMenu.dataSynced')}
                   </p>
                 )}
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Jetons API</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.apiTokens')}</p>
                   {tokenFeedback && <span className="text-xs text-emerald-600">{tokenFeedback}</span>}
                 </div>
                 <p className="text-xs text-slate-500">
-                  Collez les tokens signés fournis par NeuroSooth pour publier et modérer via le backend sécurisé.
+                  {t('adminMenu.apiTokensDesc')}
                 </p>
                 <label className="text-xs font-medium text-slate-500" htmlFor="partner-token-input">
-                  Jeton partenaire
+                  {t('adminMenu.partnerToken')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1916,11 +1992,11 @@ const App: React.FC = () => {
                     placeholder="Bearer token"
                   />
                   <Button size="sm" variant="outline" onClick={() => handleTokenSave('partner')}>
-                    Sauver
+                    {t('buttons.save')}
                   </Button>
                 </div>
                 <label className="text-xs font-medium text-slate-500" htmlFor="moderator-token-input">
-                  Jeton modérateur
+                  {t('adminMenu.moderatorToken')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1932,7 +2008,7 @@ const App: React.FC = () => {
                     placeholder="Bearer token"
                   />
                   <Button size="sm" variant="outline" onClick={() => handleTokenSave('moderator')}>
-                    Sauver
+                    {t('buttons.save')}
                   </Button>
                 </div>
               </div>
@@ -1951,5 +2027,13 @@ const App: React.FC = () => {
 const container = document.getElementById('root');
 if (container) {
   const root = createRoot(container);
-  root.render(<App />);
+  root.render(
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-slate-600">Loading...</div>
+      </div>
+    }>
+      <App />
+    </Suspense>
+  );
 }

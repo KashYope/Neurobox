@@ -1,0 +1,114 @@
+{
+  "app": {
+    "name": "NeuroSooth",
+    "tagline": "Somatische Regulatie"
+  },
+  "buttons": {
+    "submit": "Verzenden",
+    "cancel": "Annuleren",
+    "back": "Terug",
+    "save": "Opslaan",
+    "delete": "Verwijderen",
+    "add": "Toevoegen",
+    "approve": "Goedkeuren",
+    "reject": "Afwijzen",
+    "logout": "Uitloggen",
+    "login": "Inloggen",
+    "register": "Account aanmaken",
+    "close": "Sluiten",
+    "viewAll": "Alles bekijken",
+    "addTechnique": "Techniek toevoegen",
+    "publishDirectly": "Direct publiceren",
+    "publish": "Techniek publiceren",
+    "addStep": "Stap toevoegen",
+    "sendThanks": "Bedankt zeggen",
+    "thanksSent": "Bedankt verzonden!",
+    "start": "Begin de reis"
+  },
+  "labels": {
+    "name": "Naam",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "organization": "Organisatie",
+    "duration": "Duur",
+    "title": "Titel",
+    "description": "Beschrijving",
+    "steps": "Stappen",
+    "tags": "Tags",
+    "warning": "Waarschuwing",
+    "situations": "Situaties",
+    "neurotypes": "Neuro-atypische profielen",
+    "image": "Afbeelding / GIF",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "all": "Alle"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "syncing": "Synchroniseren…",
+    "synced": "Gegevens perfect gesynchroniseerd",
+    "pending": "in behandeling",
+    "approved": "Goedgekeurd",
+    "rejected": "Afgewezen"
+  },
+  "menu": {
+    "adminSpace": "Admin ruimte",
+    "quickActions": "Snelle acties",
+    "sync": "Synchronisatie",
+    "offlineMode": "Offline modus",
+    "pendingChanges": "{{count}} wijziging(en) in behandeling",
+    "apiTokens": "API Tokens",
+    "partnerToken": "Partner Token",
+    "moderatorToken": "Moderator Token"
+  },
+  "messages": {
+    "noResults": "Geen techniek gevonden",
+    "tryChangeFilter": "Probeer het filter te wijzigen of voeg uw eigen techniek toe.",
+    "loading": "Laden...",
+    "error": "Er is een fout opgetreden",
+    "success": "Succes",
+    "tokenSaved": "Token opgeslagen.",
+    "tokenRemoved": "Token verwijderd.",
+    "helpedPeople": "{{count}} mensen geholpen"
+  },
+  "neuroTypes": {
+    "ADHD": "ADHD",
+    "ASD": "ASS (Autisme)",
+    "Trauma": "Trauma/CPTSD",
+    "HighSensitivity": "Hoogsensitief/Hoogbegaafd",
+    "None": "Neurotypisch"
+  },
+  "dashboard": {
+    "recommendedForYou": "Aanbevolen voor u",
+    "basedOnProfile": "Op basis van uw profiel {{neurotypes}}",
+    "specificTechniques": "Specifieke regulatietechnieken",
+    "noTechniquesFound": "Geen techniek gevonden",
+    "tryChangeFilter": "Probeer het filter te wijzigen of voeg uw eigen techniek toe."
+  },
+  "adminMenu": {
+    "adminSpace": "Admin ruimte",
+    "quickActions": "Snelle acties",
+    "addTechnique": "Techniek toevoegen",
+    "synchronization": "Synchronisatie",
+    "offlineMode": "Offline modus",
+    "pendingChanges": "{{count}} wijziging(en) in behandeling",
+    "syncing": "Synchroniseren…",
+    "dataSynced": "Gegevens perfect gesynchroniseerd",
+    "apiTokens": "API Tokens",
+    "apiTokensDesc": "Plak de ondertekende tokens van NeuroSooth om te publiceren en te modereren via de beveiligde backend.",
+    "partnerToken": "Partner Token",
+    "moderatorToken": "Moderator Token"
+  },
+  "situations": {
+    "Crisis": "Crisis / Paniek",
+    "Rumination": "Mentale Ruminatie",
+    "Freeze": "Bevriezen / Dissociatie",
+    "Stress": "Stress / Angst",
+    "Anger": "Woede / Meltdown",
+    "Sleep": "Slaap / Slapeloosheid",
+    "Pain": "Pijn / Spanning",
+    "Focus": "Focus",
+    "Trauma": "Trauma / Flashback"
+  }
+}
