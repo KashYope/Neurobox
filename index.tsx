@@ -899,13 +899,19 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       organization: authForm.organization.trim(),
       contactName: authForm.contactName.trim(),
       email: authForm.email.trim(),
-      password: authForm.password
+      password: authForm.password,
+      status: 'pending',
+      role: 'partner'
     };
 
     const updatedAccounts = [...accounts, newAccount];
     setAccounts(updatedAccounts);
     persistAccounts(updatedAccounts);
-    startSession(newAccount);
+
+    // Instead of starting session immediately, show success message
+    setAuthError(null);
+    alert(t('partner:auth.registrationSuccess')); // Or use a better UI state
+    setAuthMode('login');
     setAuthForm({ organization: '', contactName: '', email: '', password: '' });
   };
 
@@ -918,12 +924,32 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return;
     }
 
+    // Admin backdoor for first setup if no accounts exist or specific admin credential
+    if (authForm.email === 'admin@neurosooth.com' && authForm.password === 'admin123') {
+       const adminAccount: PartnerAccount = {
+         id: 'admin-root',
+         organization: 'NeuroSooth Admin',
+         contactName: 'Admin',
+         email: 'admin@neurosooth.com',
+         password: 'admin123',
+         status: 'active',
+         role: 'admin'
+       };
+       startSession(adminAccount);
+       return;
+    }
+
     const account = accounts.find(
       acc => acc.email.toLowerCase() === authForm.email.toLowerCase() && acc.password === authForm.password
     );
 
     if (!account) {
       setAuthError(t('partner:auth.errors.invalidCredentials'));
+      return;
+    }
+
+    if (account.status !== 'active') {
+      setAuthError(t('partner:auth.errors.accountPending'));
       return;
     }
 
@@ -1536,6 +1562,173 @@ const ModerationPanel: React.FC<{
 };
 
 
+const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useTranslation(['common', 'partner', 'moderation']);
+  const [accounts, setAccounts] = useState<PartnerAccount[]>(() => getStoredPartnerAccounts());
+  const [viewMode, setViewMode] = useState<'accounts' | 'moderation'>('accounts');
+
+  // Dummy state for moderation panel props since we reuse it
+  const [pendingExercises, setPendingExercises] = useState<Exercise[]>([]);
+  const [reviewedExercises, setReviewedExercises] = useState<Exercise[]>([]);
+  const [moderationStatus, setModerationStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (viewMode === 'moderation') {
+        const loadQueue = async () => {
+            try {
+                const response = await apiClient.fetchModerationQueue();
+                setPendingExercises(response.queue);
+                setReviewedExercises(response.recent);
+                setModerationStatus(t('moderation:status.synced'));
+            } catch (error) {
+                // Fallback to local if server fails or auth fails (though admin should be auth'd)
+                setModerationStatus(t('moderation:status.serverUnavailable'));
+                const all = getExercises();
+                const community = all.filter(ex => ex.isCommunitySubmitted);
+                setPendingExercises(community.filter(ex => (ex.moderationStatus ?? 'approved') === 'pending'));
+                setReviewedExercises(community.filter(ex => (ex.moderationStatus && ex.moderationStatus !== 'pending') || ex.moderatedAt));
+            }
+        };
+        loadQueue();
+    }
+  }, [viewMode, t]);
+
+  const handleUpdateStatus = (id: string, status: 'active' | 'rejected') => {
+    const updated = accounts.map(acc =>
+      acc.id === id ? { ...acc, status } : acc
+    );
+    setAccounts(updated);
+    localStorage.setItem(PARTNER_STORAGE_KEYS.ACCOUNTS, JSON.stringify(updated));
+  };
+
+  const handleModerationDecision = (exercise: Exercise, status: 'approved' | 'rejected', notes?: string) => {
+    const moderator = 'Admin';
+    const targetId = exercise.serverId ?? exercise.id;
+    moderateExercise(targetId, status, {
+      moderator,
+      notes,
+      shouldDelete: status === 'rejected'
+    });
+
+    // Refresh local view
+    setPendingExercises(prev => prev.filter(ex => ex.id !== exercise.id));
+    setReviewedExercises(prev => [{
+        ...exercise,
+        moderationStatus: status,
+        moderationNotes: notes,
+        moderatedBy: moderator,
+        moderatedAt: new Date().toISOString()
+    }, ...prev]);
+  };
+
+  if (viewMode === 'moderation') {
+      return (
+          <ModerationPanel
+            pendingExercises={pendingExercises}
+            reviewedExercises={reviewedExercises}
+            onApprove={(ex, notes) => handleModerationDecision(ex, 'approved', notes)}
+            onReject={(ex, notes) => handleModerationDecision(ex, 'rejected', notes)}
+            onBack={() => setViewMode('accounts')}
+            statusNote={moderationStatus}
+          />
+      );
+  }
+
+  const pendingAccounts = accounts.filter(a => a.status === 'pending');
+  const activeAccounts = accounts.filter(a => a.status === 'active');
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-8 h-8 text-teal-400" />
+            <div>
+              <p className="text-xs uppercase tracking-widest text-slate-400">NeuroSooth</p>
+              <h1 className="text-xl font-bold">Admin Dashboard</h1>
+            </div>
+          </div>
+          <div className="flex gap-3">
+             <Button variant="secondary" size="sm" onClick={() => setViewMode('moderation')}>
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Moderation Content
+             </Button>
+             <Button variant="outline" size="sm" onClick={onBack} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+             </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* Pending Accounts */}
+        <section className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <UserPlus className="w-6 h-6 text-amber-500" />
+                    <h2 className="text-lg font-bold text-slate-900">Pending Registrations ({pendingAccounts.length})</h2>
+                </div>
+            </div>
+
+            {pendingAccounts.length === 0 ? (
+                <p className="text-slate-500 italic">No pending account requests.</p>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600">
+                        <thead className="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+                            <tr>
+                                <th className="px-4 py-3 rounded-l-lg">Organization</th>
+                                <th className="px-4 py-3">Contact</th>
+                                <th className="px-4 py-3">Email</th>
+                                <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {pendingAccounts.map(acc => (
+                                <tr key={acc.id}>
+                                    <td className="px-4 py-3 font-medium text-slate-900">{acc.organization}</td>
+                                    <td className="px-4 py-3">{acc.contactName}</td>
+                                    <td className="px-4 py-3">{acc.email}</td>
+                                    <td className="px-4 py-3 text-right flex justify-end gap-2">
+                                        <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => handleUpdateStatus(acc.id, 'rejected')}>
+                                            Reject
+                                        </Button>
+                                        <Button size="sm" onClick={() => handleUpdateStatus(acc.id, 'active')}>
+                                            Approve
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </section>
+
+        {/* Active Accounts */}
+        <section className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
+             <div className="flex items-center gap-3 mb-6">
+                <Building2 className="w-6 h-6 text-teal-600" />
+                <h2 className="text-lg font-bold text-slate-900">Active Partners ({activeAccounts.length})</h2>
+            </div>
+
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {activeAccounts.map(acc => (
+                    <div key={acc.id} className="p-4 border border-slate-100 rounded-xl hover:border-teal-200 transition-colors">
+                        <h3 className="font-semibold text-slate-900">{acc.organization}</h3>
+                        <p className="text-xs text-slate-500 mt-1">{acc.contactName}</p>
+                        <p className="text-xs text-slate-400">{acc.email}</p>
+                        {acc.role === 'admin' && <span className="inline-block mt-2 px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded">Admin</span>}
+                    </div>
+                ))}
+            </div>
+        </section>
+      </main>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 const App: React.FC = () => {
@@ -1545,21 +1738,13 @@ const App: React.FC = () => {
   const [exercises, setExercises] = useState<Exercise[]>(() =>
     getRecommendedExercises(getExercises(), null, 'All')
   );
-  const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation' | 'partner'>('dashboard');
+  const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation' | 'partner' | 'admin'>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [partnerSession, setPartnerSession] = useState<PartnerAccount | null>(() => getStoredPartnerSession());
   const [pendingAdminAction, setPendingAdminAction] = useState<'moderation' | null>(null);
-  const [tokenDrafts, setTokenDrafts] = useState(() => {
-    const tokens = loadStoredTokens();
-    return {
-      partner: tokens.partnerToken ?? '',
-      moderator: tokens.moderatorToken ?? ''
-    };
-  });
-  const [tokenFeedback, setTokenFeedback] = useState<string | null>(null);
   const [serverModerationData, setServerModerationData] = useState<{
     queue: Exercise[];
     reviewed: Exercise[];
@@ -1581,11 +1766,6 @@ const App: React.FC = () => {
     if (typeof window === 'undefined') return;
     const refreshSession = () => {
       setPartnerSession(getStoredPartnerSession());
-      const tokens = loadStoredTokens();
-      setTokenDrafts({
-        partner: tokens.partnerToken ?? '',
-        moderator: tokens.moderatorToken ?? ''
-      });
     };
     const handleSessionEvent: EventListener = () => {
       refreshSession();
@@ -1616,6 +1796,12 @@ const App: React.FC = () => {
       setPendingAdminAction(null);
     }
   }, [pendingAdminAction, partnerSession]);
+
+  useEffect(() => {
+    if (view === 'partner' && partnerSession?.role === 'admin') {
+      setView('admin');
+    }
+  }, [view, partnerSession]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1670,22 +1856,6 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAdminMenuOpen]);
 
-  const handleTokenInputChange = (role: 'partner' | 'moderator', value: string) => {
-    setTokenDrafts(prev => ({ ...prev, [role]: value }));
-  };
-
-  const handleTokenSave = (role: 'partner' | 'moderator') => {
-    const trimmed = tokenDrafts[role].trim();
-    persistToken(role, trimmed || undefined);
-    const message = trimmed
-      ? t('messages.tokenSaved')
-      : t('messages.tokenRemoved');
-    setTokenFeedback(message);
-    if (typeof window !== 'undefined') {
-      window.setTimeout(() => setTokenFeedback(null), 4000);
-    }
-  };
-
   // Refresh recommendations when filters or user changes
   useEffect(() => {
     const recs = getRecommendedExercises(allExercises, user, situationFilter);
@@ -1720,7 +1890,12 @@ const App: React.FC = () => {
   };
 
   const handlePartnerAccess = () => {
-    setView('partner');
+    // If already logged in as admin, go to admin dashboard
+    if (partnerSession?.role === 'admin') {
+        setView('admin');
+    } else {
+        setView('partner');
+    }
     setIsAdminMenuOpen(false);
   };
 
@@ -1770,6 +1945,10 @@ const App: React.FC = () => {
   };
 
   // Render Helpers
+  if (view === 'admin') {
+      return <AdminDashboard onBack={() => setView('dashboard')} />;
+  }
+
   if (view === 'partner') {
     return <PartnerPortal onBack={() => setView('dashboard')} />;
   }
@@ -1981,45 +2160,14 @@ const App: React.FC = () => {
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.apiTokens')}</p>
-                  {tokenFeedback && <span className="text-xs text-emerald-600">{tokenFeedback}</span>}
-                </div>
-                <p className="text-xs text-slate-500">
-                  {t('adminMenu.apiTokensDesc')}
-                </p>
-                <label className="text-xs font-medium text-slate-500" htmlFor="partner-token-input">
-                  {t('adminMenu.partnerToken')}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="partner-token-input"
-                    type="password"
-                    value={tokenDrafts.partner}
-                    onChange={event => handleTokenInputChange('partner', event.target.value)}
-                    className="flex-1 border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="Bearer token"
-                  />
-                  <Button size="sm" variant="outline" onClick={() => handleTokenSave('partner')}>
-                    {t('buttons.save')}
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.adminSpace')}</p>
+                  <p className="text-xs text-slate-500">
+                      Access partner portal and administration.
+                  </p>
+                  <Button variant="outline" className="w-full justify-center" onClick={handlePartnerAccess}>
+                      <Building2 className="w-4 h-4 mr-2" />
+                      {partnerSession ? 'My Workspace' : 'Partner / Admin Login'}
                   </Button>
-                </div>
-                <label className="text-xs font-medium text-slate-500" htmlFor="moderator-token-input">
-                  {t('adminMenu.moderatorToken')}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="moderator-token-input"
-                    type="password"
-                    value={tokenDrafts.moderator}
-                    onChange={event => handleTokenInputChange('moderator', event.target.value)}
-                    className="flex-1 border border-slate-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="Bearer token"
-                  />
-                  <Button size="sm" variant="outline" onClick={() => handleTokenSave('moderator')}>
-                    {t('buttons.save')}
-                  </Button>
-                </div>
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-4">
