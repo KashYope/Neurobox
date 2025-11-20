@@ -1,0 +1,30 @@
+{
+  "detail": {
+    "peopleHelped": "{{count}} personnes aidées",
+    "instructions": "Instructions",
+    "wasItHelpful": "Cette technique vous a-t-elle aidé ?",
+    "thanksSent": "Merci envoyé !",
+    "sayThanks": "Dire Merci"
+  },
+  "creation": {
+    "title": "Ajouter une technique",
+    "cancel": "Annuler",
+    "communityNote": "Les contributions communautaires passent désormais par une revue humaine. Votre proposition apparaîtra dans la grille une fois validée par l'équipe de modération.",
+    "form": {
+      "title": "Titre",
+      "titlePlaceholder": "Ex: Respiration Carrée",
+      "description": "Description Courte",
+      "descriptionPlaceholder": "A quoi ça sert ?",
+      "image": "Image / GIF (URL)",
+      "imageHelper": "Laissez vide pour une image par défaut",
+      "situation": "Situation (Choisir au moins 1)",
+      "duration": "Durée",
+      "durationPlaceholder": "Ex: 2 minutes",
+      "steps": "Étapes",
+      "step": "Étape {{number}}",
+      "stepPlaceholder": "Étape {{number}}",
+      "addStep": "+ Ajouter une étape",
+      "submit": "Publier la technique"
+    }
+  }
+}

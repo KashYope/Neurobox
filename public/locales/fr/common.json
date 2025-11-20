@@ -25,6 +25,9 @@
     "thanksSent": "Merci envoyé !",
     "start": "Commencer l'aventure"
   },
+  "languageSelector": {
+    "label": "Langue / Language"
+  },
   "labels": {
     "name": "Nom",
     "email": "Email",
@@ -98,7 +101,8 @@
     "apiTokens": "Jetons API",
     "apiTokensDesc": "Collez les tokens signés fournis par NeuroSooth pour publier et modérer via le backend sécurisé.",
     "partnerToken": "Jeton partenaire",
-    "moderatorToken": "Jeton modérateur"
+    "moderatorToken": "Jeton modérateur",
+    "buyCoffee": "Nourrir les licornes"
   },
   "situations": {
     "Crisis": "Crise / Panique",

@@ -1,0 +1,33 @@
+{
+  "header": {
+    "space": "Espace modération",
+    "review": "Revue des propositions",
+    "backToApp": "Retour à l'app"
+  },
+  "status": {
+    "approved": "Validée",
+    "rejected": "Refusée",
+    "pending": "En attente",
+    "tokenRequired": "Jeton modérateur requis pour charger la file serveur.",
+    "serverUnavailable": "Serveur indisponible. Affichage des données locales.",
+    "synced": "File synchronisée avec le serveur sécurisé."
+  },
+  "queue": {
+    "title": "{{count}} proposition(s) à traiter",
+    "empty": "Toutes les contributions ont été modérées. Revenez plus tard !",
+    "proposedOn": "Proposée le {{date}}",
+    "internalNote": "Note interne (optionnelle)",
+    "internalNotePlaceholder": "Feedback à partager avec l'auteur...",
+    "reject": "Refuser",
+    "approve": "Valider et publier",
+    "duration": "Durée",
+    "tags": "Tags"
+  },
+  "history": {
+    "title": "Historique récent",
+    "empty": "Aucun historique de modération pour le moment.",
+    "note": "Note : {{note}}",
+    "moderatedBy": "{{author}} • {{date}}",
+    "unknownDate": "Date inconnue"
+  }
+}

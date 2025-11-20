@@ -1,0 +1,30 @@
+{
+  "detail": {
+    "peopleHelped": "{{count}} people helped",
+    "instructions": "Instructions",
+    "wasItHelpful": "Was this technique helpful?",
+    "thanksSent": "Thanks sent!",
+    "sayThanks": "Say Thanks"
+  },
+  "creation": {
+    "title": "Add a Technique",
+    "cancel": "Cancel",
+    "communityNote": "Community contributions now go through human review. Your proposal will appear in the grid once validated by the moderation team.",
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Ex: Box Breathing",
+      "description": "Short Description",
+      "descriptionPlaceholder": "What is it for?",
+      "image": "Image / GIF (URL)",
+      "imageHelper": "Leave empty for default image",
+      "situation": "Situation (Choose at least 1)",
+      "duration": "Duration",
+      "durationPlaceholder": "Ex: 2 minutes",
+      "steps": "Steps",
+      "step": "Step {{number}}",
+      "stepPlaceholder": "Step {{number}}",
+      "addStep": "+ Add a step",
+      "submit": "Publish Technique"
+    }
+  }
+}
