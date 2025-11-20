@@ -31,6 +31,8 @@ export interface PartnerAccount {
   contactName: string;
   email: string;
   password: string;
+  status: 'pending' | 'active' | 'rejected';
+  role: 'partner' | 'admin';
 }
 
 export type ModerationStatus = 'pending' | 'approved' | 'rejected';
