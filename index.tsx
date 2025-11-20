@@ -62,7 +62,7 @@ if (typeof window !== 'undefined') {
 // --- Components ---
 
 const LanguageSelector: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['common']);
   const currentLang = i18n.language;
   const languages = getSupportedLanguages();
 
@@ -78,7 +78,7 @@ const LanguageSelector: React.FC = () => {
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
         <Globe className="w-4 h-4" />
-        <span>Language / Langue</span>
+        <span>{t('languageSelector.label')}</span>
       </div>
       <div className="space-y-1">
         {Object.entries(languages).map(([code, name]) => (
@@ -212,6 +212,7 @@ const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onC
 };
 
 const BuyMeACoffeeButton: React.FC<{ onSupport?: () => void }> = ({ onSupport }) => {
+  const { t } = useTranslation(['common']);
   const buttonContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -227,7 +228,7 @@ const BuyMeACoffeeButton: React.FC<{ onSupport?: () => void }> = ({ onSupport })
     script.dataset.color = '#FFDD00';
     script.dataset.emoji = '🦄';
     script.dataset.font = 'Lato';
-    script.dataset.text = 'Feed the Unicorns';
+    script.dataset.text = t('adminMenu.buyCoffee') || 'Feed the Unicorns';
     script.dataset.outlineColor = '#000000';
     script.dataset.fontColor = '#000000';
     script.dataset.coffeeColor = '#ffffff';
@@ -327,6 +328,7 @@ const ExerciseDetail: React.FC<{
   onBack: () => void; 
   onThanks: () => void 
 }> = ({ exercise, onBack, onThanks }) => {
+  const { t } = useTranslation(['common', 'exercise']);
   const [hasThanked, setHasThanked] = useState(false);
 
   const handleThanks = () => {
@@ -357,7 +359,7 @@ const ExerciseDetail: React.FC<{
           <div className="absolute bottom-4 left-4 flex gap-2">
             {exercise.situation.map(s => (
               <span key={s} className="bg-black/70 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm">
-                {s}
+                {t(`situations.${s}`)}
               </span>
             ))}
           </div>
@@ -372,7 +374,7 @@ const ExerciseDetail: React.FC<{
             </div>
             <div className="flex items-center gap-1 text-sm font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
               <Heart className="w-4 h-4 fill-rose-600" />
-              <span>{exercise.thanksCount + (hasThanked ? 1 : 0)} personnes aidées</span>
+              <span>{t('exercise:detail.peopleHelped', { count: exercise.thanksCount + (hasThanked ? 1 : 0) })}</span>
             </div>
           </div>
           
@@ -391,7 +393,7 @@ const ExerciseDetail: React.FC<{
 
         {/* Steps */}
         <div className="space-y-6 mb-12">
-          <h3 className="text-xl font-bold text-slate-900 mb-4">Instructions</h3>
+          <h3 className="text-xl font-bold text-slate-900 mb-4">{t('exercise:detail.instructions')}</h3>
           {exercise.steps.map((step, idx) => (
             <div key={idx} className="flex gap-4">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">
@@ -404,7 +406,7 @@ const ExerciseDetail: React.FC<{
 
         {/* Action */}
         <div className="border-t border-gray-100 pt-8 text-center">
-          <p className="text-slate-500 mb-4 text-sm">Cette technique vous a-t-elle aidé ?</p>
+          <p className="text-slate-500 mb-4 text-sm">{t('exercise:detail.wasItHelpful')}</p>
           <Button 
             size="lg" 
             variant={hasThanked ? "outline" : "primary"}
@@ -413,7 +415,7 @@ const ExerciseDetail: React.FC<{
             className={hasThanked ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-rose-600 hover:bg-rose-700 text-white"}
           >
             <Heart className={`w-5 h-5 mr-2 ${hasThanked ? 'fill-rose-600' : ''}`} />
-            {hasThanked ? "Merci envoyé !" : "Dire Merci"}
+            {hasThanked ? t('exercise:detail.thanksSent') : t('exercise:detail.sayThanks')}
           </Button>
         </div>
       </div>
@@ -422,6 +424,7 @@ const ExerciseDetail: React.FC<{
 };
 
 const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise) => void }> = ({ onCancel, onSubmit }) => {
+  const { t } = useTranslation(['common', 'exercise']);
   const [formData, setFormData] = useState<Partial<Exercise>>({
     title: '',
     description: '',
@@ -481,42 +484,41 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
     <div className="fixed inset-0 bg-slate-50 z-50 overflow-y-auto animate-slide-in">
       <div className="max-w-2xl mx-auto bg-white min-h-screen shadow-xl">
         <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold">Ajouter une technique</h2>
-          <Button variant="ghost" size="sm" onClick={onCancel}>Annuler</Button>
+          <h2 className="text-lg font-bold">{t('exercise:creation.title')}</h2>
+          <Button variant="ghost" size="sm" onClick={onCancel}>{t('exercise:creation.cancel')}</Button>
         </div>
 
         <form onSubmit={doSubmit} className="p-6 space-y-6">
           <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex gap-3">
             <Clock className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <p>
-              Les contributions communautaires passent désormais par une revue humaine.
-              Votre proposition apparaîtra dans la grille une fois validée par l'équipe de modération.
+              {t('exercise:creation.communityNote')}
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Titre</label>
+            <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.title')}</label>
             <input
               className="w-full border p-2 rounded-lg" 
               value={formData.title} 
               onChange={e => setFormData({...formData, title: e.target.value})} 
-              placeholder="Ex: Respiration Carrée"
+              placeholder={t('exercise:creation.form.titlePlaceholder')}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description Courte</label>
+            <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.description')}</label>
             <textarea 
               className="w-full border p-2 rounded-lg" 
               value={formData.description} 
               onChange={e => setFormData({...formData, description: e.target.value})} 
-              placeholder="A quoi ça sert ?"
+              placeholder={t('exercise:creation.form.descriptionPlaceholder')}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Image / GIF (URL)</label>
+            <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.image')}</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <ImageIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
@@ -528,11 +530,11 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
                 />
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-1">Laissez vide pour une image par défaut</p>
+            <p className="text-xs text-slate-500 mt-1">{t('exercise:creation.form.imageHelper')}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Situation (Choisir au moins 1)</label>
+            <label className="block text-sm font-medium mb-2">{t('exercise:creation.form.situation')}</label>
             <div className="flex flex-wrap gap-2">
               {Object.values(Situation).map(s => (
                 <button
@@ -545,24 +547,24 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
                       : 'bg-white text-slate-600 border-slate-200'
                   }`}
                 >
-                  {s}
+                  {t(`situations.${s}`)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Durée</label>
+            <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.duration')}</label>
             <input 
               className="w-full border p-2 rounded-lg" 
               value={formData.duration} 
               onChange={e => setFormData({...formData, duration: e.target.value})} 
-              placeholder="Ex: 2 minutes"
+              placeholder={t('exercise:creation.form.durationPlaceholder')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Étapes</label>
+            <label className="block text-sm font-medium mb-2">{t('exercise:creation.form.steps')}</label>
             {formData.steps?.map((step, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <span className="pt-2 text-xs text-slate-400">{i+1}</span>
@@ -570,17 +572,17 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
                   className="w-full border p-2 rounded-lg"
                   value={step}
                   onChange={e => handleStepChange(i, e.target.value)}
-                  placeholder={`Étape ${i+1}`}
+                  placeholder={t('exercise:creation.form.stepPlaceholder', { number: i + 1 })}
                 />
               </div>
             ))}
             <Button type="button" variant="secondary" size="sm" onClick={addStep} className="mt-2">
-              + Ajouter une étape
+              {t('exercise:creation.form.addStep')}
             </Button>
           </div>
 
           <div className="pt-6">
-             <Button type="submit" className="w-full" size="lg">Publier la technique</Button>
+             <Button type="submit" className="w-full" size="lg">{t('exercise:creation.form.submit')}</Button>
           </div>
         </form>
       </div>
@@ -834,6 +836,7 @@ const createEmptyPartnerForm = (): PartnerFormState => ({
 });
 
 const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { t } = useTranslation(['common', 'partner']);
   const [accounts, setAccounts] = useState<PartnerAccount[]>(() => getStoredPartnerAccounts());
   const [activeAccount, setActiveAccount] = useState<PartnerAccount | null>(() => getStoredPartnerSession());
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -882,12 +885,12 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setAuthError(null);
 
     if (!authForm.organization || !authForm.contactName || !authForm.email || !authForm.password) {
-      setAuthError('Tous les champs sont requis pour créer un compte.');
+      setAuthError(t('partner:auth.errors.allFieldsRequired'));
       return;
     }
 
     if (accounts.some(account => account.email.toLowerCase() === authForm.email.toLowerCase())) {
-      setAuthError('Cette adresse e-mail est déjà enregistrée.');
+      setAuthError(t('partner:auth.errors.emailTaken'));
       return;
     }
 
@@ -911,7 +914,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setAuthError(null);
 
     if (!authForm.email || !authForm.password) {
-      setAuthError('Veuillez renseigner votre e-mail et votre mot de passe.');
+      setAuthError(t('partner:auth.errors.missingCredentials'));
       return;
     }
 
@@ -920,7 +923,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 
     if (!account) {
-      setAuthError('Identifiants incorrects.');
+      setAuthError(t('partner:auth.errors.invalidCredentials'));
       return;
     }
 
@@ -933,12 +936,12 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setManualFeedback(null);
 
     if (!activeAccount) {
-      setManualFeedback({ type: 'error', text: 'Connectez-vous pour publier un exercice.' });
+      setManualFeedback({ type: 'error', text: t('partner:manual.loginRequired') });
       return;
     }
 
     if (!manualForm.title.trim() || !manualForm.description.trim()) {
-      setManualFeedback({ type: 'error', text: 'Le titre et la description sont obligatoires.' });
+      setManualFeedback({ type: 'error', text: t('partner:manual.validationError') });
       return;
     }
 
@@ -958,7 +961,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     const exercise = createPartnerExercise(draft, `${activeAccount.organization} • ${activeAccount.contactName}`);
     saveExercise(exercise);
-    setManualFeedback({ type: 'success', text: 'Technique publiée immédiatement pour les utilisateurs.' });
+    setManualFeedback({ type: 'success', text: t('partner:manual.success') });
     setManualForm(createEmptyPartnerForm());
   };
 
@@ -1008,7 +1011,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           : parseCsvDrafts(content);
 
         if (drafts.length === 0) {
-          setImportFeedback({ type: 'error', text: 'Aucun exercice valide trouvé dans le fichier.' });
+          setImportFeedback({ type: 'error', text: t('partner:import.noValidExercise') });
           setFileInputKey(Date.now());
           return;
         }
@@ -1020,10 +1023,10 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
         setImportFeedback({
           type: 'success',
-          text: `${drafts.length} exercice(s) importé(s) depuis ${file.name}.`
+          text: t('partner:import.success', { count: drafts.length, fileName: file.name })
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Import impossible. Vérifiez votre fichier.';
+        const message = error instanceof Error ? error.message : t('partner:import.error');
         setImportFeedback({ type: 'error', text: message });
       } finally {
         setFileInputKey(Date.now());
@@ -1040,9 +1043,9 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <Lock className="w-8 h-8 text-slate-600" />
           <div>
             <h2 className="text-xl font-semibold text-slate-900">
-              {authMode === 'login' ? 'Connexion partenaire' : 'Créer un compte partenaire'}
+              {authMode === 'login' ? t('partner:auth.loginTitle') : t('partner:auth.registerTitle')}
             </h2>
-            <p className="text-sm text-slate-500">L'accès est réservé aux établissements accompagnés.</p>
+            <p className="text-sm text-slate-500">{t('partner:auth.accessRestricted')}</p>
           </div>
         </div>
 
@@ -1050,22 +1053,22 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           {authMode === 'register' && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">Organisation</label>
+                <label className="block text-sm font-medium mb-1">{t('partner:auth.organization')}</label>
                 <input
                   className="w-full border border-slate-200 rounded-lg px-3 py-2"
                   value={authForm.organization}
                   onChange={e => setAuthForm(prev => ({ ...prev, organization: e.target.value }))}
-                  placeholder="Centre hospitalier, association..."
+                  placeholder={t('partner:auth.organizationPlaceholder')}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Référent</label>
+                <label className="block text-sm font-medium mb-1">{t('partner:auth.contactName')}</label>
                 <input
                   className="w-full border border-slate-200 rounded-lg px-3 py-2"
                   value={authForm.contactName}
                   onChange={e => setAuthForm(prev => ({ ...prev, contactName: e.target.value }))}
-                  placeholder="Nom et prénom"
+                  placeholder={t('partner:auth.contactNamePlaceholder')}
                   required
                 />
               </div>
@@ -1073,24 +1076,24 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1">Email professionnel</label>
+            <label className="block text-sm font-medium mb-1">{t('partner:auth.email')}</label>
             <input
               type="email"
               className="w-full border border-slate-200 rounded-lg px-3 py-2"
               value={authForm.email}
               onChange={e => setAuthForm(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="contact@organisation.fr"
+              placeholder={t('partner:auth.emailPlaceholder')}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Mot de passe</label>
+            <label className="block text-sm font-medium mb-1">{t('partner:auth.password')}</label>
             <input
               type="password"
               className="w-full border border-slate-200 rounded-lg px-3 py-2"
               value={authForm.password}
               onChange={e => setAuthForm(prev => ({ ...prev, password: e.target.value }))}
-              placeholder="••••••••"
+              placeholder={t('partner:auth.passwordPlaceholder')}
               required
             />
           </div>
@@ -1102,7 +1105,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           )}
 
           <Button type="submit" className="w-full" size="lg">
-            {authMode === 'login' ? 'Se connecter' : 'Créer mon accès'}
+            {authMode === 'login' ? t('partner:auth.loginAction') : t('partner:auth.createAccess')}
           </Button>
         </form>
 
@@ -1113,7 +1116,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               className="text-teal-600 font-medium"
               onClick={() => { setAuthMode('register'); setAuthError(null); }}
             >
-              <UserPlus className="inline w-4 h-4 mr-1" /> Créer un compte partenaire
+              <UserPlus className="inline w-4 h-4 mr-1" /> {t('partner:auth.createAccountLink')}
             </button>
           ) : (
             <button
@@ -1121,7 +1124,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               className="text-teal-600 font-medium"
               onClick={() => { setAuthMode('login'); setAuthError(null); }}
             >
-              <User className="inline w-4 h-4 mr-1" /> J'ai déjà un accès
+              <User className="inline w-4 h-4 mr-1" /> {t('partner:auth.hasAccountLink')}
             </button>
           )}
         </div>
@@ -1134,13 +1137,13 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {activeAccount && (
         <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-wide text-slate-400">Compte vérifié</p>
+            <p className="text-sm uppercase tracking-wide text-slate-400">{t('partner:workspace.verifiedAccount')}</p>
             <h2 className="text-2xl font-semibold text-slate-900">{activeAccount.organization}</h2>
-            <p className="text-sm text-slate-500">Référent : {activeAccount.contactName}</p>
-            <p className="text-sm text-slate-500">Email : {activeAccount.email}</p>
+            <p className="text-sm text-slate-500">{t('partner:workspace.referent', { name: activeAccount.contactName })}</p>
+            <p className="text-sm text-slate-500">{t('partner:workspace.email', { email: activeAccount.email })}</p>
           </div>
           <Button variant="ghost" onClick={clearSession}>
-            <LogOut className="w-4 h-4 mr-2" /> Déconnexion
+            <LogOut className="w-4 h-4 mr-2" /> {t('partner:workspace.logout')}
           </Button>
         </div>
       )}
@@ -1149,8 +1152,8 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="flex items-center gap-3">
           <ClipboardList className="w-6 h-6 text-teal-600" />
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Créer une technique manuellement</h3>
-            <p className="text-sm text-slate-500">Publiez instantanément une nouvelle fiche validée par votre équipe.</p>
+            <h3 className="text-lg font-semibold text-slate-900">{t('partner:manual.title')}</h3>
+            <p className="text-sm text-slate-500">{t('partner:manual.subtitle')}</p>
           </div>
         </div>
 
@@ -1167,71 +1170,71 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <form onSubmit={handleManualSubmit} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Titre</label>
+              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.title')}</label>
               <input
                 className="w-full border border-slate-200 rounded-lg px-3 py-2"
                 value={manualForm.title}
                 onChange={e => setManualForm(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Ex: Respiration alternée"
+                placeholder={t('partner:manual.form.titlePlaceholder')}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Durée</label>
+              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.duration')}</label>
               <input
                 className="w-full border border-slate-200 rounded-lg px-3 py-2"
                 value={manualForm.duration}
                 onChange={e => setManualForm(prev => ({ ...prev, duration: e.target.value }))}
-                placeholder="5 minutes"
+                placeholder={t('partner:manual.form.durationPlaceholder')}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1">{t('partner:manual.form.description')}</label>
             <textarea
               className="w-full border border-slate-200 rounded-lg px-3 py-2"
               value={manualForm.description}
               onChange={e => setManualForm(prev => ({ ...prev, description: e.target.value }))}
               rows={4}
-              placeholder="Objectif de l'exercice et contexte thérapeutique"
+              placeholder={t('partner:manual.form.descriptionPlaceholder')}
               required
             />
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Image / GIF (URL)</label>
+              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.image')}</label>
               <input
                 className="w-full border border-slate-200 rounded-lg px-3 py-2"
                 value={manualForm.imageUrl}
                 onChange={e => setManualForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                placeholder="https://..."
+                placeholder={t('partner:manual.form.imagePlaceholder')}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Avertissement clinique</label>
+              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.warning')}</label>
               <input
                 className="w-full border border-slate-200 rounded-lg px-3 py-2"
                 value={manualForm.warning}
                 onChange={e => setManualForm(prev => ({ ...prev, warning: e.target.value }))}
-                placeholder="Contre-indications..."
+                placeholder={t('partner:manual.form.warningPlaceholder')}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Tags (séparés par des virgules)</label>
+            <label className="block text-sm font-medium mb-1">{t('partner:manual.form.tags')}</label>
             <input
               className="w-full border border-slate-200 rounded-lg px-3 py-2"
               value={manualForm.tagsText}
               onChange={e => setManualForm(prev => ({ ...prev, tagsText: e.target.value }))}
-              placeholder="Somatique, Respiration, TCC"
+              placeholder={t('partner:manual.form.tagsPlaceholder')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Situations ciblées</label>
+            <label className="block text-sm font-medium mb-2">{t('partner:manual.form.situations')}</label>
             <div className="flex flex-wrap gap-2">
               {Object.values(Situation).map(item => (
                 <button
@@ -1243,14 +1246,14 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     : 'bg-slate-50 border-slate-200 text-slate-600'
                   }`}
                 >
-                  {item}
+                  {t(`situations.${item}`)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Profils neuro-atypiques concernés</label>
+            <label className="block text-sm font-medium mb-2">{t('partner:manual.form.neurotypes')}</label>
             <div className="flex flex-wrap gap-2">
               {Object.values(NeuroType).filter(type => type !== NeuroType.None).map(type => (
                 <button
@@ -1262,14 +1265,14 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     : 'bg-white border-slate-200 text-slate-600'
                   }`}
                 >
-                  {type}
+                  {t(`neuroTypes.${type}`)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Étapes détaillées</label>
+            <label className="block text-sm font-medium mb-2">{t('partner:manual.form.detailedSteps')}</label>
             <div className="space-y-2">
               {manualForm.steps.map((step, index) => (
                 <div key={index} className="flex gap-2">
@@ -1277,23 +1280,23 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     className="flex-1 border border-slate-200 rounded-lg px-3 py-2"
                     value={step}
                     onChange={e => handleStepChange(index, e.target.value)}
-                    placeholder={`Étape ${index + 1}`}
+                    placeholder={t('partner:manual.form.stepPlaceholder', { number: index + 1 })}
                   />
                   {manualForm.steps.length > 1 && (
                     <Button type="button" variant="ghost" onClick={() => removeStepField(index)}>
-                      Supprimer
+                      {t('partner:manual.form.deleteStep')}
                     </Button>
                   )}
                 </div>
               ))}
             </div>
             <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={addStepField}>
-              + Ajouter une étape
+              {t('partner:manual.form.addStep')}
             </Button>
           </div>
 
           <div className="pt-4">
-            <Button type="submit" size="lg" className="w-full">Publier directement</Button>
+            <Button type="submit" size="lg" className="w-full">{t('partner:manual.publish')}</Button>
           </div>
         </form>
       </section>
@@ -1302,8 +1305,8 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="flex items-center gap-3">
           <UploadCloud className="w-6 h-6 text-teal-600" />
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Importer un fichier CSV ou JSON</h3>
-            <p className="text-sm text-slate-500">Créez plusieurs techniques d'un coup. Chaque entrée est publiée automatiquement.</p>
+            <h3 className="text-lg font-semibold text-slate-900">{t('partner:import.title')}</h3>
+            <p className="text-sm text-slate-500">{t('partner:import.subtitle')}</p>
           </div>
         </div>
 
@@ -1320,22 +1323,22 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="border border-dashed border-slate-200 rounded-xl p-4">
             <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
-              <FileSpreadsheet className="w-4 h-4" /> Format CSV
+              <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.csvFormat')}
             </div>
-            <p className="text-sm text-slate-500 mb-2">En-têtes conseillés : title, description, duration, situations, steps, tags, warning, imageUrl.</p>
-            <p className="text-xs text-slate-400">Séparez les situations, étapes et tags avec le symbole |</p>
+            <p className="text-sm text-slate-500 mb-2">{t('partner:import.csvHeaders')}</p>
+            <p className="text-xs text-slate-400">{t('partner:import.csvSeparator')}</p>
           </div>
           <div className="border border-dashed border-slate-200 rounded-xl p-4">
             <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
-              <FileSpreadsheet className="w-4 h-4" /> Format JSON
+              <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.jsonFormat')}
             </div>
-            <p className="text-sm text-slate-500 mb-2">Structure attendue : tableau d'objets avec les mêmes champs que ci-dessus.</p>
-            <p className="text-xs text-slate-400">Exemple : [{{"title":"Routine vagale","situations":["Stress / Anxiété"]}}]</p>
+            <p className="text-sm text-slate-500 mb-2">{t('partner:import.jsonStructure')}</p>
+            <p className="text-xs text-slate-400">{t('partner:import.jsonExample')}</p>
           </div>
         </div>
 
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
-          <p className="text-sm text-slate-600">Choisissez un fichier (.csv ou .json). Le traitement peut prendre quelques secondes selon la taille.</p>
+          <p className="text-sm text-slate-600">{t('partner:import.fileInput')}</p>
           <input
             key={fileInputKey}
             type="file"
@@ -1357,13 +1360,13 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-400">Backoffice</p>
-              <h1 className="text-2xl font-semibold text-slate-900">Espace Partenaires</h1>
+              <p className="text-xs uppercase tracking-wide text-slate-400">{t('partner:workspace.backoffice')}</p>
+              <h1 className="text-2xl font-semibold text-slate-900">{t('partner:workspace.partnerSpace')}</h1>
             </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="w-4 h-4 mr-2" /> Retour au catalogue
+              <ArrowLeft className="w-4 h-4 mr-2" /> {t('partner:workspace.backToCatalog')}
             </Button>
           </div>
         </div>
@@ -1384,6 +1387,7 @@ const ModerationPanel: React.FC<{
   onBack: () => void;
   statusNote?: string | null;
 }> = ({ pendingExercises, reviewedExercises, onApprove, onReject, onBack, statusNote }) => {
+  const { t } = useTranslation(['common', 'moderation']);
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
 
   const handleNoteChange = (id: string, value: string) => {
@@ -1393,12 +1397,12 @@ const ModerationPanel: React.FC<{
   const renderStatusBadge = (status: string) => {
     const base = 'px-2 py-0.5 rounded-full text-xs font-semibold';
     if (status === 'approved') {
-      return <span className={`${base} bg-emerald-100 text-emerald-700`}>Validée</span>;
+      return <span className={`${base} bg-emerald-100 text-emerald-700`}>{t('moderation:status.approved')}</span>;
     }
     if (status === 'rejected') {
-      return <span className={`${base} bg-rose-100 text-rose-700`}>Refusée</span>;
+      return <span className={`${base} bg-rose-100 text-rose-700`}>{t('moderation:status.rejected')}</span>;
     }
-    return <span className={`${base} bg-amber-100 text-amber-700`}>En attente</span>;
+    return <span className={`${base} bg-amber-100 text-amber-700`}>{t('moderation:status.pending')}</span>;
   };
 
   return (
@@ -1408,12 +1412,12 @@ const ModerationPanel: React.FC<{
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-8 h-8 text-teal-600" />
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-500">Espace modération</p>
-              <h1 className="text-xl font-bold text-slate-900">Revue des propositions</h1>
+              <p className="text-xs uppercase tracking-widest text-slate-500">{t('moderation:header.space')}</p>
+              <h1 className="text-xl font-bold text-slate-900">{t('moderation:header.review')}</h1>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={onBack}>
-            Retour à l'app
+            {t('moderation:header.backToApp')}
           </Button>
         </div>
       </header>
@@ -1428,13 +1432,13 @@ const ModerationPanel: React.FC<{
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList className="w-5 h-5 text-slate-500" />
             <h2 className="text-lg font-semibold text-slate-900">
-              {pendingExercises.length} proposition(s) à traiter
+              {t('moderation:queue.title', { count: pendingExercises.length })}
             </h2>
           </div>
           {pendingExercises.length === 0 ? (
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-6 flex items-center gap-3">
               <CheckCircle2 className="w-6 h-6" />
-              <p>Toutes les contributions ont été modérées. Revenez plus tard !</p>
+              <p>{t('moderation:queue.empty')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1442,33 +1446,35 @@ const ModerationPanel: React.FC<{
                 <div key={ex.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Proposée le {new Date(ex.createdAt || '').toLocaleString()}</p>
+                      <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">
+                        {t('moderation:queue.proposedOn', { date: new Date(ex.createdAt || '').toLocaleString() })}
+                      </p>
                       <h3 className="text-xl font-semibold text-slate-900">{ex.title}</h3>
                       <p className="text-slate-600 mt-1">{ex.description}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {ex.situation.map(sit => (
-                        <TagBadge key={sit} text={sit} />
+                        <TagBadge key={sit} text={t(`situations.${sit}`)} />
                       ))}
                     </div>
                   </div>
 
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 mb-1">Durée</p>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">{t('moderation:queue.duration')}</p>
                       <p className="text-sm text-slate-700">{ex.duration}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 mb-1">Tags</p>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">{t('moderation:queue.tags')}</p>
                       <p className="text-sm text-slate-700">{ex.tags.join(', ')}</p>
                     </div>
                   </div>
 
                   <div className="mt-4">
-                    <label className="text-xs font-semibold text-slate-500">Note interne (optionnelle)</label>
+                    <label className="text-xs font-semibold text-slate-500">{t('moderation:queue.internalNote')}</label>
                     <textarea
                       className="mt-1 w-full border border-slate-200 rounded-xl p-3 text-sm"
-                      placeholder="Feedback à partager avec l'auteur..."
+                      placeholder={t('moderation:queue.internalNotePlaceholder')}
                       value={notesMap[ex.id] || ''}
                       onChange={e => handleNoteChange(ex.id, e.target.value)}
                     />
@@ -1480,13 +1486,13 @@ const ModerationPanel: React.FC<{
                       onClick={() => onReject(ex, notesMap[ex.id])}
                     >
                       <XCircle className="w-4 h-4 mr-2" />
-                      Refuser
+                      {t('moderation:queue.reject')}
                     </Button>
                     <Button
                       onClick={() => onApprove(ex, notesMap[ex.id])}
                     >
                       <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Valider et publier
+                      {t('moderation:queue.approve')}
                     </Button>
                   </div>
                 </div>
@@ -1498,19 +1504,24 @@ const ModerationPanel: React.FC<{
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-slate-500" />
-            <h2 className="text-lg font-semibold text-slate-900">Historique récent</h2>
+            <h2 className="text-lg font-semibold text-slate-900">{t('moderation:history.title')}</h2>
           </div>
           {reviewedExercises.length === 0 ? (
-            <p className="text-sm text-slate-500">Aucun historique de modération pour le moment.</p>
+            <p className="text-sm text-slate-500">{t('moderation:history.empty')}</p>
           ) : (
             <div className="space-y-3">
               {reviewedExercises.map(ex => (
                 <div key={ex.id} className="bg-white border border-slate-100 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{ex.title}</p>
-                    <p className="text-xs text-slate-500">{ex.moderatedBy || 'Admin'} • {ex.moderatedAt ? new Date(ex.moderatedAt).toLocaleString() : 'Date inconnue'}</p>
+                    <p className="text-xs text-slate-500">
+                      {t('moderation:history.moderatedBy', {
+                        author: ex.moderatedBy || 'Admin',
+                        date: ex.moderatedAt ? new Date(ex.moderatedAt).toLocaleString() : t('moderation:history.unknownDate')
+                      })}
+                    </p>
                     {ex.moderationNotes && (
-                      <p className="text-sm text-slate-600 mt-1">Note: {ex.moderationNotes}</p>
+                      <p className="text-sm text-slate-600 mt-1">{t('moderation:history.note', { note: ex.moderationNotes })}</p>
                     )}
                   </div>
                   {renderStatusBadge(ex.moderationStatus || 'pending')}
@@ -1528,7 +1539,7 @@ const ModerationPanel: React.FC<{
 // --- Main App ---
 
 const App: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common']);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [allExercises, setAllExercises] = useState<Exercise[]>(() => getExercises());
   const [exercises, setExercises] = useState<Exercise[]>(() =>
@@ -1620,14 +1631,14 @@ const App: React.FC = () => {
         const response = await apiClient.fetchModerationQueue();
         if (!isCancelled) {
           setServerModerationData({ queue: response.queue, reviewed: response.recent });
-          setModerationStatusMessage('File synchronisée avec le serveur sécurisé.');
+          setModerationStatusMessage(t('moderation:status.synced'));
         }
       } catch (error) {
         if (isCancelled) return;
         const message =
           error instanceof Error && /auth/i.test(error.message)
-            ? 'Jeton modérateur requis pour charger la file serveur.'
-            : 'Serveur indisponible. Affichage des données locales.';
+            ? t('moderation:status.tokenRequired')
+            : t('moderation:status.serverUnavailable');
         setModerationStatusMessage(message);
         setServerModerationData(null);
       }
@@ -1667,10 +1678,8 @@ const App: React.FC = () => {
     const trimmed = tokenDrafts[role].trim();
     persistToken(role, trimmed || undefined);
     const message = trimmed
-      ? role === 'partner'
-        ? 'Jeton partenaire enregistré.'
-        : 'Jeton modérateur enregistré.'
-      : 'Jeton supprimé.';
+      ? t('messages.tokenSaved')
+      : t('messages.tokenRemoved');
     setTokenFeedback(message);
     if (typeof window !== 'undefined') {
       window.setTimeout(() => setTokenFeedback(null), 4000);
@@ -1811,7 +1820,7 @@ const App: React.FC = () => {
             <div className="bg-teal-600 p-1.5 rounded-lg">
               <Brain className="w-6 h-6 text-white" />
             </div>
-            <span className="font-bold text-xl text-slate-800 hidden md:block">NeuroSooth</span>
+            <span className="font-bold text-xl text-slate-800 hidden md:block">{t('app.name')}</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -1829,7 +1838,7 @@ const App: React.FC = () => {
               className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             >
               <Menu className="w-5 h-5" />
-              <span className="sr-only">Ouvrir le menu administrateur</span>
+              <span className="sr-only">{t('menu.adminSpace')}</span>
             </button>
           </div>
         </div>
@@ -1928,7 +1937,7 @@ const App: React.FC = () => {
                 type="button"
                 onClick={() => setIsAdminMenuOpen(false)}
                 className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                aria-label="Fermer le menu administrateur"
+                aria-label={t('buttons.close')}
               >
                 <X className="w-4 h-4" />
               </button>

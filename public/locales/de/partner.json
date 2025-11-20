@@ -1,0 +1,80 @@
+{
+  "auth": {
+    "loginTitle": "Partner Login",
+    "registerTitle": "Create Partner Account",
+    "accessRestricted": "Access is restricted to supported organizations.",
+    "organization": "Organization",
+    "organizationPlaceholder": "Hospital, association...",
+    "contactName": "Contact Person",
+    "contactNamePlaceholder": "First and last name",
+    "email": "Professional Email",
+    "emailPlaceholder": "contact@organization.org",
+    "password": "Password",
+    "passwordPlaceholder": "••••••••",
+    "loginAction": "Login",
+    "createAccess": "Create Access",
+    "createAccountLink": "Create Partner Account",
+    "hasAccountLink": "I already have access",
+    "errors": {
+      "allFieldsRequired": "All fields are required to create an account.",
+      "emailTaken": "This email address is already registered.",
+      "missingCredentials": "Please enter your email and password.",
+      "invalidCredentials": "Invalid credentials."
+    }
+  },
+  "workspace": {
+    "verifiedAccount": "Verified Account",
+    "referent": "Contact: {{name}}",
+    "email": "Email: {{email}}",
+    "logout": "Logout",
+    "backoffice": "Backoffice",
+    "partnerSpace": "Partner Space",
+    "backToCatalog": "Back to Catalog"
+  },
+  "manual": {
+    "title": "Create Technique Manually",
+    "subtitle": "Instantly publish a new card validated by your team.",
+    "loginRequired": "Login to publish an exercise.",
+    "validationError": "Title and description are required.",
+    "success": "Technique published immediately for users.",
+    "publish": "Publish Directly",
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "Ex: Alternate Nostril Breathing",
+      "duration": "Duration",
+      "durationPlaceholder": "5 minutes",
+      "description": "Description",
+      "descriptionPlaceholder": "Exercise goal and therapeutic context",
+      "image": "Image / GIF (URL)",
+      "imagePlaceholder": "https://...",
+      "warning": "Clinical Warning",
+      "warningPlaceholder": "Contraindications...",
+      "tags": "Tags (separated by commas)",
+      "tagsPlaceholder": "Somatic, Breathing, CBT",
+      "neurotypes": "Relevant Neuro-atypical Profiles",
+      "situations": "Targeted Situations",
+      "detailedSteps": "Detailed Steps",
+      "stepPlaceholder": "Step {{number}}",
+      "deleteStep": "Delete",
+      "addStep": "+ Add a step"
+    }
+  },
+  "import": {
+    "title": "Import CSV or JSON File",
+    "subtitle": "Create multiple techniques at once. Each entry is published automatically.",
+    "success": "{{count}} exercise(s) imported from {{fileName}}.",
+    "error": "Import failed. Check your file.",
+    "noValidExercise": "No valid exercise found in the file.",
+    "csvFormat": "CSV Format",
+    "csvHeaders": "Recommended headers: title, description, duration, situations, steps, tags, warning, imageUrl.",
+    "csvSeparator": "Separate situations, steps, and tags with the | symbol",
+    "jsonFormat": "JSON Format",
+    "jsonStructure": "Expected structure: array of objects with the same fields as above.",
+    "jsonExample": "Example: [{\"title\":\"Vagal routine\",\"situations\":[\"Stress / Anxiety\"]}]",
+    "fileInput": "Choose a file (.csv or .json). Processing may take a few seconds depending on size.",
+    "errors": {
+      "csvHeader": "The CSV file must contain a header and at least one row.",
+      "jsonInvalid": "Invalid JSON. Please check the file structure."
+    }
+  }
+}

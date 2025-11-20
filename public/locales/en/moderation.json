@@ -1,0 +1,33 @@
+{
+  "header": {
+    "space": "Moderation Space",
+    "review": "Proposal Review",
+    "backToApp": "Back to App"
+  },
+  "status": {
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "pending": "Pending",
+    "tokenRequired": "Moderator token required to load server queue.",
+    "serverUnavailable": "Server unavailable. Showing local data.",
+    "synced": "Queue synchronized with secure server."
+  },
+  "queue": {
+    "title": "{{count}} proposal(s) to review",
+    "empty": "All contributions have been moderated. Come back later!",
+    "proposedOn": "Proposed on {{date}}",
+    "internalNote": "Internal Note (Optional)",
+    "internalNotePlaceholder": "Feedback to share with the author...",
+    "reject": "Reject",
+    "approve": "Validate and Publish",
+    "duration": "Duration",
+    "tags": "Tags"
+  },
+  "history": {
+    "title": "Recent History",
+    "empty": "No moderation history yet.",
+    "note": "Note: {{note}}",
+    "moderatedBy": "{{author}} • {{date}}",
+    "unknownDate": "Unknown date"
+  }
+}

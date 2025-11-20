@@ -98,7 +98,8 @@
     "apiTokens": "Tokens API",
     "apiTokensDesc": "Pegue los tokens firmados proporcionados por NeuroSooth para publicar y moderar a través del backend seguro.",
     "partnerToken": "Token de socio",
-    "moderatorToken": "Token de moderador"
+    "moderatorToken": "Token de moderador",
+    "buyCoffee": "Feed the Unicorns"
   },
   "situations": {
     "Crisis": "Crisis / Pánico",
@@ -110,5 +111,8 @@
     "Pain": "Dolor / Tensión",
     "Focus": "Concentración",
     "Trauma": "Trauma / Flashback"
+  },
+  "languageSelector": {
+    "label": "Langue / Language"
   }
 }

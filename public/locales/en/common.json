@@ -25,6 +25,9 @@
     "thanksSent": "Thanks Sent!",
     "start": "Start the Journey"
   },
+  "languageSelector": {
+    "label": "Langue / Language"
+  },
   "labels": {
     "name": "Name",
     "email": "Email",
@@ -98,7 +101,8 @@
     "apiTokens": "API Tokens",
     "apiTokensDesc": "Paste the signed tokens provided by NeuroSooth to publish and moderate via the secure backend.",
     "partnerToken": "Partner Token",
-    "moderatorToken": "Moderator Token"
+    "moderatorToken": "Moderator Token",
+    "buyCoffee": "Feed the Unicorns"
   },
   "situations": {
     "Crisis": "Crisis / Panic",

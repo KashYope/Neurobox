@@ -1,0 +1,80 @@
+{
+  "auth": {
+    "loginTitle": "Connexion partenaire",
+    "registerTitle": "Créer un compte partenaire",
+    "accessRestricted": "L'accès est réservé aux établissements accompagnés.",
+    "organization": "Organisation",
+    "organizationPlaceholder": "Centre hospitalier, association...",
+    "contactName": "Référent",
+    "contactNamePlaceholder": "Nom et prénom",
+    "email": "Email professionnel",
+    "emailPlaceholder": "contact@organisation.fr",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "••••••••",
+    "loginAction": "Se connecter",
+    "createAccess": "Créer mon accès",
+    "createAccountLink": "Créer un compte partenaire",
+    "hasAccountLink": "J'ai déjà un accès",
+    "errors": {
+      "allFieldsRequired": "Tous les champs sont requis pour créer un compte.",
+      "emailTaken": "Cette adresse e-mail est déjà enregistrée.",
+      "missingCredentials": "Veuillez renseigner votre e-mail et votre mot de passe.",
+      "invalidCredentials": "Identifiants incorrects."
+    }
+  },
+  "workspace": {
+    "verifiedAccount": "Compte vérifié",
+    "referent": "Référent : {{name}}",
+    "email": "Email : {{email}}",
+    "logout": "Déconnexion",
+    "backoffice": "Backoffice",
+    "partnerSpace": "Espace Partenaires",
+    "backToCatalog": "Retour au catalogue"
+  },
+  "manual": {
+    "title": "Créer une technique manuellement",
+    "subtitle": "Publiez instantanément une nouvelle fiche validée par votre équipe.",
+    "loginRequired": "Connectez-vous pour publier un exercice.",
+    "validationError": "Le titre et la description sont obligatoires.",
+    "success": "Technique publiée immédiatement pour les utilisateurs.",
+    "publish": "Publier directement",
+    "form": {
+      "title": "Titre",
+      "titlePlaceholder": "Ex: Respiration alternée",
+      "duration": "Durée",
+      "durationPlaceholder": "5 minutes",
+      "description": "Description",
+      "descriptionPlaceholder": "Objectif de l'exercice et contexte thérapeutique",
+      "image": "Image / GIF (URL)",
+      "imagePlaceholder": "https://...",
+      "warning": "Avertissement clinique",
+      "warningPlaceholder": "Contre-indications...",
+      "tags": "Tags (séparés par des virgules)",
+      "tagsPlaceholder": "Somatique, Respiration, TCC",
+      "neurotypes": "Profils neuro-atypiques concernés",
+      "situations": "Situations ciblées",
+      "detailedSteps": "Étapes détaillées",
+      "stepPlaceholder": "Étape {{number}}",
+      "deleteStep": "Supprimer",
+      "addStep": "+ Ajouter une étape"
+    }
+  },
+  "import": {
+    "title": "Importer un fichier CSV ou JSON",
+    "subtitle": "Créez plusieurs techniques d'un coup. Chaque entrée est publiée automatiquement.",
+    "success": "{{count}} exercice(s) importé(s) depuis {{fileName}}.",
+    "error": "Import impossible. Vérifiez votre fichier.",
+    "noValidExercise": "Aucun exercice valide trouvé dans le fichier.",
+    "csvFormat": "Format CSV",
+    "csvHeaders": "En-têtes conseillés : title, description, duration, situations, steps, tags, warning, imageUrl.",
+    "csvSeparator": "Séparez les situations, étapes et tags avec le symbole |",
+    "jsonFormat": "Format JSON",
+    "jsonStructure": "Structure attendue : tableau d'objets avec les mêmes champs que ci-dessus.",
+    "jsonExample": "Exemple : [{\"title\":\"Routine vagale\",\"situations\":[\"Stress / Anxiété\"]}]",
+    "fileInput": "Choisissez un fichier (.csv ou .json). Le traitement peut prendre quelques secondes selon la taille.",
+    "errors": {
+      "csvHeader": "Le fichier CSV doit contenir un en-tête et au moins une ligne.",
+      "jsonInvalid": "JSON invalide. Veuillez vérifier la structure du fichier."
+    }
+  }
+}
