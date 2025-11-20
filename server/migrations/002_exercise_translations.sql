@@ -36,6 +36,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_exercise_strings_updated_at ON exercise_strings;
 CREATE TRIGGER trigger_exercise_strings_updated_at
   BEFORE UPDATE ON exercise_strings
   FOR EACH ROW
@@ -50,6 +51,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_exercise_translations_updated_at ON exercise_translations;
 CREATE TRIGGER trigger_exercise_translations_updated_at
   BEFORE UPDATE ON exercise_translations
   FOR EACH ROW
