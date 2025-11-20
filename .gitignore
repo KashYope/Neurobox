@@ -1,5 +1,59 @@
+# Environment Variables & Secrets
+.env
+.env.local
+.env.production
+.env.*.local
+*.swp
+
+# Build Output
+dist/
+build/
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Docker
+docker-compose.override.yml
+
+# Node Modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Testing
+coverage/
+*.coverage
+.nyc_output
+.cache
+
+# IDE & Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Deployment Specific (VPS)
+DEPLOYMENT.md
+SSL_SETUP_SUMMARY.md
+FINAL_SETUP_SUMMARY.md
+update-frontend.sh
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,23 +61,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-test
-dist-ssr
-server/dist
-.env
-.env.*
-!.env.example
-*.local
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Service Worker (generated)
+sw.js
+workbox-*.js
