@@ -98,6 +98,17 @@ Une API REST Express vit dans `server/` afin de partager les exercices, remercie
   docker run --env-file .env -p 4000:4000 neurosooth-api
   ```
 
+## Déploiement VPS (Docker + nginx)
+
+Un guide détaillé est disponible dans `deploy/README.md`. Il couvre :
+
+- La génération d’un fichier `.env.server` à partir de `deploy/env.server.example`
+- La construction/pousse de l’image (`docker build -t neurobox:latest .`)
+- L’utilisation du manifeste `docker-compose.neurobox.yml` pour exposer l’API sur un port dédié (`4400`) et un réseau isolé (`neurobox_net`) afin de ne pas perturber les autres services Docker du VPS
+- La configuration nginx (`deploy/nginx.conf.example`) qui sert les fichiers `dist/` et proxifie `/api/` vers l’API
+
+Suivez ce guide pour installer Docker/compose sur l’hôte, exécuter les migrations (`docker compose -f docker-compose.neurobox.yml run --rm neurobox-api npm run server:migrate`), démarrer le service (`... up -d`) puis activer HTTPS avec certbot.
+
 ### Routes exposées (préfixe `/api`)
 
 | Méthode | Endpoint | Description |

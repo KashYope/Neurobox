@@ -1861,6 +1861,15 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              <Button
+                variant="primary"
+                className="w-full justify-center gap-2"
+                onClick={handleContributionAccess}
+              >
+                <Plus className="w-4 h-4" />
+                Ajouter une technique
+              </Button>
+
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Synchronisation</p>
                 {showSyncStatus ? (
@@ -1882,20 +1891,6 @@ const App: React.FC = () => {
                   <p className="flex items-center gap-2 text-emerald-600">
                     <CheckCircle2 className="w-4 h-4" />
                     Données parfaitement synchronisées
-                  </p>
-                )}
-              </div>
-
-              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Compte sécurisé</p>
-                {partnerSession ? (
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">{partnerSession.organization}</p>
-                    <p className="text-xs text-slate-500">{partnerSession.email}</p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-600">
-                    Connectez-vous via l'espace partenaires pour débloquer les accès sensibles.
                   </p>
                 )}
               </div>
@@ -1942,49 +1937,9 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={handlePartnerAccess}
-                >
-                  <Building2 className="w-4 h-4" />
-                  Espace partenaires
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between gap-2"
-                  onClick={handleModerationAccess}
-                >
-                  <span className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4" />
-                    Modération
-                  </span>
-                  {displayPendingCount > 0 && (
-                    <span className="text-xs font-bold bg-rose-50 text-rose-600 rounded-full px-2 py-0.5">
-                      {displayPendingCount}
-                    </span>
-                  )}
-                </Button>
-                {!partnerSession && (
-                  <p className="text-xs text-slate-500 pl-8 -mt-2">
-                    Accès restreint aux comptes partenaires.
-                  </p>
-                )}
-                <Button
-                  variant="primary"
-                  className="w-full justify-center gap-2"
-                  onClick={handleContributionAccess}
-                >
-                  <Plus className="w-4 h-4" />
-                  Ajouter une technique
-                </Button>
+              <div className="bg-white border border-slate-200 rounded-xl p-4">
+                <BuyMeACoffeeButton onSupport={() => setIsAdminMenuOpen(false)} />
               </div>
-            </div>
-
-            <div className="p-4 border-t border-slate-100 space-y-3">
-              <BuyMeACoffeeButton onSupport={() => setIsAdminMenuOpen(false)} />
-              <p className="text-xs text-slate-400 text-center">Merci pour votre soutien à la régulation émotionnelle.</p>
             </div>
           </div>
         </div>

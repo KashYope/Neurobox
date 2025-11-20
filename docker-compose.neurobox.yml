@@ -1,0 +1,25 @@
+services:
+  neurobox-api:
+    image: neurobox:latest
+    container_name: neurobox-api
+    restart: unless-stopped
+    env_file:
+      - .env.server
+    ports:
+      - "4400:4000"
+    networks:
+      - neurobox_net
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "fetch('http://127.0.0.1:4000/healthz').then(()=>process.exit(0)).catch(()=>process.exit(1));"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  neurobox_net:
+    name: neurobox_net
+    driver: bridge
+
