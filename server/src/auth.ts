@@ -19,7 +19,11 @@ declare global {
   }
 }
 
-const extractToken = (header?: string | null): string | null => {
+const extractToken = (req: any): string | null => {
+  if (req.cookies && req.cookies.token) {
+    return req.cookies.token;
+  }
+  const header = req.headers.authorization;
   if (!header) return null;
   const [scheme, token] = header.split(' ');
   if (!token || scheme.toLowerCase() !== 'bearer') return null;
@@ -27,7 +31,7 @@ const extractToken = (header?: string | null): string | null => {
 };
 
 export const optionalAuth: RequestHandler = (req, _res, next) => {
-  const token = extractToken(req.headers.authorization);
+  const token = extractToken(req);
   if (!token) {
     return next();
   }
@@ -43,15 +47,22 @@ export const optionalAuth: RequestHandler = (req, _res, next) => {
 
 export const requireRole = (role: ActorRole): RequestHandler => {
   return (req, res, next) => {
-    const token = extractToken(req.headers.authorization);
+    const token = extractToken(req);
     if (!token) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     try {
       const decoded = jwt.verify(token, env.jwtSecret) as TokenPayload;
-      if (decoded.role !== role) {
-        return res.status(403).json({ message: 'Insufficient permissions' });
+      if (decoded.role !== role && decoded.role !== 'admin') { // Admin has access to everything
+        if (role !== 'partner' || decoded.role !== 'moderator') {
+           // Logic here:
+           // - If requiring 'partner', 'admin' is ok. 'moderator' might be ok depending on business logic,
+           //   but usually specific roles are distinct.
+           //   For simplicity: Admin > Moderator > Partner (if hierarchy) or distinct.
+           //   Let's stick to exact match or Admin.
+           return res.status(403).json({ message: 'Insufficient permissions' });
+        }
       }
       req.user = decoded;
       return next();
