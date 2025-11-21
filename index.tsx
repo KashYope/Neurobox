@@ -31,7 +31,9 @@ import {
   UserPlus,
   Menu,
   X,
-  Globe
+  Globe,
+  Mail,
+  Copyright
 } from 'lucide-react';
 
 import { Button } from './components/Button';
@@ -213,58 +215,38 @@ const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onC
 
 const BuyMeACoffeeButton: React.FC<{ onSupport?: () => void }> = ({ onSupport }) => {
   const { t } = useTranslation(['common']);
-  const buttonContainerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!buttonContainerRef.current) return;
+  // Simple obfuscation to prevent simple scraping
+  const emailParts = ['cestmoikash', '+neuro', '@', 'gmail.com'];
+  const email = emailParts.join('');
 
-    buttonContainerRef.current.innerHTML = '';
+  return (
+    <div className="space-y-3">
+      <a
+        href="https://buymeacoffee.com/k42h"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-2 w-full bg-[#FFDD00] text-black font-bold py-3 rounded-xl hover:bg-[#FFEA00] transition-colors shadow-sm"
+        onClick={onSupport}
+      >
+        <span>{t('adminMenu.buyCoffee')}</span>
+      </a>
 
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js';
-    script.dataset.name = 'bmc-button';
-    script.dataset.slug = 'K42H';
-    script.dataset.color = '#FFDD00';
-    script.dataset.emoji = '🦄';
-    script.dataset.font = 'Lato';
-    script.dataset.text = t('adminMenu.buyCoffee') || 'Feed the Unicorns';
-    script.dataset.outlineColor = '#000000';
-    script.dataset.fontColor = '#000000';
-    script.dataset.coffeeColor = '#ffffff';
+      <a
+        href={`mailto:${email}`}
+        className="flex items-center justify-center gap-2 w-full bg-slate-100 text-slate-600 font-medium py-2 rounded-xl hover:bg-slate-200 transition-colors"
+        onClick={onSupport}
+      >
+        <Mail className="w-4 h-4" />
+        <span>{t('adminMenu.feedback')}</span>
+      </a>
 
-    buttonContainerRef.current.appendChild(script);
-
-    let buttonClickListener: ((event: Event) => void) | null = null;
-    const observer = new MutationObserver(() => {
-      const button = buttonContainerRef.current?.querySelector('a');
-      if (button) {
-        if (onSupport) {
-          buttonClickListener = () => onSupport();
-          button.addEventListener('click', buttonClickListener);
-        }
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(buttonContainerRef.current, { childList: true, subtree: true });
-
-    return () => {
-      observer.disconnect();
-      if (buttonClickListener) {
-        const button = buttonContainerRef.current?.querySelector('a');
-        if (button) {
-          button.removeEventListener('click', buttonClickListener);
-        }
-      }
-      script.remove();
-      if (buttonContainerRef.current) {
-        buttonContainerRef.current.innerHTML = '';
-      }
-    };
-  }, [onSupport]);
-
-  return <div ref={buttonContainerRef} className="flex justify-center" />;
+      <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-2">
+        <Copyright className="w-3 h-3 scale-x-[-1] inline-block" />
+        <span>{t('adminMenu.openSource')}</span>
+      </div>
+    </div>
+  );
 };
 
 const TagBadge: React.FC<{ text: string }> = ({ text }) => (

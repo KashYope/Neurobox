@@ -102,7 +102,9 @@
     "apiTokensDesc": "Collez les tokens signés fournis par NeuroSooth pour publier et modérer via le backend sécurisé.",
     "partnerToken": "Jeton partenaire",
     "moderatorToken": "Jeton modérateur",
-    "buyCoffee": "Nourrir les licornes"
+    "buyCoffee": "Nourrir les licornes 🦄",
+    "feedback": "Feedback / Contact",
+    "openSource": "Open Source"
   },
   "situations": {
     "Crisis": "Crise / Panique",
