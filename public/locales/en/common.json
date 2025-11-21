@@ -102,7 +102,9 @@
     "apiTokensDesc": "Paste the signed tokens provided by NeuroSooth to publish and moderate via the secure backend.",
     "partnerToken": "Partner Token",
     "moderatorToken": "Moderator Token",
-    "buyCoffee": "Feed the Unicorns"
+    "buyCoffee": "Feed a unicorn 🦄",
+    "feedback": "Feedback / Contact",
+    "openSource": "Open Source"
   },
   "situations": {
     "Crisis": "Crisis / Panic",
