@@ -591,29 +591,6 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
 };
 
 // --- Partner Portal Helpers ---
-const PARTNER_STORAGE_KEYS = {
-  ACCOUNTS: 'neurosooth_partner_accounts',
-  SESSION: 'neurosooth_partner_session'
-};
-
-const getStoredPartnerAccounts = (): PartnerAccount[] => {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(PARTNER_STORAGE_KEYS.ACCOUNTS);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-};
-
-const getStoredPartnerSession = (): PartnerAccount | null => {
-  if (typeof window === 'undefined') return null;
-  const sessionId = localStorage.getItem(PARTNER_STORAGE_KEYS.SESSION);
-  if (!sessionId) return null;
-  const accounts = getStoredPartnerAccounts();
-  return accounts.find(acc => acc.id === sessionId) || null;
-};
-
 interface PartnerExerciseDraft {
   title: string;
   description: string;
@@ -837,8 +814,8 @@ const createEmptyPartnerForm = (): PartnerFormState => ({
 
 const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useTranslation(['common', 'partner']);
-  const [accounts, setAccounts] = useState<PartnerAccount[]>(() => getStoredPartnerAccounts());
-  const [activeAccount, setActiveAccount] = useState<PartnerAccount | null>(() => getStoredPartnerSession());
+  const [activeAccount, setActiveAccount] = useState<PartnerAccount | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authForm, setAuthForm] = useState({
     organization: '',
@@ -852,35 +829,45 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [fileInputKey, setFileInputKey] = useState<number>(Date.now());
 
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { user } = await apiClient.getMe();
+        setActiveAccount({
+            id: user.id,
+            organization: user.organization,
+            contactName: user.contactName,
+            email: user.email,
+            role: user.role,
+            status: 'active',
+            password: '' // Not needed/secure
+        });
+      } catch (e) {
+        setActiveAccount(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkSession();
+  }, []);
+
   const emitSessionChange = (session: PartnerAccount | null) => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('partner-session-change', { detail: session }));
     }
   };
 
-  const persistAccounts = (list: PartnerAccount[]) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(PARTNER_STORAGE_KEYS.ACCOUNTS, JSON.stringify(list));
+  const handleLogout = async () => {
+    try {
+      await apiClient.logout();
+      setActiveAccount(null);
+      emitSessionChange(null);
+    } catch (e) {
+      console.error('Logout failed', e);
     }
   };
 
-  const startSession = (account: PartnerAccount) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(PARTNER_STORAGE_KEYS.SESSION, account.id);
-    }
-    setActiveAccount(account);
-    emitSessionChange(account);
-  };
-
-  const clearSession = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(PARTNER_STORAGE_KEYS.SESSION);
-    }
-    setActiveAccount(null);
-    emitSessionChange(null);
-  };
-
-  const handleRegister = (event: React.FormEvent) => {
+  const handleRegister = async (event: React.FormEvent) => {
     event.preventDefault();
     setAuthError(null);
 
@@ -889,33 +876,23 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return;
     }
 
-    if (accounts.some(account => account.email.toLowerCase() === authForm.email.toLowerCase())) {
-      setAuthError(t('partner:auth.errors.emailTaken'));
-      return;
+    try {
+      await apiClient.register({
+        organization: authForm.organization.trim(),
+        contactName: authForm.contactName.trim(),
+        email: authForm.email.trim(),
+        password: authForm.password
+      });
+
+      alert(t('partner:auth.registrationSuccess'));
+      setAuthMode('login');
+      setAuthForm({ organization: '', contactName: '', email: '', password: '' });
+    } catch (error: any) {
+      setAuthError(error.message || t('partner:auth.errors.generic'));
     }
-
-    const newAccount: PartnerAccount = {
-      id: `partner-${Date.now()}`,
-      organization: authForm.organization.trim(),
-      contactName: authForm.contactName.trim(),
-      email: authForm.email.trim(),
-      password: authForm.password,
-      status: 'pending',
-      role: 'partner'
-    };
-
-    const updatedAccounts = [...accounts, newAccount];
-    setAccounts(updatedAccounts);
-    persistAccounts(updatedAccounts);
-
-    // Instead of starting session immediately, show success message
-    setAuthError(null);
-    alert(t('partner:auth.registrationSuccess')); // Or use a better UI state
-    setAuthMode('login');
-    setAuthForm({ organization: '', contactName: '', email: '', password: '' });
   };
 
-  const handleLogin = (event: React.FormEvent) => {
+  const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setAuthError(null);
 
@@ -924,37 +901,28 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return;
     }
 
-    // Admin backdoor for first setup if no accounts exist or specific admin credential
-    if (authForm.email === 'admin@neurosooth.com' && authForm.password === 'admin123') {
-       const adminAccount: PartnerAccount = {
-         id: 'admin-root',
-         organization: 'NeuroSooth Admin',
-         contactName: 'Admin',
-         email: 'admin@neurosooth.com',
-         password: 'admin123',
-         status: 'active',
-         role: 'admin'
-       };
-       startSession(adminAccount);
-       return;
+    try {
+      const { user } = await apiClient.login({
+        email: authForm.email,
+        password: authForm.password
+      });
+
+      const account = {
+        id: user.id,
+        organization: user.organization,
+        contactName: user.contactName,
+        email: user.email,
+        role: user.role,
+        status: 'active' as const,
+        password: ''
+      };
+
+      setActiveAccount(account);
+      emitSessionChange(account);
+      setAuthForm({ organization: '', contactName: '', email: '', password: '' });
+    } catch (error: any) {
+      setAuthError(error.message || t('partner:auth.errors.invalidCredentials'));
     }
-
-    const account = accounts.find(
-      acc => acc.email.toLowerCase() === authForm.email.toLowerCase() && acc.password === authForm.password
-    );
-
-    if (!account) {
-      setAuthError(t('partner:auth.errors.invalidCredentials'));
-      return;
-    }
-
-    if (account.status !== 'active') {
-      setAuthError(t('partner:auth.errors.accountPending'));
-      return;
-    }
-
-    startSession(account);
-    setAuthForm({ organization: '', contactName: '', email: '', password: '' });
   };
 
   const handleManualSubmit = (event: React.FormEvent) => {
@@ -1168,7 +1136,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <p className="text-sm text-slate-500">{t('partner:workspace.referent', { name: activeAccount.contactName })}</p>
             <p className="text-sm text-slate-500">{t('partner:workspace.email', { email: activeAccount.email })}</p>
           </div>
-          <Button variant="ghost" onClick={clearSession}>
+          <Button variant="ghost" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" /> {t('partner:workspace.logout')}
           </Button>
         </div>
@@ -1399,7 +1367,7 @@ const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
-        {activeAccount ? renderWorkspace() : renderAuthForm()}
+        {isLoading ? <div className="text-center py-8">Loading...</div> : (activeAccount ? renderWorkspace() : renderAuthForm())}
       </main>
     </div>
   );
@@ -1564,7 +1532,8 @@ const ModerationPanel: React.FC<{
 
 const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useTranslation(['common', 'partner', 'moderation']);
-  const [accounts, setAccounts] = useState<PartnerAccount[]>(() => getStoredPartnerAccounts());
+  // In a real implementation, we would fetch this list from the API
+  const [accounts, setAccounts] = useState<PartnerAccount[]>([]);
   const [viewMode, setViewMode] = useState<'accounts' | 'moderation'>('accounts');
 
   // Dummy state for moderation panel props since we reuse it
@@ -1594,11 +1563,14 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }, [viewMode, t]);
 
   const handleUpdateStatus = (id: string, status: 'active' | 'rejected') => {
-    const updated = accounts.map(acc =>
-      acc.id === id ? { ...acc, status } : acc
-    );
-    setAccounts(updated);
-    localStorage.setItem(PARTNER_STORAGE_KEYS.ACCOUNTS, JSON.stringify(updated));
+     // This would be an API call in full implementation
+     // apiClient.updateUserStatus(id, status)
+     alert("User management API not fully connected in this view yet.");
+  };
+
+  const handleLogout = async () => {
+      await apiClient.logout();
+      onBack();
   };
 
   const handleModerationDecision = (exercise: Exercise, status: 'approved' | 'rejected', notes?: string) => {
@@ -1653,7 +1625,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <ClipboardList className="w-4 h-4 mr-2" />
                 Moderation Content
              </Button>
-             <Button variant="outline" size="sm" onClick={onBack} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+             <Button variant="outline" size="sm" onClick={handleLogout} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
              </Button>
@@ -1743,7 +1715,7 @@ const App: React.FC = () => {
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
-  const [partnerSession, setPartnerSession] = useState<PartnerAccount | null>(() => getStoredPartnerSession());
+  const [partnerSession, setPartnerSession] = useState<PartnerAccount | null>(null);
   const [pendingAdminAction, setPendingAdminAction] = useState<'moderation' | null>(null);
   const [serverModerationData, setServerModerationData] = useState<{
     queue: Exercise[];
@@ -1764,19 +1736,32 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const refreshSession = () => {
-      setPartnerSession(getStoredPartnerSession());
+    const checkSession = async () => {
+      try {
+         const { user } = await apiClient.getMe();
+         setPartnerSession({
+            id: user.id,
+            organization: user.organization,
+            contactName: user.contactName,
+            email: user.email,
+            role: user.role,
+            status: 'active',
+            password: ''
+         });
+      } catch {
+         setPartnerSession(null);
+      }
     };
+
     const handleSessionEvent: EventListener = () => {
-      refreshSession();
+      checkSession();
     };
-    refreshSession();
+
+    checkSession();
     window.addEventListener('partner-session-change', handleSessionEvent);
-    window.addEventListener('storage', handleSessionEvent);
 
     return () => {
       window.removeEventListener('partner-session-change', handleSessionEvent);
-      window.removeEventListener('storage', handleSessionEvent);
     };
   }, []);
 

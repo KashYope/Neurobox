@@ -81,6 +81,7 @@ class ApiClient {
         ...(options.headers || {}),
         ...this.buildAuthHeader(role)
       },
+      credentials: 'include', // Important for cookies
       ...options
     });
 
@@ -162,6 +163,28 @@ class ApiClient {
       },
       'partner'
     );
+  }
+
+  async login(credentials: any): Promise<any> {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  }
+
+  async register(data: any): Promise<any> {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async logout(): Promise<any> {
+    return this.request('/auth/logout', { method: 'POST' });
+  }
+
+  async getMe(): Promise<any> {
+    return this.request('/auth/me');
   }
 }
 

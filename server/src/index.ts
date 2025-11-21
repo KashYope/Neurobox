@@ -1,11 +1,13 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { exercisesRouter } from './routes/exercises.js';
 import { moderationRouter } from './routes/moderation.js';
 import { stringsRouter } from './routes/strings.js';
+import { authRouter } from './routes/auth.js';
 import { env } from './env.js';
 import { optionalAuth } from './auth.js';
 
@@ -46,6 +48,7 @@ app.use(
   })
 );
 app.use(express.json({ limit: '1mb' }));
+app.use(cookieParser());
 
 app.get('/healthz', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -68,6 +71,7 @@ app.use(express.static(distPath, {
 }));
 
 // API routes (with auth middleware applied only to API routes)
+app.use('/api/auth', authRouter);
 app.use('/api/exercises', optionalAuth, exercisesRouter);
 app.use('/api/moderation', optionalAuth, moderationRouter);
 app.use('/api/strings', optionalAuth, stringsRouter);
