@@ -186,17 +186,6 @@ class ApiClient {
   async getMe(): Promise<any> {
     return this.request('/auth/me');
   }
-
-  async fetchUsers(): Promise<any> {
-    return this.request('/admin/users', {}, 'admin');
-  }
-
-  async updateUserStatus(userId: string, status: 'active' | 'rejected'): Promise<any> {
-    return this.request(`/admin/users/${userId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status })
-    }, 'admin');
-  }
 }
 
 export interface ExerciseStringRecord {

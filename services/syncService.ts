@@ -59,6 +59,7 @@ export class SyncService {
   private cache: Exercise[];
   private pendingMutations: PendingMutation[];
   private readyResolver: (() => void) | null = null;
+  private initialized = false;
   private listeners = new Set<CacheListener>();
   private statusListeners = new Set<StatusListener>();
   private status: SyncStatus;
@@ -81,10 +82,11 @@ export class SyncService {
   }
 
   init(): Promise<void> {
-    if (this.readyResolver) {
+    if (this.initialized) {
       return this.ready;
     }
 
+    this.initialized = true;
     this.ready = new Promise(resolve => {
       this.readyResolver = resolve;
     });
@@ -111,13 +113,13 @@ export class SyncService {
         window.addEventListener('offline', this.handleOffline);
       }
 
-      try {
-        await this.hydrateFromServer();
-      } catch (error) {
-        console.warn('Failed to hydrate exercises', error);
-      } finally {
-        this.readyResolver?.();
-      }
+      this.hydrateFromServer()
+        .catch(error => {
+          console.warn('Failed to hydrate exercises', error);
+        })
+        .finally(() => {
+          this.readyResolver?.();
+        });
 
       if (this.status.isOnline) {
         this.flushQueue();
@@ -544,13 +546,6 @@ export class SyncService {
   private handleOffline = () => {
     this.updateStatus({ isOnline: false });
   };
-
-  destroy(): void {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('online', this.handleOnline);
-      window.removeEventListener('offline', this.handleOffline);
-    }
-  }
 }
 
 export const syncService = new SyncService();

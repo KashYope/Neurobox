@@ -50,7 +50,7 @@ class ContentResolver {
     const steps = exercise.stepsStringIds && exercise.stepsStringIds.length > 0
       ? exercise.stepsStringIds.map((stringId, idx) => 
           langCache[stringId] || exercise.steps[idx] || ''
-        ).filter(step => step)
+        )
       : exercise.steps;
 
     // Resolve warning
