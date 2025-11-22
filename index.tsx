@@ -1,22 +1,13 @@
 import './src/i18n';
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { useTranslation } from 'react-i18next';
 import {
   Heart,
-  Wind,
-  Brain,
-  Flame,
-  Moon,
   Zap,
   AlertTriangle,
   ArrowLeft,
-  Plus,
-  User,
-  Check,
-  Search,
-  Activity,
   Image as ImageIcon,
   ShieldCheck,
   ClipboardList,
@@ -28,15 +19,13 @@ import {
   FileSpreadsheet,
   LogOut,
   Lock,
-  UserPlus,
-  Menu,
-  X,
-  Globe,
-  Mail,
-  Copyright
+  UserPlus
 } from 'lucide-react';
 
 import { Button } from './components/Button';
+import { Onboarding } from './components/onboarding/Onboarding';
+import { Dashboard } from './features/dashboard/Dashboard';
+import { PartnerPortal } from './features/partners/PartnerPortal';
 import { Exercise, NeuroType, Situation, UserProfile, PartnerAccount } from './types';
 import {
   getUser,
@@ -49,8 +38,6 @@ import {
 } from './services/dataService';
 import { syncService, SyncStatus } from './services/syncService';
 import { apiClient } from './services/apiClient';
-import { loadStoredTokens, persistToken } from './services/tokenStore';
-import { loadLanguageTranslations, getSupportedLanguages, type SupportedLanguage } from './services/languageService';
 
 if (typeof window !== 'undefined') {
   registerSW({
@@ -63,247 +50,11 @@ if (typeof window !== 'undefined') {
 
 // --- Components ---
 
-const LanguageSelector: React.FC = () => {
-  const { t, i18n } = useTranslation(['common']);
-  const currentLang = i18n.language;
-  const languages = getSupportedLanguages();
-
-  const changeLanguage = async (lang: string) => {
-    try {
-      await loadLanguageTranslations(lang as SupportedLanguage);
-    } catch (error) {
-      console.error('Failed to change language:', error);
-    }
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-        <Globe className="w-4 h-4" />
-        <span>{t('languageSelector.label')}</span>
-      </div>
-      <div className="space-y-1">
-        {Object.entries(languages).map(([code, name]) => (
-          <button
-            key={code}
-            onClick={() => changeLanguage(code)}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-              currentLang === code
-                ? 'bg-teal-50 text-teal-700 font-medium border border-teal-200'
-                : 'text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            {name}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const Onboarding: React.FC<{ onComplete: (user: UserProfile) => void }> = ({ onComplete }) => {
-  const { t, i18n } = useTranslation(['common', 'onboarding']);
-  const [name, setName] = useState('');
-  const [selectedNeurotypes, setSelectedNeurotypes] = useState<NeuroType[]>([]);
-  const [currentLang, setCurrentLang] = useState(i18n.language);
-  const languages = getSupportedLanguages();
-
-  const handleLanguageChange = async (lang: string) => {
-    try {
-      await loadLanguageTranslations(lang as SupportedLanguage);
-      setCurrentLang(lang);
-    } catch (error) {
-      console.error('Failed to change language:', error);
-    }
-  };
-
-  const toggleNeurotype = (type: NeuroType) => {
-    if (selectedNeurotypes.includes(type)) {
-      setSelectedNeurotypes(prev => prev.filter(t => t !== type));
-    } else {
-      setSelectedNeurotypes(prev => [...prev, type]);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name) return;
-    
-    const newUser: UserProfile = {
-      name,
-      neurotypes: selectedNeurotypes.length > 0 ? selectedNeurotypes : [NeuroType.None],
-      sensitivities: [],
-      completedOnboarding: true
-    };
-    
-    saveUser(newUser);
-    onComplete(newUser);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-        {/* Language Selector */}
-        <div className="mb-6">
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            {Object.entries(languages).map(([code, name]) => (
-              <button
-                key={code}
-                onClick={() => handleLanguageChange(code)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  currentLang === code
-                    ? 'bg-teal-600 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="text-center mb-8">
-          <div className="mx-auto bg-teal-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-            <Brain className="w-8 h-8 text-teal-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('onboarding:title')}</h1>
-          <p className="text-slate-600 mt-2">{t('onboarding:subtitle')}</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('onboarding:nameQuestion')}</label>
-            <input 
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
-              placeholder={t('onboarding:namePlaceholder')}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">{t('onboarding:neuroProfile')}</label>
-            <div className="grid grid-cols-1 gap-2">
-              {Object.values(NeuroType).filter(nt => nt !== NeuroType.None).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => toggleNeurotype(type)}
-                  className={`flex items-center justify-between px-4 py-3 rounded-lg border transition-all ${
-                    selectedNeurotypes.includes(type)
-                      ? 'border-teal-500 bg-teal-50 text-teal-800'
-                      : 'border-gray-200 hover:bg-gray-50 text-slate-600'
-                  }`}
-                >
-                  <span>{t(`neuroTypes.${type}`)}</span>
-                  {selectedNeurotypes.includes(type) && <Check className="w-4 h-4" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Button type="submit" className="w-full" size="lg">
-            {t('buttons.start')}
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const BuyMeACoffeeButton: React.FC<{ onSupport?: () => void }> = ({ onSupport }) => {
-  const { t } = useTranslation(['common']);
-
-  // Simple obfuscation to prevent simple scraping
-  const emailParts = ['cestmoikash', '+neuro', '@', 'gmail.com'];
-  const email = emailParts.join('');
-
-  return (
-    <div className="space-y-3">
-      <a
-        href="https://buymeacoffee.com/k42h"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full bg-[#FFDD00] text-black font-bold py-3 rounded-xl hover:bg-[#FFEA00] transition-colors shadow-sm"
-        onClick={onSupport}
-      >
-        <span>{t('adminMenu.buyCoffee')}</span>
-      </a>
-
-      <a
-        href={`mailto:${email}`}
-        className="flex items-center justify-center gap-2 w-full bg-slate-100 text-slate-600 font-medium py-2 rounded-xl hover:bg-slate-200 transition-colors"
-        onClick={onSupport}
-      >
-        <Mail className="w-4 h-4" />
-        <span>{t('adminMenu.feedback')}</span>
-      </a>
-
-      <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-2">
-        <Copyright className="w-3 h-3 scale-x-[-1] inline-block" />
-        <span>{t('adminMenu.openSource')}</span>
-      </div>
-    </div>
-  );
-};
-
 const TagBadge: React.FC<{ text: string }> = ({ text }) => (
   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 mr-2 mb-2">
     {text}
   </span>
 );
-
-const ExerciseCard: React.FC<{ exercise: Exercise; onClick: () => void }> = ({ exercise, onClick }) => {
-  // Select an icon based on first situation or default
-  const getIcon = () => {
-    if (exercise.situation.includes(Situation.Crisis)) return <Activity className="w-5 h-5 text-rose-500" />;
-    if (exercise.situation.includes(Situation.Sleep)) return <Moon className="w-5 h-5 text-indigo-500" />;
-    if (exercise.situation.includes(Situation.Anger)) return <Flame className="w-5 h-5 text-orange-500" />;
-    return <Wind className="w-5 h-5 text-teal-500" />;
-  };
-
-  return (
-    <div 
-      onClick={onClick}
-      className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full"
-    >
-      <div className="relative h-32 overflow-hidden bg-gray-100">
-        <img 
-          src={exercise.imageUrl} 
-          alt={exercise.title} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/e2e8f0/94a3b8?text=NeuroSooth' }}
-        />
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-semibold text-slate-700 flex items-center gap-1">
-          <Heart className="w-3 h-3 text-rose-500 fill-rose-500" /> {exercise.thanksCount}
-        </div>
-      </div>
-      
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="font-semibold text-slate-900 leading-tight group-hover:text-teal-700 transition-colors">
-            {exercise.title}
-          </h3>
-          {getIcon()}
-        </div>
-        
-        <p className="text-sm text-slate-500 mb-4 line-clamp-2 flex-1">
-          {exercise.description}
-        </p>
-
-        <div className="flex flex-wrap gap-1 mt-auto">
-          {exercise.tags.slice(0, 2).map(tag => (
-            <span key={tag} className="text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const ExerciseDetail: React.FC<{ 
   exercise: Exercise; 
@@ -1958,194 +1709,23 @@ const App: React.FC = () => {
 
   // Dashboard View
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="bg-teal-600 p-1.5 rounded-lg">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-bold text-xl text-slate-800 hidden md:block">{t('app.name')}</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {user && (
-              <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full">
-                <User className="w-4 h-4" />
-                <span className="font-medium">{user.name}</span>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setIsAdminMenuOpen(true)}
-              aria-label="Ouvrir le menu administrateur"
-              aria-expanded={isAdminMenuOpen}
-              className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            >
-              <Menu className="w-5 h-5" />
-              <span className="sr-only">{t('menu.adminSpace')}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Filter Bar */}
-        <div className="border-t border-gray-100 overflow-x-auto hide-scrollbar">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex gap-2 min-w-max">
-            <button
-              onClick={() => setSituationFilter('All')}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                situationFilter === 'All' 
-                  ? 'bg-slate-800 text-white' 
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {t('labels.all')}
-            </button>
-            {Object.values(Situation).map((sit) => (
-              <button
-                key={sit}
-                onClick={() => setSituationFilter(sit)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
-                  situationFilter === sit 
-                    ? 'bg-teal-600 text-white shadow-md transform scale-105' 
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {t(`situations.${sit}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {/* Context Header */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">
-            {situationFilter === 'All' ? t('dashboard.recommendedForYou') : t(`situations.${situationFilter}`)}
-          </h2>
-          <p className="text-slate-500">
-            {situationFilter === 'All'
-              ? t('dashboard.basedOnProfile', { neurotypes: user?.neurotypes.map(nt => t(`neuroTypes.${nt}`)).join(', ') || '' })
-              : t('dashboard.specificTechniques')
-            }
-          </p>
-        </div>
-
-        {/* Grid */}
-        {exercises.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-            {exercises.map((ex) => (
-              <ExerciseCard 
-                key={ex.id} 
-                exercise={ex} 
-                onClick={() => handleExerciseClick(ex)} 
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-medium text-slate-900">{t('dashboard.noTechniquesFound')}</h3>
-            <p className="text-slate-500 mb-6">{t('dashboard.tryChangeFilter')}</p>
-            <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={() => setSituationFilter('All')}>
-                {t('buttons.viewAll')}
-              </Button>
-              <Button variant="primary" onClick={() => setView('add')}>
-                {t('buttons.addTechnique')}
-              </Button>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {isAdminMenuOpen && (
-        <div className="fixed inset-0 z-40 flex" aria-modal="true" role="dialog">
-          <div
-            className="flex-1 bg-slate-900/40 backdrop-blur-sm"
-            onClick={() => setIsAdminMenuOpen(false)}
-          />
-          <div
-            id="admin-menu"
-            className="w-full max-w-xs bg-white h-full shadow-2xl border-l border-slate-100 flex flex-col"
-          >
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-widest text-slate-400">{t('adminMenu.adminSpace')}</p>
-                <h2 className="text-lg font-semibold text-slate-900">{t('adminMenu.quickActions')}</h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAdminMenuOpen(false)}
-                className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                aria-label={t('buttons.close')}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-5">
-              <Button
-                variant="primary"
-                className="w-full justify-center gap-2"
-                onClick={handleContributionAccess}
-              >
-                <Plus className="w-4 h-4" />
-                {t('adminMenu.addTechnique')}
-              </Button>
-
-              <LanguageSelector />
-
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.synchronization')}</p>
-                {showSyncStatus ? (
-                  <div className="space-y-1">
-                    {!syncStatus.isOnline && (
-                      <p className="text-amber-700 font-semibold">{t('adminMenu.offlineMode')}</p>
-                    )}
-                    {syncStatus.pendingMutations > 0 && (
-                      <p>{t('adminMenu.pendingChanges', { count: syncStatus.pendingMutations })}</p>
-                    )}
-                    {syncStatus.isSyncing && syncStatus.isOnline && (
-                      <p className="flex items-center gap-2 text-teal-700">
-                        <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                        {t('adminMenu.syncing')}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="flex items-center gap-2 text-emerald-600">
-                    <CheckCircle2 className="w-4 h-4" />
-                    {t('adminMenu.dataSynced')}
-                  </p>
-                )}
-              </div>
-
-              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.adminSpace')}</p>
-                  <p className="text-xs text-slate-500">
-                      Access partner portal and administration.
-                  </p>
-                  <Button variant="outline" className="w-full justify-center" onClick={handlePartnerAccess}>
-                      <Building2 className="w-4 h-4 mr-2" />
-                      {partnerSession ? 'My Workspace' : 'Partner / Admin Login'}
-                  </Button>
-              </div>
-
-              <div className="bg-white border border-slate-200 rounded-xl p-4">
-                <BuyMeACoffeeButton onSupport={() => setIsAdminMenuOpen(false)} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    <Dashboard
+      user={user}
+      exercises={exercises}
+      situationFilter={situationFilter}
+      onFilterChange={setSituationFilter}
+      onExerciseClick={handleExerciseClick}
+      onAddTechnique={handleContributionAccess}
+      onPartnerAccess={handlePartnerAccess}
+      syncStatus={syncStatus}
+      showSyncStatus={showSyncStatus}
+      partnerSession={partnerSession}
+      isAdminMenuOpen={isAdminMenuOpen}
+      onOpenAdminMenu={() => setIsAdminMenuOpen(true)}
+      onCloseAdminMenu={() => setIsAdminMenuOpen(false)}
+    />
   );
+
 };
 
 const container = document.getElementById('root');
