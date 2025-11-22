@@ -8,7 +8,6 @@ import {
   type ExerciseStringTranslationPayload
 } from '../utils/validation.js';
 import { requireRole } from '../auth.js';
-import { supportedLanguages } from '../languages.js';
 
 const router = Router();
 
@@ -150,7 +149,7 @@ router.get('/translations/:lang', async (req, res, next) => {
   try {
     const { lang } = req.params;
     
-    if (!supportedLanguages.includes(lang)) {
+    if (!['en', 'de', 'es', 'nl'].includes(lang)) {
       return res.status(400).json({ message: 'Invalid language code' });
     }
     
