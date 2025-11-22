@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import { pool } from '../db.js';
 import { env } from '../env.js';
-import { optionalAuth } from '../auth.js';
+import { requireAuth } from '../auth.js';
 
 const router = Router();
 
@@ -91,11 +92,7 @@ router.post('/logout', (_req, res) => {
   res.json({ message: 'Logged out' });
 });
 
-router.get('/me', optionalAuth, async (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-
+router.get('/me', requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT id, organization, contact_name, email, role, status FROM users WHERE id = $1',
