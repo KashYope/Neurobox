@@ -51,6 +51,12 @@ export const bulkStringImportSchema = z.object({
   translations: z.array(exerciseStringTranslationSchema).optional()
 });
 
+export const batchTranslationSchema = z.object({
+  targetLangs: z.array(z.enum(['en', 'de', 'es', 'nl'])).min(1),
+  perimeter: z.string().optional()
+});
+
 export type ExerciseStringPayload = z.infer<typeof exerciseStringSchema>;
 export type ExerciseStringTranslationPayload = z.infer<typeof exerciseStringTranslationSchema>;
 export type BulkStringImportPayload = z.infer<typeof bulkStringImportSchema>;
+export type BatchTranslationPayload = z.infer<typeof batchTranslationSchema>;

@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   Heart,
   Image as ImageIcon,
+  Languages,
   Lock,
   LogOut,
   ShieldCheck,
@@ -24,6 +25,7 @@ import {
 import { Onboarding } from '../components/onboarding/Onboarding';
 import { Dashboard } from '../features/dashboard/Dashboard';
 import { PartnerPortal } from '../features/partners/PartnerPortal';
+import { BatchTranslationPanel } from '../features/admin/BatchTranslationPanel';
 import { Exercise, NeuroType, Situation, UserProfile, PartnerAccount } from '../types';
 import {
   getUser,
@@ -1255,7 +1257,7 @@ const ModerationPanel: React.FC<{
 const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useTranslation(['common', 'partner', 'moderation']);
   const [accounts, setAccounts] = useState<PartnerAccount[]>([]);
-  const [viewMode, setViewMode] = useState<'accounts' | 'moderation'>('accounts');
+  const [viewMode, setViewMode] = useState<'accounts' | 'moderation' | 'batchTranslation'>('accounts');
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
@@ -1351,17 +1353,21 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }, ...prev]);
   };
 
+  if (viewMode === 'batchTranslation') {
+    return <BatchTranslationPanel onBack={() => setViewMode('accounts')} />;
+  }
+
   if (viewMode === 'moderation') {
-      return (
-          <ModerationPanel
-            pendingExercises={pendingExercises}
-            reviewedExercises={reviewedExercises}
-            onApprove={(ex, notes) => handleModerationDecision(ex, 'approved', notes)}
-            onReject={(ex, notes) => handleModerationDecision(ex, 'rejected', notes)}
-            onBack={() => setViewMode('accounts')}
-            statusNote={moderationStatus}
-          />
-      );
+    return (
+      <ModerationPanel
+        pendingExercises={pendingExercises}
+        reviewedExercises={reviewedExercises}
+        onApprove={(ex, notes) => handleModerationDecision(ex, 'approved', notes)}
+        onReject={(ex, notes) => handleModerationDecision(ex, 'rejected', notes)}
+        onBack={() => setViewMode('accounts')}
+        statusNote={moderationStatus}
+      />
+    );
   }
 
   const pendingAccounts = accounts.filter(a => a.status === 'pending');
@@ -1379,14 +1385,18 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
           </div>
           <div className="flex gap-3">
-             <Button variant="secondary" size="sm" onClick={() => setViewMode('moderation')}>
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Moderation Content
-             </Button>
-             <Button variant="outline" size="sm" onClick={handleLogout} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-             </Button>
+            <Button variant="secondary" size="sm" onClick={() => setViewMode('batchTranslation')}>
+              <Languages className="w-4 h-4 mr-2" />
+              Batch Traductions
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setViewMode('moderation')}>
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Moderation Content
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+               <LogOut className="w-4 h-4 mr-2" />
+               Logout
+            </Button>
           </div>
         </div>
       </header>
