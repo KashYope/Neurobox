@@ -200,7 +200,6 @@ Les actions sensibles sont protégées via des Bearer tokens signés avec `JWT_S
 
 Un utilitaire simplifie la génération locale de tokens :
 
-```bash
 # Jeton partenaire (subject facultatif)
 npm run server:token partner mon-equipe
 
@@ -251,7 +250,6 @@ Les routes suivantes exposent les chaînes et traductions (préfixe `/api`). Les
 
 # Jeton modérateur
 npm run server:token moderator alice
-```
 
 Collez ensuite ces jetons dans la section « Jetons API » du tiroir administrateur. Les valeurs sont stockées dans `localStorage` via `services/tokenStore` et injectées automatiquement dans `apiClient`. Les jetons `moderator`/`admin` débloquent le panel de modération, tandis que les jetons `partner` permettent la publication immédiate des fiches partenaires.
 
