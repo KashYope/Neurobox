@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import {
-  Heart,
-  Zap,
   AlertTriangle,
   ArrowLeft,
-  Image as ImageIcon,
-  ShieldCheck,
-  ClipboardList,
-  CheckCircle2,
-  XCircle,
-  Clock,
   Building2,
-  UploadCloud,
+  Button,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
   FileSpreadsheet,
-  LogOut,
+  Heart,
+  Image as ImageIcon,
   Lock,
-  UserPlus
-} from 'lucide-react';
-
-import { Button } from '../components/Button';
+  LogOut,
+  ShieldCheck,
+  UploadCloud,
+  User,
+  UserPlus,
+  XCircle,
+  Zap
+} from '../components/ui';
 import { Onboarding } from '../components/onboarding/Onboarding';
 import { Dashboard } from '../features/dashboard/Dashboard';
 import { PartnerPortal } from '../features/partners/PartnerPortal';

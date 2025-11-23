@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+
 import {
   Activity,
   Brain,
+  Button,
   Flame,
   Heart,
   Menu,
@@ -9,10 +12,7 @@ import {
   Search,
   User,
   Wind
-} from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-
-import { Button } from '../../components/Button';
+} from '../../components/ui';
 import { AdminDrawer } from '../admin/AdminDrawer';
 import { Exercise, PartnerAccount, Situation, UserProfile } from '../../types';
 import { SyncStatus } from '../../services/syncService';

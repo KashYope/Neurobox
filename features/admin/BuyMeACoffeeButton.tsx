@@ -1,6 +1,7 @@
 import React from 'react';
-import { Copyright, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
+import { Copyright, Mail } from '../../components/ui';
 
 export interface BuyMeACoffeeButtonProps {
   onSupport?: () => void;

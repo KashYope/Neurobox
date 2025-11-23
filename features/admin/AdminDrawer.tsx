@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
-import { Building2, CheckCircle2, Plus, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { LanguageSelector } from '../../components/language/LanguageSelector';
-import { Button } from '../../components/Button';
+import { Building2, Button, CheckCircle2, Plus, X } from '../../components/ui';
 import { BuyMeACoffeeButton } from './BuyMeACoffeeButton';
 import { SyncStatus } from '../../services/syncService';
 import { PartnerAccount } from '../../types';

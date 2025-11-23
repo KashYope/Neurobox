@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Brain, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '../Button';
+import { Brain, Button, Check } from '../ui';
 import { saveUser } from '../../services/dataService';
 import { getSupportedLanguages, loadLanguageTranslations, type SupportedLanguage } from '../../services/languageService';
 import { NeuroType, type UserProfile } from '../../types';
