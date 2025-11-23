@@ -534,7 +534,7 @@ const createEmptyPartnerForm = (): PartnerFormState => ({
   neurotypes: []
 });
 
-const PartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const LegacyPartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useTranslation(['common', 'partner']);
   const [activeAccount, setActiveAccount] = useState<PartnerAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
