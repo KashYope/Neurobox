@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { requireRole } from '../auth.js';
+import { batchTranslationSchema } from '../utils/validation.js';
+import { getBatchTranslationStatus, startBatchTranslation } from '../services/batchTranslationService.js';
 
 const router = Router();
 
@@ -48,6 +50,28 @@ router.patch('/partners/:id/status', requireRole('moderator'), async (req, res, 
     }
 
     res.json(mapUserRow(result.rows[0]));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/batch-translations', requireRole('moderator'), async (req, res, next) => {
+  try {
+    const payload = batchTranslationSchema.parse(req.body);
+    const job = await startBatchTranslation(payload.targetLangs, payload.perimeter);
+    res.status(202).json(job);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/batch-translations/:id', requireRole('moderator'), (req, res, next) => {
+  try {
+    const job = getBatchTranslationStatus(req.params.id);
+    if (!job) {
+      return res.status(404).json({ message: 'Batch translation not found' });
+    }
+    res.json(job);
   } catch (error) {
     next(error);
   }

@@ -52,6 +52,27 @@ export interface PartnerAccountsResponse {
   >;
 }
 
+export type BatchTranslationStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+export interface BatchTranslationJob {
+  id: string;
+  targetLangs: string[];
+  perimeter?: string;
+  status: BatchTranslationStatus;
+  progress: {
+    processed: number;
+    total: number;
+  };
+  startedAt: string;
+  completedAt?: string;
+  errors: string[];
+}
+
+export interface StartBatchTranslationPayload {
+  targetLangs: string[];
+  perimeter?: string;
+}
+
 const defaultFetchImpl = (...args: Parameters<typeof fetch>) => {
   if (typeof fetch !== 'function') {
     throw new Error('Fetch API is not available in this environment');
@@ -157,6 +178,21 @@ class ApiClient {
 
   async rejectPartner(id: string): Promise<PartnerAccountsResponse['partners'][number]> {
     return this.updatePartnerStatus(id, 'rejected');
+  }
+
+  async startBatchTranslation(payload: StartBatchTranslationPayload): Promise<BatchTranslationJob> {
+    return this.request<BatchTranslationJob>(
+      '/admin/batch-translations',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      },
+      'moderator'
+    );
+  }
+
+  async fetchBatchTranslationStatus(jobId: string): Promise<BatchTranslationJob> {
+    return this.request<BatchTranslationJob>(`/admin/batch-translations/${jobId}`, {}, 'moderator');
   }
 
   // Exercise string translation methods
