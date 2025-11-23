@@ -73,6 +73,22 @@ export interface StartBatchTranslationPayload {
   perimeter?: string;
 }
 
+export interface AdminMetricsResponse {
+  totalThanks: number;
+  totalExercises: number;
+  communityExercises: number;
+  partnerExercises: number;
+  pendingModeration: number;
+  approvedExercises: number;
+  rejectedExercises: number;
+  totalUsers: number;
+  activeUsers: number;
+  pendingUsers: number;
+  adminUsers: number;
+  moderatorUsers: number;
+  lastUpdated: string;
+}
+
 const defaultFetchImpl = (...args: Parameters<typeof fetch>) => {
   if (typeof fetch !== 'function') {
     throw new Error('Fetch API is not available in this environment');
@@ -178,6 +194,10 @@ class ApiClient {
 
   async rejectPartner(id: string): Promise<PartnerAccountsResponse['partners'][number]> {
     return this.updatePartnerStatus(id, 'rejected');
+  }
+
+  async fetchAdminMetrics(): Promise<AdminMetricsResponse> {
+    return this.request<AdminMetricsResponse>('/admin/metrics', {}, 'moderator');
   }
 
   async startBatchTranslation(payload: StartBatchTranslationPayload): Promise<BatchTranslationJob> {

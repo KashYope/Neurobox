@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import {
   AlertTriangle,
+  Activity,
   ArrowLeft,
+  BarChart3,
   Building2,
   Button,
   CheckCircle2,
@@ -18,6 +20,7 @@ import {
   ShieldCheck,
   UploadCloud,
   User,
+  Users,
   UserPlus,
   XCircle,
   Zap
@@ -37,7 +40,7 @@ import {
   moderateExercise
 } from '../services/dataService';
 import { syncService, SyncStatus } from '../services/syncService';
-import { apiClient } from '../services/apiClient';
+import { apiClient, type AdminMetricsResponse } from '../services/apiClient';
 
 // --- Components ---
 
@@ -1261,6 +1264,10 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<AdminMetricsResponse | null>(null);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  const [metricsUpdatedAt, setMetricsUpdatedAt] = useState<number | null>(null);
 
   // Dummy state for moderation panel props since we reuse it
   const [pendingExercises, setPendingExercises] = useState<Exercise[]>([]);
@@ -1284,11 +1291,38 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   }, []);
 
+  const loadMetrics = useCallback(
+    async (force = false) => {
+      if (!force && metricsUpdatedAt && Date.now() - metricsUpdatedAt < 60_000) {
+        return;
+      }
+
+      setIsLoadingMetrics(true);
+      setMetricsError(null);
+      try {
+        const response = await apiClient.fetchAdminMetrics();
+        setMetrics(response);
+        setMetricsUpdatedAt(Date.now());
+      } catch (error: any) {
+        setMetricsError(error.message || 'Unable to load platform metrics');
+      } finally {
+        setIsLoadingMetrics(false);
+      }
+    },
+    [metricsUpdatedAt]
+  );
+
   useEffect(() => {
     if (viewMode === 'accounts') {
       loadAccounts();
     }
   }, [viewMode, loadAccounts]);
+
+  useEffect(() => {
+    loadMetrics(true);
+    const interval = setInterval(() => loadMetrics(true), 60000);
+    return () => clearInterval(interval);
+  }, [loadMetrics]);
 
   useEffect(() => {
     if (viewMode === 'moderation') {
@@ -1310,6 +1344,45 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         loadQueue();
     }
   }, [viewMode, t]);
+
+  const formatNumber = (value: number) => value.toLocaleString();
+
+  const metricCards = metrics
+    ? [
+        {
+          label: 'Total Thanks',
+          value: metrics.totalThanks,
+          subLabel: `${formatNumber(metrics.approvedExercises)} approved exercises`,
+          icon: Heart,
+          iconColor: 'text-rose-500',
+          iconBg: 'bg-rose-50'
+        },
+        {
+          label: 'Exercises in DB',
+          value: metrics.totalExercises,
+          subLabel: `${formatNumber(metrics.pendingModeration)} pending moderation`,
+          icon: ClipboardList,
+          iconColor: 'text-indigo-600',
+          iconBg: 'bg-indigo-50'
+        },
+        {
+          label: 'Users',
+          value: metrics.totalUsers,
+          subLabel: `${formatNumber(metrics.activeUsers)} active / ${formatNumber(metrics.pendingUsers)} pending`,
+          icon: Users,
+          iconColor: 'text-slate-700',
+          iconBg: 'bg-slate-50'
+        },
+        {
+          label: 'Content Mix',
+          value: metrics.partnerExercises + metrics.communityExercises,
+          subLabel: `${formatNumber(metrics.partnerExercises)} partner / ${formatNumber(metrics.communityExercises)} community`,
+          icon: BarChart3,
+          iconColor: 'text-emerald-600',
+          iconBg: 'bg-emerald-50'
+        }
+      ]
+    : [];
 
   const handleUpdateStatus = async (id: string, status: 'active' | 'rejected') => {
      setActionInProgress(id);
@@ -1402,6 +1475,48 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        <section className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Activity className="w-6 h-6 text-emerald-600" />
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-400">Live overview</p>
+                <h2 className="text-lg font-bold text-slate-900">Platform metrics</h2>
+              </div>
+            </div>
+            <div className="text-xs text-slate-500">
+              {metricsUpdatedAt
+                ? `Updated ${new Date(metricsUpdatedAt).toLocaleTimeString()}`
+                : 'Awaiting first sync'}
+            </div>
+          </div>
+
+          {metricsError && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {metricsError}
+            </div>
+          )}
+
+          {isLoadingMetrics && !metrics ? (
+            <p className="text-slate-500 italic">Loading platform metrics...</p>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {metricCards.map(card => (
+                <div key={card.label} className="p-4 border border-slate-100 rounded-xl bg-slate-50/60 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">{card.label}</p>
+                    <p className="text-2xl font-bold text-slate-900">{formatNumber(card.value)}</p>
+                    {card.subLabel && <p className="text-xs text-slate-500">{card.subLabel}</p>}
+                  </div>
+                  <div className={`p-3 rounded-lg ${card.iconBg}`}>
+                    <card.icon className={`w-6 h-6 ${card.iconColor}`} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Pending Accounts */}
         <section className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
             <div className="flex items-center justify-between mb-6">
