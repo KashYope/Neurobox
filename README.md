@@ -163,7 +163,7 @@ Une API REST Express vit dans `server/` afin de partager les exercices, remercie
 - Pour un build JS :
   ```bash
   npm run server:build
-  npm run server:start
+npm run server:start
   ```
 - En production, vous pouvez utiliser le Dockerfile racine :
   ```bash
@@ -197,3 +197,133 @@ Les actions sensibles sont protégées via des Bearer tokens signés avec `JWT_S
 
 - `partner` : publier du contenu directement approuvé et accéder au backoffice.
 - `moderator` : charger la file `/api/moderation/queue` et appliquer des décisions.
+
+Un utilitaire simplifie la génération locale de tokens :
+
+```bash
+# Jeton partenaire (subject facultatif)
+npm run server:token partner mon-equipe
+
+## Système de traduction (base de données)
+
+Le contenu des exercices repose sur un système de traduction persistant qui stocke les chaînes dans PostgreSQL et les met en cache dans IndexedDB. Objectifs : réduire drastiquement les coûts (traduire une fois, servir à tous), garder la compatibilité ascendante et résoudre automatiquement les IDs de chaînes côté frontend via `contentResolver`.
+
+### Structure
+- **String IDs** : `exercise.resp_478.title`, `exercise.resp_478.description`, `exercise.resp_478.step_1`, etc.
+- **Tables PostgreSQL** : `exercise_strings` (chaînes sources) et `exercise_translations` (traductions par langue).
+- **Caches IndexedDB** : `exerciseStrings` et `exerciseStringTranslations` pour un usage offline.
+
+### Mise en place / migration
+1. Créer les tables :
+   ```powershell
+   npm run server:migrate
+   ```
+2. Peupler les chaînes initiales (extraites de `INITIAL_EXERCISES`) :
+   ```powershell
+   # Assurez-vous que DATABASE_URL est défini
+   npx tsx scripts/seedExerciseStrings.ts
+   ```
+3. Vérifier l’installation (optionnel) :
+   ```powershell
+   npx tsx scripts/testTranslationSystem.ts
+   ```
+
+### Utilisation API
+Les routes suivantes exposent les chaînes et traductions (préfixe `/api`). Les rôles se basent sur les Bearer tokens générés via `npm run server:token <role> <subject>`.
+
+| Méthode | Endpoint | Description | Rôle requis |
+| --- | --- | --- | --- |
+| GET | `/strings` | Lister toutes les chaînes (filtrage possible via `?context=exercise`) | Public |
+| GET | `/strings/:id` | Récupérer une chaîne | Public |
+| POST | `/strings` | Créer une nouvelle chaîne | Partner ou Moderator |
+| DELETE | `/strings/:id` | Supprimer une chaîne | Moderator |
+| GET | `/strings/:id/translations` | Voir les traductions d’une chaîne | Public |
+| GET | `/strings/translations/:lang` | Lister toutes les traductions d’une langue | Public |
+| POST | `/strings/:id/translations` | Ajouter ou mettre à jour une traduction | Partner ou Moderator |
+| POST | `/strings/bulk` | Importer en masse chaînes + traductions | Moderator |
+
+### Stratégie de migration
+- **Phase 1** : garder les champs legacy (`title`, `description`, `steps`) et ajouter les IDs facultatifs (`titleStringId`, etc.) ; le résolveur retombe sur les champs legacy si l’ID est absent.
+- **Phase 2** : exécuter le seed, renseigner les IDs dans `constants.ts` ; les nouvelles fiches utilisent directement les IDs.
+- **Phase 3** : généraliser les IDs de chaînes puis retirer les champs legacy (changement majeur).
+
+> Référence unique : toute la documentation du système de traduction est désormais centralisée dans cette section du README.
+
+# Jeton modérateur
+npm run server:token moderator alice
+```
+
+Collez ensuite ces jetons dans la section « Jetons API » du tiroir administrateur. Les valeurs sont stockées dans `localStorage` via `services/tokenStore` et injectées automatiquement dans `apiClient`. Les jetons `moderator`/`admin` débloquent le panel de modération, tandis que les jetons `partner` permettent la publication immédiate des fiches partenaires.
+
+### Synchronisation front/back
+- `services/syncService` gère la file des mutations (création, remerciements, modération) puis réconcilie les exercices renvoyés par l’API.
+- Les exercices marqués `deletedAt` côté serveur sont supprimés du cache et n’apparaissent plus dans les recommandations.
+- Le panel de modération interroge périodiquement `/api/moderation/queue`; en cas d’erreur réseau ou de jeton manquant il bascule automatiquement sur les données locales.
+
+## Ajouter un exercice manuellement
+1. Depuis le tableau de bord principal, cliquez sur **Ajouter une technique** pour ouvrir `AddExerciseForm`.
+2. Renseignez au minimum le titre, la description et une situation cible.
+3. Indiquez chaque étape dans l’ordre; des URL d’images/GIF optionnelles peuvent améliorer la carte.
+4. Validez : la contribution est stockée localement, passe en statut « pending » et attend la validation du panel de modération.
+
+## Dire merci et suivi d’impact
+- Le bouton « Dire Merci » (vue détail) appelle `incrementThanks`, incrémente le compteur et déclenche un rerender des cartes afin que les techniques les plus utiles montent naturellement dans les recommandations.
+- Ces remerciements sont mis en file dans `syncService` afin d’être persistés côté serveur dès que possible.
+
+## Espaces d’administration
+
+### Backoffice Partenaires (`PartnerPortal`)
+- Accédez-y via le tiroir administrateur (**Espace Partenaires**).
+- Les organisations créent un compte local (stocké dans `localStorage`) ou se connectent à un compte existant.
+- Deux workflows sont proposés :
+  - **Création manuelle** : formulaire complet (tags, étapes dynamiques, profils ciblés) publié instantanément et marqué « Partenaire ».
+  - **Import CSV/JSON** : parsing tolérant (`mapRowToDraft`) avec auto-détection des colonnes (`title`, `description`, `situations`, `steps`, `tags`, `warning`, `imageUrl`). Les listes acceptent `|`, `;` ou `,`.
+
+### Panel de modération
+- Accessible via le tiroir administrateur (**Modération**). Sans session partenaire, l’utilisateur est redirigé vers l’espace partenaires pour s’authentifier.
+- Affiche les contributions `isCommunitySubmitted` en attente et un historique des décisions approuvées/refusées (8 derniers items).
+- Les modérateurs peuvent saisir une note, appliquer **Valider** ou **Refuser** (`moderateExercise`). Les décisions mettent à jour `moderationStatus`, `moderationNotes`, `moderatedAt`, `moderatedBy` et peuvent supprimer l’entrée (`shouldDelete`).
+- Si un jeton `moderator` valide est stocké, la file serveur est chargée toutes les 45 s; sinon l’interface reste fonctionnelle avec les données locales.
+
+## Progressive Web App
+- `vite-plugin-pwa` injecte automatiquement le service worker `src/sw.ts` (Workbox) et le manifeste (`public/manifest.webmanifest`).
+- `src/sw.ts` implémente une stratégie de cache complète pour une utilisation 100% hors-ligne :
+  - **App shell** : `StaleWhileRevalidate` pour HTML/JS/CSS avec mise en cache immédiate lors de l'installation.
+  - **API** : `NetworkFirst` avec fallback sur cache (timeout 10s) + `BackgroundSyncPlugin` pour rejouer les mutations.
+  - **Locales** : `StaleWhileRevalidate` pour fichiers `/locales/*` (7 jours, max 10 entrées) permettant le changement de langue hors-ligne.
+  - **Images** : `CacheFirst` avec expiration 30 jours (max 100 entrées).
+  - **CDN externes** : `StaleWhileRevalidate` pour fonts.googleapis.com, aistudiocdn.com, cdn.tailwindcss.com, etc. (max 60 entrées, 30 jours).
+  - **Fallback offline** : `setCatchHandler` redirige les requêtes échouées vers le cache ou une erreur appropriée.
+- `services/syncService` déclenche la synchronisation après chaque mutation pour garantir une reprise automatique dès le retour réseau.
+
+### Installation sur mobile
+1. **Android / Chrome**
+   - Construire l'app de production : `npm run build`.
+   - Démarrer le serveur preview : `npm run preview`.
+   - Sur votre PC, identifier votre adresse IP locale (`ipconfig` sur Windows, `ifconfig` sur macOS/Linux).
+   - Sur votre appareil Android connecté au **même réseau Wi-Fi**, ouvrir Chrome et accéder à `http://VOTRE_IP:4173`.
+   - Chrome affichera un bandeau « Ajouter à l'écran d'accueil » ou accéder via ⋮ > *Installer l'application*.
+   - Après installation, l'app fonctionne **entièrement hors-ligne** : le shell, les exercices et les images sont mis en cache automatiquement.
+   - Les actions (remerciements, contributions) sont mises en file et synchronisées dès le retour réseau.
+2. **iOS / Safari**
+   - Même procédure pour accéder à l'URL via Safari.
+   - Appuyer sur **Partager > Sur l'écran d'accueil**.
+   - Lancer l'app en mode standalone.
+   - Activer le mode avion pour vérifier que l'application reste pleinement fonctionnelle hors-ligne.
+
+## Distribution mobile via Capacitor
+1. Vérifier/adapter `capacitor.config.ts` (App ID `com.neurosooth.app`, `webDir: dist`).
+2. Générer le build web :
+   ```bash
+   npm run build
+   ```
+3. Initialiser les plateformes :
+   ```bash
+   npx cap add ios
+   npx cap add android
+   ```
+4. Copier le build dans les shells natifs après chaque release :
+   ```bash
+   npx cap sync
+   ```
+5. Ouvrir les projets correspondants (`npx cap open ios` / `android`), configurer les certificats stores (App Store / Play Store), puis soumettre les binaires. Les assets PWA (manifest + icônes) sont réutilisés automatiquement.
