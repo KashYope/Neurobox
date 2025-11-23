@@ -1,4 +1,4 @@
-import { Exercise, ModerationStatus, ServerExercise } from '../types';
+import { Exercise, ModerationStatus, PartnerAccount, ServerExercise } from '../types';
 
 type ImportMetaWithEnv = ImportMeta & { env?: Record<string, string | undefined> };
 
@@ -44,6 +44,12 @@ export interface ModerateExercisePayload {
 export interface ModerationQueueResponse {
   queue: ServerExercise[];
   recent: ServerExercise[];
+}
+
+export interface PartnerAccountsResponse {
+  partners: Array<
+    Pick<PartnerAccount, 'id' | 'organization' | 'contactName' | 'email' | 'status' | 'role'>
+  >;
 }
 
 const defaultFetchImpl = (...args: Parameters<typeof fetch>) => {
@@ -128,6 +134,29 @@ class ApiClient {
 
   async fetchModerationQueue(): Promise<ModerationQueueResponse> {
     return this.request<ModerationQueueResponse>('/moderation/queue', {}, 'moderator');
+  }
+
+  async fetchPartners(): Promise<PartnerAccountsResponse> {
+    return this.request<PartnerAccountsResponse>('/admin/partners', {}, 'moderator');
+  }
+
+  async updatePartnerStatus(id: string, status: PartnerAccount['status']): Promise<PartnerAccountsResponse['partners'][number]> {
+    return this.request<PartnerAccountsResponse['partners'][number]>(
+      `/admin/partners/${id}/status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      },
+      'moderator'
+    );
+  }
+
+  async approvePartner(id: string): Promise<PartnerAccountsResponse['partners'][number]> {
+    return this.updatePartnerStatus(id, 'active');
+  }
+
+  async rejectPartner(id: string): Promise<PartnerAccountsResponse['partners'][number]> {
+    return this.updatePartnerStatus(id, 'rejected');
   }
 
   // Exercise string translation methods
