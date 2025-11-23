@@ -163,7 +163,7 @@ Une API REST Express vit dans `server/` afin de partager les exercices, remercie
 - Pour un build JS :
   ```bash
   npm run server:build
-  npm run server:start
+npm run server:start
   ```
 - En production, vous pouvez utiliser le Dockerfile racine :
   ```bash
@@ -203,6 +203,51 @@ Un utilitaire simplifie la génération locale de tokens :
 ```bash
 # Jeton partenaire (subject facultatif)
 npm run server:token partner mon-equipe
+
+## Système de traduction (base de données)
+
+Le contenu des exercices repose sur un système de traduction persistant qui stocke les chaînes dans PostgreSQL et les met en cache dans IndexedDB. Objectifs : réduire drastiquement les coûts (traduire une fois, servir à tous), garder la compatibilité ascendante et résoudre automatiquement les IDs de chaînes côté frontend via `contentResolver`.
+
+### Structure
+- **String IDs** : `exercise.resp_478.title`, `exercise.resp_478.description`, `exercise.resp_478.step_1`, etc.
+- **Tables PostgreSQL** : `exercise_strings` (chaînes sources) et `exercise_translations` (traductions par langue).
+- **Caches IndexedDB** : `exerciseStrings` et `exerciseStringTranslations` pour un usage offline.
+
+### Mise en place / migration
+1. Créer les tables :
+   ```powershell
+   npm run server:migrate
+   ```
+2. Peupler les chaînes initiales (extraites de `INITIAL_EXERCISES`) :
+   ```powershell
+   # Assurez-vous que DATABASE_URL est défini
+   npx tsx scripts/seedExerciseStrings.ts
+   ```
+3. Vérifier l’installation (optionnel) :
+   ```powershell
+   npx tsx scripts/testTranslationSystem.ts
+   ```
+
+### Utilisation API
+Les routes suivantes exposent les chaînes et traductions (préfixe `/api`). Les rôles se basent sur les Bearer tokens générés via `npm run server:token <role> <subject>`.
+
+| Méthode | Endpoint | Description | Rôle requis |
+| --- | --- | --- | --- |
+| GET | `/strings` | Lister toutes les chaînes (filtrage possible via `?context=exercise`) | Public |
+| GET | `/strings/:id` | Récupérer une chaîne | Public |
+| POST | `/strings` | Créer une nouvelle chaîne | Partner ou Moderator |
+| DELETE | `/strings/:id` | Supprimer une chaîne | Moderator |
+| GET | `/strings/:id/translations` | Voir les traductions d’une chaîne | Public |
+| GET | `/strings/translations/:lang` | Lister toutes les traductions d’une langue | Public |
+| POST | `/strings/:id/translations` | Ajouter ou mettre à jour une traduction | Partner ou Moderator |
+| POST | `/strings/bulk` | Importer en masse chaînes + traductions | Moderator |
+
+### Stratégie de migration
+- **Phase 1** : garder les champs legacy (`title`, `description`, `steps`) et ajouter les IDs facultatifs (`titleStringId`, etc.) ; le résolveur retombe sur les champs legacy si l’ID est absent.
+- **Phase 2** : exécuter le seed, renseigner les IDs dans `constants.ts` ; les nouvelles fiches utilisent directement les IDs.
+- **Phase 3** : généraliser les IDs de chaînes puis retirer les champs legacy (changement majeur).
+
+> Référence unique : toute la documentation du système de traduction est désormais centralisée dans cette section du README.
 
 # Jeton modérateur
 npm run server:token moderator alice
