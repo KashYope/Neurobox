@@ -151,6 +151,11 @@ Une API REST Express vit dans `server/` afin de partager les exercices, remercie
   ```bash
   npm run server:migrate
   ```
+- **Créer un compte administrateur** : après avoir configuré `DATABASE_URL`, exécutez le script de seed pour insérer un compte admin par défaut puis changez immédiatement son mot de passe.
+  ```bash
+  npx tsx server/scripts/seedAdmin.ts
+  ```
+  Vérifiez que l’utilisateur est bien créé avec le rôle **admin** (utile pour gérer les droits `moderator`) avant de passer en production.
 - Démarrez l’API en mode développement (TypeScript + watch) :
   ```bash
   npm run server:dev
@@ -203,7 +208,7 @@ npm run server:token partner mon-equipe
 npm run server:token moderator alice
 ```
 
-Collez ensuite ces jetons dans la section « Jetons API » du tiroir administrateur. Les valeurs sont stockées dans `localStorage` via `services/tokenStore` et injectées automatiquement dans `apiClient`.
+Collez ensuite ces jetons dans la section « Jetons API » du tiroir administrateur. Les valeurs sont stockées dans `localStorage` via `services/tokenStore` et injectées automatiquement dans `apiClient`. Les jetons `moderator`/`admin` débloquent le panel de modération, tandis que les jetons `partner` permettent la publication immédiate des fiches partenaires.
 
 ### Synchronisation front/back
 - `services/syncService` gère la file des mutations (création, remerciements, modération) puis réconcilie les exercices renvoyés par l’API.
