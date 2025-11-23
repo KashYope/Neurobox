@@ -8,6 +8,7 @@ import { exercisesRouter } from './routes/exercises.js';
 import { moderationRouter } from './routes/moderation.js';
 import { stringsRouter } from './routes/strings.js';
 import { authRouter } from './routes/auth.js';
+import { adminRouter } from './routes/admin.js';
 import { env } from './env.js';
 import { optionalAuth } from './auth.js';
 
@@ -75,6 +76,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/exercises', optionalAuth, exercisesRouter);
 app.use('/api/moderation', optionalAuth, moderationRouter);
 app.use('/api/strings', optionalAuth, stringsRouter);
+app.use('/api/admin', optionalAuth, adminRouter);
 
 // SPA fallback - serve index.html for any non-API, non-static routes
 app.get('*', (_req, res) => {

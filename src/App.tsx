@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -1254,14 +1254,39 @@ const ModerationPanel: React.FC<{
 
 const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useTranslation(['common', 'partner', 'moderation']);
-  // In a real implementation, we would fetch this list from the API
   const [accounts, setAccounts] = useState<PartnerAccount[]>([]);
   const [viewMode, setViewMode] = useState<'accounts' | 'moderation'>('accounts');
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
 
   // Dummy state for moderation panel props since we reuse it
   const [pendingExercises, setPendingExercises] = useState<Exercise[]>([]);
   const [reviewedExercises, setReviewedExercises] = useState<Exercise[]>([]);
   const [moderationStatus, setModerationStatus] = useState<string | null>(null);
+
+  const loadAccounts = useCallback(async () => {
+    setIsLoadingAccounts(true);
+    setAccountsError(null);
+    try {
+      const response = await apiClient.fetchPartners();
+      const mapped = response.partners.map(acc => ({
+        ...acc,
+        password: ''
+      }));
+      setAccounts(mapped);
+    } catch (error: any) {
+      setAccountsError(error.message || 'Unable to load partner accounts');
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (viewMode === 'accounts') {
+      loadAccounts();
+    }
+  }, [viewMode, loadAccounts]);
 
   useEffect(() => {
     if (viewMode === 'moderation') {
@@ -1284,10 +1309,21 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
   }, [viewMode, t]);
 
-  const handleUpdateStatus = (id: string, status: 'active' | 'rejected') => {
-     // This would be an API call in full implementation
-     // apiClient.updateUserStatus(id, status)
-     alert("User management API not fully connected in this view yet.");
+  const handleUpdateStatus = async (id: string, status: 'active' | 'rejected') => {
+     setActionInProgress(id);
+     setAccountsError(null);
+     try {
+       if (status === 'active') {
+         await apiClient.approvePartner(id);
+       } else {
+         await apiClient.rejectPartner(id);
+       }
+       await loadAccounts();
+     } catch (error: any) {
+       setAccountsError(error.message || 'Unable to update account status');
+     } finally {
+       setActionInProgress(null);
+     }
   };
 
   const handleLogout = async () => {
@@ -1365,7 +1401,15 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </div>
 
-            {pendingAccounts.length === 0 ? (
+            {accountsError && (
+              <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                {accountsError}
+              </div>
+            )}
+
+            {isLoadingAccounts ? (
+                <p className="text-slate-500 italic">Loading partner accounts...</p>
+            ) : pendingAccounts.length === 0 ? (
                 <p className="text-slate-500 italic">No pending account requests.</p>
             ) : (
                 <div className="overflow-x-auto">
@@ -1385,11 +1429,11 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     <td className="px-4 py-3">{acc.contactName}</td>
                                     <td className="px-4 py-3">{acc.email}</td>
                                     <td className="px-4 py-3 text-right flex justify-end gap-2">
-                                        <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => handleUpdateStatus(acc.id, 'rejected')}>
-                                            Reject
+                                        <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => handleUpdateStatus(acc.id, 'rejected')} disabled={actionInProgress === acc.id}>
+                                            {actionInProgress === acc.id ? 'Processing...' : 'Reject'}
                                         </Button>
-                                        <Button size="sm" onClick={() => handleUpdateStatus(acc.id, 'active')}>
-                                            Approve
+                                        <Button size="sm" onClick={() => handleUpdateStatus(acc.id, 'active')} disabled={actionInProgress === acc.id}>
+                                            {actionInProgress === acc.id ? 'Saving...' : 'Approve'}
                                         </Button>
                                     </td>
                                 </tr>
@@ -1407,16 +1451,22 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <h2 className="text-lg font-bold text-slate-900">Active Partners ({activeAccounts.length})</h2>
             </div>
 
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {activeAccounts.map(acc => (
-                    <div key={acc.id} className="p-4 border border-slate-100 rounded-xl hover:border-teal-200 transition-colors">
-                        <h3 className="font-semibold text-slate-900">{acc.organization}</h3>
-                        <p className="text-xs text-slate-500 mt-1">{acc.contactName}</p>
-                        <p className="text-xs text-slate-400">{acc.email}</p>
-                        {acc.role === 'admin' && <span className="inline-block mt-2 px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded">Admin</span>}
-                    </div>
-                ))}
-            </div>
+             {isLoadingAccounts ? (
+                <p className="text-slate-500 italic">Loading partner accounts...</p>
+             ) : activeAccounts.length === 0 ? (
+                <p className="text-slate-500 italic">No active partners yet.</p>
+             ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {activeAccounts.map(acc => (
+                        <div key={acc.id} className="p-4 border border-slate-100 rounded-xl hover:border-teal-200 transition-colors">
+                            <h3 className="font-semibold text-slate-900">{acc.organization}</h3>
+                            <p className="text-xs text-slate-500 mt-1">{acc.contactName}</p>
+                            <p className="text-xs text-slate-400">{acc.email}</p>
+                            {acc.role === 'admin' && <span className="inline-block mt-2 px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded">Admin</span>}
+                        </div>
+                    ))}
+                </div>
+             )}
         </section>
       </main>
     </div>
