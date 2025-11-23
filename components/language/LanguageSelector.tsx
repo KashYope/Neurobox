@@ -1,6 +1,7 @@
 import React from 'react';
-import { Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+
+import { Globe } from '../ui';
 
 import { getSupportedLanguages, loadLanguageTranslations, type SupportedLanguage } from '../../services/languageService';
 

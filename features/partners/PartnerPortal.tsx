@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import {
   ArrowLeft,
   Building2,
+  Button,
   ClipboardList,
   FileSpreadsheet,
   Lock,
@@ -9,10 +12,7 @@ import {
   UploadCloud,
   User,
   UserPlus
-} from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-
-import { Button } from '../../components/Button';
+} from '../../components/ui';
 import { saveExercise } from '../../services/dataService';
 import { apiClient } from '../../services/apiClient';
 import { Exercise, NeuroType, PartnerAccount, Situation } from '../../types';
