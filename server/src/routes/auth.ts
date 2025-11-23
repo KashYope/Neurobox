@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -32,7 +33,7 @@ router.post('/register', async (req, res, next) => {
 
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
-    const id = crypto.randomUUID();
+    const id = randomUUID();
 
     await pool.query(
       `INSERT INTO users (id, organization, contact_name, email, password_hash, role, status)
