@@ -37,6 +37,29 @@ router.get('/', async (req, res, next) => {
 });
 
 /**
+ * GET /api/strings/translations/:lang
+ * Get all translations for a specific language
+ */
+router.get('/translations/:lang', async (req, res, next) => {
+  try {
+    const { lang } = req.params;
+
+    if (!['en', 'de', 'es', 'nl'].includes(lang)) {
+      return res.status(400).json({ message: 'Invalid language code' });
+    }
+
+    const result = await pool.query<ExerciseTranslationRow>(
+      'SELECT * FROM exercise_translations WHERE lang = $1',
+      [lang]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/strings/:id
  * Get a specific exercise string by ID
  */
@@ -136,29 +159,6 @@ router.post('/:id/translations', requireRole('partner'), async (req, res, next) 
     );
     
     res.status(201).json(result.rows[0]);
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * GET /api/strings/translations/:lang
- * Get all translations for a specific language
- */
-router.get('/translations/:lang', async (req, res, next) => {
-  try {
-    const { lang } = req.params;
-    
-    if (!['en', 'de', 'es', 'nl'].includes(lang)) {
-      return res.status(400).json({ message: 'Invalid language code' });
-    }
-    
-    const result = await pool.query<ExerciseTranslationRow>(
-      'SELECT * FROM exercise_translations WHERE lang = $1',
-      [lang]
-    );
-    
-    res.json(result.rows);
   } catch (error) {
     next(error);
   }
