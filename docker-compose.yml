@@ -33,6 +33,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
       NODE_ENV: ${NODE_ENV:-development}
+      GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy

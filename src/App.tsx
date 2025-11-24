@@ -42,6 +42,7 @@ import {
 } from '../services/dataService';
 import { syncService, SyncStatus } from '../services/syncService';
 import { apiClient, type AdminMetricsResponse } from '../services/apiClient';
+import { useExerciseTranslation } from '../hooks/useExerciseTranslation';
 
 // --- Components ---
 
@@ -1617,6 +1618,10 @@ const App: React.FC = () => {
   const { t } = useTranslation(['common']);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [allExercises, setAllExercises] = useState<Exercise[]>(() => getExercises());
+  
+  // Apply translations to exercises based on current language
+  const translatedExercises = useExerciseTranslation(allExercises);
+  
   const [exercises, setExercises] = useState<Exercise[]>(() =>
     getRecommendedExercises(getExercises(), null, 'All')
   );
@@ -1644,14 +1649,14 @@ const App: React.FC = () => {
     setView(newView);
     
     if (newView === 'detail' && exerciseId) {
-      const exercise = allExercises.find(ex => ex.id === exerciseId);
+      const exercise = translatedExercises.find(ex => ex.id === exerciseId);
       if (exercise) setSelectedExercise(exercise);
     }
     
     setTimeout(() => {
       isNavigatingRef.current = false;
     }, 100);
-  }, [allExercises]);
+  }, [translatedExercises]);
 
   const navigateBack = useCallback(() => {
     if (isNavigatingRef.current) return;
@@ -1823,17 +1828,17 @@ const App: React.FC = () => {
 
   // Refresh recommendations when filters or user changes
   useEffect(() => {
-    const recs = getRecommendedExercises(allExercises, user, situationFilter);
+    const recs = getRecommendedExercises(translatedExercises, user, situationFilter);
     setExercises(recs);
-  }, [allExercises, user, situationFilter]);
+  }, [translatedExercises, user, situationFilter]);
 
   useEffect(() => {
     if (!selectedExercise) return;
-    const fresh = allExercises.find(ex => ex.id === selectedExercise.id);
+    const fresh = translatedExercises.find(ex => ex.id === selectedExercise.id);
     if (fresh && fresh !== selectedExercise) {
       setSelectedExercise(fresh);
     }
-  }, [allExercises, selectedExercise]);
+  }, [translatedExercises, selectedExercise]);
 
   const handleOnboardingComplete = (newUser: UserProfile) => {
     setUser(newUser);
@@ -1882,7 +1887,7 @@ const App: React.FC = () => {
   const showSyncStatus =
     !syncStatus.isOnline || syncStatus.pendingMutations > 0 || syncStatus.isSyncing;
 
-  const communityExercises = allExercises.filter(ex => ex.isCommunitySubmitted);
+  const communityExercises = translatedExercises.filter(ex => ex.isCommunitySubmitted);
   const parseTimestamp = (value?: string) => (value ? Date.parse(value) : 0);
   const localPendingExercises = communityExercises.filter(
     ex => (ex.moderationStatus ?? 'approved') === 'pending'

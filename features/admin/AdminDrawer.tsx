@@ -79,31 +79,6 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
 
           <LanguageSelector />
 
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.synchronization')}</p>
-            {showSyncStatus ? (
-              <div className="space-y-1">
-                {!syncStatus.isOnline && (
-                  <p className="text-amber-700 font-semibold">{t('adminMenu.offlineMode')}</p>
-                )}
-                {syncStatus.pendingMutations > 0 && (
-                  <p>{t('adminMenu.pendingChanges', { count: syncStatus.pendingMutations })}</p>
-                )}
-                {syncStatus.isSyncing && syncStatus.isOnline && (
-                  <p className="flex items-center gap-2 text-teal-700">
-                    <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                    {t('adminMenu.syncing')}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="flex items-center gap-2 text-emerald-600">
-                <CheckCircle2 className="w-4 h-4" />
-                {t('adminMenu.dataSynced')}
-              </p>
-            )}
-          </div>
-
           <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.adminSpace')}</p>
             <p className="text-xs text-slate-500">

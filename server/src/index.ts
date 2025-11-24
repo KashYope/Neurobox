@@ -11,6 +11,7 @@ import { authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { env } from './env.js';
 import { optionalAuth } from './auth.js';
+import { seedDatabaseIfEmpty } from './utils/seedDatabase.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,6 +103,11 @@ app.get('*', (_req, res) => {
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
   res.status(500).json({ message: 'Unexpected server error' });
+});
+
+// Seed database on startup if empty
+seedDatabaseIfEmpty().catch(error => {
+  console.error('Failed to seed database:', error);
 });
 
 app.listen(env.port, () => {

@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { pool } from '../db.js';
+import { translationService } from './translationService.js';
 
 export type BatchTranslationStatus = 'queued' | 'running' | 'completed' | 'failed';
 
@@ -53,7 +54,7 @@ const processJob = async (job: InternalJob, perimeter?: string) => {
       return;
     }
 
-    const runTask = (index: number) => {
+    const runTask = async (index: number): Promise<void> => {
       if (index >= tasks.length) {
         console.log(`[BatchTranslation] All tasks completed for job ${job.id}`);
         job.status = 'completed';
@@ -62,15 +63,52 @@ const processJob = async (job: InternalJob, perimeter?: string) => {
         return;
       }
 
-      setTimeout(() => {
-        const task = tasks[index];
-        console.log(`[BatchTranslation] Processing task ${index + 1}/${tasks.length}: stringId=${task.stringId}, lang=${task.lang}`);
-        // TODO: ACTUAL TRANSLATION IS NOT IMPLEMENTED!
-        // This currently just simulates progress without performing actual translations
-        job.progress.processed += 1;
-        jobs.set(job.id, job);
-        runTask(index + 1);
-      }, 150);
+      const task = tasks[index];
+      console.log(`[BatchTranslation] Processing task ${index + 1}/${tasks.length}: stringId=${task.stringId}, lang=${task.lang}`);
+      
+      try {
+        // Fetch source text from database
+        const stringQuery = 'SELECT source_text, source_lang FROM exercise_strings WHERE id = $1';
+        const stringResult = await pool.query<{ source_text: string; source_lang: string }>(stringQuery, [task.stringId]);
+        
+        if (stringResult.rows.length === 0) {
+          console.error(`[BatchTranslation] String ${task.stringId} not found`);
+          job.errors.push(`String ${task.stringId} not found`);
+        } else {
+          const { source_text, source_lang } = stringResult.rows[0];
+          
+          // Translate text
+          const result = await translationService.translate(source_text, source_lang, task.lang);
+          
+          if (result.error) {
+            console.error(`[BatchTranslation] Translation error for ${task.stringId}:`, result.error);
+            job.errors.push(`Translation error for ${task.stringId}: ${result.error}`);
+          } else {
+            // Insert/update translation in database
+            const upsertQuery = `
+              INSERT INTO exercise_translations (string_id, lang, translated_text, translation_method, translated_at)
+              VALUES ($1, $2, $3, $4, NOW())
+              ON CONFLICT (string_id, lang) 
+              DO UPDATE SET 
+                translated_text = EXCLUDED.translated_text,
+                translation_method = EXCLUDED.translation_method,
+                updated_at = NOW()
+            `;
+            await pool.query(upsertQuery, [task.stringId, task.lang, result.translatedText, 'google_translate']);
+            console.log(`[BatchTranslation] Successfully translated ${task.stringId} to ${task.lang}`);
+          }
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`[BatchTranslation] Task failed:`, errorMsg);
+        job.errors.push(`Task ${task.stringId}/${task.lang} failed: ${errorMsg}`);
+      }
+      
+      job.progress.processed += 1;
+      jobs.set(job.id, job);
+      
+      // Small delay before next task
+      setTimeout(() => runTask(index + 1), 150);
     };
 
     runTask(0);

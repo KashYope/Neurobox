@@ -19,5 +19,6 @@ export const env = {
     process.env.DATABASE_URL ||
     'postgresql://postgres:postgres@localhost:5432/neurobox',
   jwtSecret: process.env.JWT_SECRET || 'local-dev-secret',
-  allowedOrigins: list(process.env.CORS_ORIGINS)
+  allowedOrigins: list(process.env.CORS_ORIGINS),
+  googleTranslateApiKey: process.env.GOOGLE_TRANSLATE_API_KEY
 };

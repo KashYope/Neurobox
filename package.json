@@ -13,6 +13,7 @@
     "server:build": "tsc -p server/tsconfig.json",
     "server:start": "node server/dist/index.js",
     "server:migrate": "tsx server/scripts/runMigrations.ts",
+    "server:seed": "tsx server/scripts/seedInitialData.ts",
     "server:token": "tsx server/scripts/generateToken.ts"
   },
   "dependencies": {

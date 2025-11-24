@@ -66,7 +66,6 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
 
   useEffect(() => {
     if (!job || job.status === 'completed' || job.status === 'failed') {
-      console.log('[BatchTranslation UI] Stopping polling. Status:', job?.status);
       return;
     }
 
@@ -91,7 +90,7 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
     }, 1500);
 
     return () => {
-      console.log('[BatchTranslation UI] Cleaning up polling interval');
+      console.log('[BatchTranslation UI] Stopping polling and cleaning up interval');
       setIsPolling(false);
       clearInterval(interval);
     };

@@ -137,17 +137,53 @@ public/locales/
 
 Tout le contenu statique (boutons, filtres, états de modération, menus) est traduit. Pour ajouter une clé, éditez les 5 fichiers du namespace approprié puis utilisez `t('namespace:cle')` dans les composants React via `useTranslation(['common', 'exercise'])`.
 
-### Traduction de contenu dynamique (optionnel)
-Pour traduire les exercices (titres, descriptions, étapes) créés par la communauté :
+### Traduction de contenu dynamique
 
+Les exercices (titres, descriptions, étapes) sont maintenant entièrement traduits automatiquement :
+
+#### Configuration
 1. Obtenir une clé API Google Cloud Translation
 2. L'ajouter dans `.env` :
    ```bash
    VITE_GOOGLE_TRANSLATE_API_KEY=votre_cle_ici
+   GOOGLE_TRANSLATE_API_KEY=votre_cle_ici  # Pour le backend
    ```
-3. Le service `translationService.ts` traduit automatiquement à la demande avec cache IndexedDB + mémoire (coût estimé : 3-6$/mois pour 1000 utilisateurs)
 
-Sans clé API, le contenu dynamique reste en français (langue originale).
+#### Architecture de traduction
+
+**Backend** :
+- `server/src/services/translationService.ts` - Service de traduction serveur avec Google Translate API
+- `server/src/services/batchTranslationService.ts` - Traduction batch orchestrée
+- Table `exercise_strings` - Textes sources en français
+- Table `exercise_translations` - Traductions par langue
+- API `/admin/batch-translations` - Endpoint pour lancer des traductions batch
+- API `/strings/translations/{lang}` - Récupération des traductions par langue
+
+**Frontend** :
+- `services/exerciseTranslationService.ts` - Récupère et applique les traductions
+- `hooks/useExerciseTranslation.ts` - Hook React qui traduit automatiquement les exercices selon la langue active
+- Cache en mémoire des traductions pour performance optimale
+
+#### Utilisation
+
+1. **Seed initial** : Peupler la base avec les chaînes sources
+   ```bash
+   docker exec neurobox_app npx tsx server/scripts/seedExerciseStrings.ts
+   ```
+
+2. **Lancer une traduction batch** : Via le panel admin → "Orchestration des traductions"
+   - Sélectionner les langues cibles (EN, DE, ES, NL)
+   - Choisir le périmètre ("exercise" pour tous les exercices)
+   - Suivre la progression en temps réel
+
+3. **Basculer de langue** : Les exercices se traduisent automatiquement
+   - Le hook `useExerciseTranslation` détecte le changement de langue
+   - Récupère les traductions depuis l'API
+   - Applique les traductions à tous les exercices affichés
+
+**Coût estimé** : 3-6$/mois pour 1000 utilisateurs avec cache agressif (traductions stockées en base).
+
+Sans clé API, le système affiche un message d'erreur lors des traductions batch et le contenu reste en français.
 
 ### Tests & débogage
 Un script de validation est fourni dans `test-lazy-loading.js` :
