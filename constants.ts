@@ -14,7 +14,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Expirez bruyamment par la bouche pendant 8 secondes.',
       'Répétez le cycle 4 fois.'
     ],
-    imageUrl: 'https://placehold.co/600x400/2dd4bf/ffffff?text=Respiration+4-7-8',
+    imageUrl: '/images/exercises/resp-478.svg',
     tags: ['Respiration', 'Vagal', 'Sommeil'],
     thanksCount: 120,
     moderationStatus: 'approved'
@@ -34,7 +34,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Observez le ralentissement immédiat du cœur.'
     ],
     warning: 'Attention si vous avez des problèmes cardiaques préexistants.',
-    imageUrl: 'https://placehold.co/600x400/3b82f6/ffffff?text=Reflexe+Plongee',
+    imageUrl: '/images/exercises/ice-dive.svg',
     tags: ['Urgence', 'Bio-hack', 'Froid'],
     thanksCount: 85,
     moderationStatus: 'approved'
@@ -53,7 +53,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Visualisez que vous repoussez une menace ou une injustice.',
       'Relâchez quand les muscles tremblent et sentez l\'espace créé.'
     ],
-    imageUrl: 'https://placehold.co/600x400/f43f5e/ffffff?text=Poussee+Murale',
+    imageUrl: '/images/exercises/wall-push.svg',
     tags: ['Décharge', 'Colère', 'Proprioception'],
     thanksCount: 64,
     moderationStatus: 'approved'
@@ -72,7 +72,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Respirez lentement et profondément.',
       'Observez vos sensations sans jugement.'
     ],
-    imageUrl: 'https://placehold.co/600x400/d946ef/ffffff?text=Calin+Papillon',
+    imageUrl: '/images/exercises/butterfly-hug.svg',
     tags: ['EMDR', 'Sécurité', 'Toucher'],
     thanksCount: 143,
     moderationStatus: 'approved'
@@ -92,7 +92,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Arrêtez brusquement et sentez l\'énergie circuler.'
     ],
     warning: 'En cas de trauma complexe, ne pratiquez pas le tremblement au sol seul trop longtemps. Arrêtez si submergé.',
-    imageUrl: 'https://placehold.co/600x400/eab308/ffffff?text=Shaking',
+    imageUrl: '/images/exercises/shaking.svg',
     tags: ['Somatic', 'TRE', 'Mouvement'],
     thanksCount: 92,
     moderationStatus: 'approved'
@@ -110,7 +110,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Expirez très longuement par la bouche.',
       'Répétez 3 à 5 fois.'
     ],
-    imageUrl: 'https://placehold.co/600x400/14b8a6/ffffff?text=Soupir+Physio',
+    imageUrl: '/images/exercises/physio-sigh.svg',
     tags: ['Respiration', 'Science', 'Rapide'],
     thanksCount: 110,
     moderationStatus: 'approved'
@@ -129,7 +129,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Nommez 2 choses que vous sentez (olfaction).',
       'Nommez 1 chose que vous pouvez goûter.'
     ],
-    imageUrl: 'https://placehold.co/600x400/a855f7/ffffff?text=Grounding+54321',
+    imageUrl: '/images/exercises/54321.svg',
     tags: ['Cognitif', 'Sensoriel', 'Dissociation'],
     thanksCount: 150,
     moderationStatus: 'approved'
@@ -148,7 +148,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Attendez que l\'inspiration revienne d\'elle-même.',
       'Répétez 3 à 5 fois.'
     ],
-    imageUrl: 'https://placehold.co/600x400/6366f1/ffffff?text=Son+Voo',
+    imageUrl: '/images/exercises/voo-sound.svg',
     tags: ['Vagal', 'Son', 'Vibration'],
     thanksCount: 45,
     moderationStatus: 'approved'
@@ -167,7 +167,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Laissez la gravité faire fondre le bas du dos dans le sol.',
       'Ne faites rien d\'autre (pas de téléphone).'
     ],
-    imageUrl: 'https://placehold.co/600x400/10b981/ffffff?text=Repos+Constructif',
+    imageUrl: '/images/exercises/psoas-release.svg',
     tags: ['Douleur', 'Posture', 'Détente'],
     thanksCount: 78,
     moderationStatus: 'approved'
@@ -185,7 +185,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Dessinez le chaos si les mots manquent.',
       'Une fois sur papier, dites à votre cerveau : "C\'est noté, tu peux lâcher".'
     ],
-    imageUrl: 'https://placehold.co/600x400/64748b/ffffff?text=Brain+Dump',
+    imageUrl: '/images/exercises/brain-dump.svg',
     tags: ['Cognitif', 'Organisation', 'Ecriture'],
     thanksCount: 112,
     moderationStatus: 'approved'
@@ -204,7 +204,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Visualisez le chiffre 99.',
       'Si une pensée intrusives arrive, recommencez doucement.'
     ],
-    imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Compte+Rebours',
+    imageUrl: '/images/exercises/visual-countdown.svg',
     tags: ['Visualisation', 'Sommeil', 'Mental'],
     thanksCount: 56,
     moderationStatus: 'approved'
@@ -223,7 +223,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Pressez fermement.',
       'Sentez vos limites : "Je commence ici, je m\'arrête là".'
     ],
-    imageUrl: 'https://placehold.co/600x400/ec4899/ffffff?text=Self+Hug',
+    imageUrl: '/images/exercises/self-hug.svg',
     tags: ['Proprioception', 'Sécurité', 'Toucher'],
     thanksCount: 88,
     moderationStatus: 'approved'
@@ -241,7 +241,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
       'Contractez les fessiers et les jambes (5s). Relâchez.',
       'Sentez la vague de chaleur qui suit le relâchement.'
     ],
-    imageUrl: 'https://placehold.co/600x400/8b5cf6/ffffff?text=Relaxation+Musculaire',
+    imageUrl: '/images/exercises/pmr-jacobson.svg',
     tags: ['Corps', 'Détente', 'Sommeil'],
     thanksCount: 72,
     moderationStatus: 'approved'
