@@ -71,6 +71,23 @@ export interface BatchTranslationJob {
 export interface StartBatchTranslationPayload {
   targetLangs: string[];
   perimeter?: string;
+  stringIds?: string[];
+  force?: boolean;
+}
+
+export interface TranslationCoverageLanguageStats {
+  translatedCount: number;
+  missingCount: number;
+  outdatedCount: number;
+}
+
+export interface TranslationCoverageItem {
+  exerciseKey: string;
+  context: string | null;
+  sourceLang: string;
+  totalStrings: number;
+  stringIds: string[];
+  perLanguage: Record<string, TranslationCoverageLanguageStats>;
 }
 
 export interface AdminMetricsResponse {
@@ -213,6 +230,19 @@ class ApiClient {
 
   async fetchBatchTranslationStatus(jobId: string): Promise<BatchTranslationJob> {
     return this.request<BatchTranslationJob>(`/admin/batch-translations/${jobId}`, {}, 'moderator');
+  }
+
+  async fetchTranslationCoverage(params?: { context?: string; langs?: string[] }): Promise<TranslationCoverageItem[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.context) {
+      searchParams.set('context', params.context);
+    }
+    if (params?.langs && params.langs.length) {
+      searchParams.set('langs', params.langs.join(','));
+    }
+    const query = searchParams.toString();
+    const path = `/admin/translation-coverage${query ? `?${query}` : ''}`;
+    return this.request<TranslationCoverageItem[]>(path, {}, 'moderator');
   }
 
   // Exercise string translation methods

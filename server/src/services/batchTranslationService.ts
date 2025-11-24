@@ -18,9 +18,17 @@ export interface BatchTranslationJob {
   errors: string[];
 }
 
+export interface BatchTranslationOptions {
+  perimeter?: string;
+  stringIds?: string[];
+  force?: boolean;
+}
+
 interface InternalJob extends Omit<BatchTranslationJob, 'startedAt' | 'completedAt'> {
   startedAt: Date;
   completedAt?: Date;
+  // Options controlling how the job was created
+  options?: BatchTranslationOptions;
 }
 
 const jobs = new Map<string, InternalJob>();
@@ -31,23 +39,87 @@ const serializeJob = (job: InternalJob): BatchTranslationJob => ({
   completedAt: job.completedAt?.toISOString()
 });
 
-const processJob = async (job: InternalJob, perimeter?: string) => {
+const processJob = async (job: InternalJob): Promise<void> => {
+  const perimeter = job.options?.perimeter;
+  const selectedStringIds = job.options?.stringIds;
+  const force = job.options?.force ?? false;
+
   try {
     job.status = 'running';
     console.log(`[BatchTranslation] Starting job ${job.id} for languages: ${job.targetLangs.join(', ')}`);
 
-    const query = perimeter ? 'SELECT id FROM exercise_strings WHERE context = $1' : 'SELECT id FROM exercise_strings';
-    const params = perimeter ? [perimeter] : [];
-    const { rows } = await pool.query<{ id: string }>(query, params);
+    // 1. Determine which strings are in scope for this job
+    let stringRows: Array<{ id: string; source_lang: string; updated_at: Date }> = [];
 
-    console.log(`[BatchTranslation] Found ${rows.length} strings to translate`);
+    if (selectedStringIds && selectedStringIds.length > 0) {
+      const { rows } = await pool.query<{ id: string; source_lang: string; updated_at: Date }>(
+        'SELECT id, source_lang, updated_at FROM exercise_strings WHERE id = ANY($1::text[])',
+        [selectedStringIds]
+      );
+      stringRows = rows;
+    } else {
+      const baseQuery = perimeter
+        ? 'SELECT id, source_lang, updated_at FROM exercise_strings WHERE context = $1'
+        : 'SELECT id, source_lang, updated_at FROM exercise_strings';
+      const params = perimeter ? [perimeter] : [];
+      const { rows } = await pool.query<{ id: string; source_lang: string; updated_at: Date }>(baseQuery, params);
+      stringRows = rows;
+    }
 
-    const tasks = rows.flatMap((row) => job.targetLangs.map((lang) => ({ stringId: row.id, lang })));
+    console.log(`[BatchTranslation] Found ${stringRows.length} strings to consider for translation`);
+
+    if (stringRows.length === 0) {
+      console.log(`[BatchTranslation] No strings in scope. Job ${job.id} completed.`);
+      job.status = 'completed';
+      job.completedAt = new Date();
+      jobs.set(job.id, job);
+      return;
+    }
+
+    const stringIds = stringRows.map(r => r.id);
+
+    // 2. Load existing translations for these strings / target languages
+    const existingResult = await pool.query<{
+      string_id: string;
+      lang: string;
+      updated_at: Date;
+    }>(
+      'SELECT string_id, lang, updated_at FROM exercise_translations WHERE string_id = ANY($1::text[]) AND lang = ANY($2::text[])',
+      [stringIds, job.targetLangs]
+    );
+
+    const existingSet = new Set<string>();
+    const existingUpdatedAt = new Map<string, Date>();
+    for (const row of existingResult.rows) {
+      const key = `${row.string_id}:${row.lang}`;
+      existingSet.add(key);
+      existingUpdatedAt.set(key, row.updated_at);
+    }
+
+    // 3. Build tasks, skipping already translated or same-language pairs unless force is true
+    const tasks = stringRows.flatMap((row) => {
+      return job.targetLangs.flatMap((lang) => {
+        // Skip if target language is the same as the source language
+        if (lang === row.source_lang) {
+          return [] as { stringId: string; lang: string }[];
+        }
+
+        const key = `${row.id}:${lang}`;
+
+        if (!force && existingSet.has(key)) {
+          // Already translated and we are not forcing re-translation
+          return [] as { stringId: string; lang: string }[];
+        }
+
+        return [{ stringId: row.id, lang }];
+      });
+    });
+
     job.progress.total = tasks.length;
-    console.log(`[BatchTranslation] Total tasks: ${tasks.length}`);
+    console.log(`[BatchTranslation] Scheduled ${tasks.length} tasks (force=${force})`);
 
     if (tasks.length === 0) {
-      console.log(`[BatchTranslation] No tasks to process. Job ${job.id} completed.`);
+      console.log(`[BatchTranslation] No tasks to process after filtering. Job ${job.id} completed.`);
       job.status = 'completed';
       job.completedAt = new Date();
       jobs.set(job.id, job);
@@ -108,10 +180,10 @@ const processJob = async (job: InternalJob, perimeter?: string) => {
       jobs.set(job.id, job);
       
       // Small delay before next task
-      setTimeout(() => runTask(index + 1), 150);
+      setTimeout(() => void runTask(index + 1), 150);
     };
 
-    runTask(0);
+    void runTask(0);
   } catch (error) {
     console.error(`[BatchTranslation] Job ${job.id} failed:`, error);
     job.status = 'failed';
@@ -121,22 +193,26 @@ const processJob = async (job: InternalJob, perimeter?: string) => {
   }
 };
 
-export const startBatchTranslation = async (targetLangs: string[], perimeter?: string): Promise<BatchTranslationJob> => {
+export const startBatchTranslation = async (
+  targetLangs: string[],
+  options: BatchTranslationOptions = {}
+): Promise<BatchTranslationJob> => {
   const job: InternalJob = {
     id: randomUUID(),
     targetLangs,
-    perimeter,
+    perimeter: options.perimeter,
     status: 'queued',
     progress: {
       processed: 0,
       total: 0
     },
     startedAt: new Date(),
-    errors: []
+    errors: [],
+    options
   };
 
   jobs.set(job.id, job);
-  void processJob(job, perimeter);
+  void processJob(job);
 
   return serializeJob(job);
 };

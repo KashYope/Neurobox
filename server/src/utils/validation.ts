@@ -39,11 +39,14 @@ export const exerciseStringSchema = z.object({
   sourceLang: z.string().length(2).default('fr')
 });
 
+// Supported languages for exercise string translations (including French as a target)
+const exerciseLangEnum = z.enum(['fr', 'en', 'de', 'es', 'nl']);
+
 export const exerciseStringTranslationSchema = z.object({
   stringId: z.string().min(3),
-  lang: z.enum(['en', 'de', 'es', 'nl']),
+  lang: exerciseLangEnum,
   translatedText: z.string().min(1),
-  translationMethod: z.enum(['manual', 'google_api', 'deepl']).default('manual')
+  translationMethod: z.enum(['manual', 'google_api', 'deepl', 'source']).default('manual')
 });
 
 export const bulkStringImportSchema = z.object({
@@ -52,8 +55,10 @@ export const bulkStringImportSchema = z.object({
 });
 
 export const batchTranslationSchema = z.object({
-  targetLangs: z.array(z.enum(['en', 'de', 'es', 'nl'])).min(1),
-  perimeter: z.string().optional()
+  targetLangs: z.array(exerciseLangEnum).min(1),
+  perimeter: z.string().optional(),
+  stringIds: z.array(z.string().min(1)).optional(),
+  force: z.boolean().optional()
 });
 
 export type ExerciseStringPayload = z.infer<typeof exerciseStringSchema>;

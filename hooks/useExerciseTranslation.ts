@@ -14,14 +14,8 @@ export function useExerciseTranslation(exercises: Exercise[]): Exercise[] {
 
   useEffect(() => {
     const currentLang = i18n.language;
-    
-    // If French (source language), return original exercises
-    if (currentLang === 'fr') {
-      setTranslatedExercises(exercises);
-      return;
-    }
 
-    // Fetch and apply translations for other languages
+    // Fetch and apply translations for the current language (including French if translations exist)
     const applyTranslations = async () => {
       setIsTranslating(true);
       try {

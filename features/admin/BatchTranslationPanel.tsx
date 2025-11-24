@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { AlertTriangle, ArrowLeft, BadgeCheck, Button, Languages, Loader2, Radio } from '../../components/ui';
-import { apiClient, BatchTranslationJob } from '../../services/apiClient';
+import { apiClient, BatchTranslationJob, TranslationCoverageItem } from '../../services/apiClient';
 
 interface BatchTranslationPanelProps {
   onBack: () => void;
 }
 
 const LANGUAGE_OPTIONS = [
+  { code: 'fr', label: 'Français' },
   { code: 'en', label: 'English' },
   { code: 'de', label: 'Deutsch' },
   { code: 'es', label: 'Español' },
@@ -27,6 +28,11 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
 
+  const [coverage, setCoverage] = useState<TranslationCoverageItem[]>([]);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
+  const [isLoadingCoverage, setIsLoadingCoverage] = useState(false);
+  const [selectedExercises, setSelectedExercises] = useState<Set<string>>(new Set());
+
   const progressPercent = useMemo(() => {
     if (!job || job.progress.total === 0) return 0;
     return Math.round((job.progress.processed / job.progress.total) * 100);
@@ -45,12 +51,22 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
       return;
     }
 
+    // Build stringIds set from selected exercises (if any)
+    const selectedKeys = Array.from(selectedExercises);
+    const stringIds = selectedKeys.length
+      ? coverage
+          .filter(item => selectedExercises.has(item.exerciseKey))
+          .flatMap(item => item.stringIds)
+      : undefined;
+
     setIsSubmitting(true);
     setError(null);
     try {
       const payload = {
         targetLangs: selectedLangs,
-        perimeter: perimeter.trim() || undefined
+        perimeter: perimeter.trim() || undefined,
+        stringIds: stringIds && stringIds.length ? stringIds : undefined,
+        force: false
       };
       console.log('[BatchTranslation UI] Submitting batch translation:', payload);
       const newJob = await apiClient.startBatchTranslation(payload);
@@ -63,6 +79,25 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    // Initial load of translation coverage
+    const loadCoverage = async () => {
+      setIsLoadingCoverage(true);
+      setCoverageError(null);
+      try {
+        const data = await apiClient.fetchTranslationCoverage({ context: 'exercise', langs: LANGUAGE_OPTIONS.map(l => l.code) });
+        setCoverage(data);
+      } catch (err: any) {
+        console.error('[BatchTranslation UI] Failed to load translation coverage:', err);
+        setCoverageError(err?.message || 'Impossible de charger l’état des traductions.');
+      } finally {
+        setIsLoadingCoverage(false);
+      }
+    };
+
+    void loadCoverage();
+  }, []);
 
   useEffect(() => {
     if (!job || job.status === 'completed' || job.status === 'failed') {
@@ -115,7 +150,7 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {isPolling && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
@@ -124,9 +159,16 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
         )}
 
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <BadgeCheck className="w-5 h-5 text-teal-600" />
-            <h2 className="text-lg font-semibold text-slate-900">Déclencher une traduction batch</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <BadgeCheck className="w-5 h-5 text-teal-600" />
+              <h2 className="text-lg font-semibold text-slate-900">Déclencher une traduction batch</h2>
+            </div>
+            <p className="text-xs text-slate-500">
+              {selectedExercises.size > 0
+                ? `${selectedExercises.size} exercice(s) sélectionné(s)`
+                : 'Aucune sélection – le périmètre sera utilisé'}
+            </p>
           </div>
 
           {error && (
@@ -191,6 +233,108 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
               </Button>
             </div>
           </form>
+        </section>
+
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Languages className="w-5 h-5 text-teal-600" />
+            <h2 className="text-lg font-semibold text-slate-900">État des traductions par exercice</h2>
+          </div>
+
+          {coverageError && (
+            <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5" />
+              <span>{coverageError}</span>
+            </div>
+          )}
+
+          {isLoadingCoverage ? (
+            <p className="text-sm text-slate-500">Chargement de la couverture des traductions...</p>
+          ) : coverage.length === 0 ? (
+            <p className="text-sm text-slate-500">Aucune chaîne d’exercice trouvée.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm text-slate-700">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedExercises.size > 0 && selectedExercises.size === coverage.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedExercises(new Set(coverage.map(item => item.exerciseKey)));
+                          } else {
+                            setSelectedExercises(new Set());
+                          }
+                        }}
+                      />
+                    </th>
+                    <th className="px-3 py-2 text-left">Exercice</th>
+                    <th className="px-3 py-2 text-left">Source</th>
+                    <th className="px-3 py-2 text-left">Total chaînes</th>
+                    {LANGUAGE_OPTIONS.map(lang => (
+                      <th key={lang.code} className="px-3 py-2 text-center">{lang.code.toUpperCase()}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {coverage.map(item => (
+                    <tr key={item.exerciseKey} className="hover:bg-slate-50/70">
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedExercises.has(item.exerciseKey)}
+                          onChange={(e) => {
+                            setSelectedExercises(prev => {
+                              const next = new Set(prev);
+                              if (e.target.checked) {
+                                next.add(item.exerciseKey);
+                              } else {
+                                next.delete(item.exerciseKey);
+                              }
+                              return next;
+                            });
+                          }}
+                        />
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs text-slate-700">{item.exerciseKey}</td>
+                      <td className="px-3 py-2 text-xs text-slate-500">{item.sourceLang.toUpperCase()}</td>
+                      <td className="px-3 py-2 text-xs">{item.totalStrings}</td>
+                      {LANGUAGE_OPTIONS.map(lang => {
+                        const stats = item.perLanguage[lang.code];
+                        const translated = stats?.translatedCount ?? 0;
+                        const missing = stats?.missingCount ?? item.totalStrings;
+                        const outdated = stats?.outdatedCount ?? 0;
+                        let badgeClass = 'bg-slate-100 text-slate-700';
+                        let label = 'Aucune';
+                        if (translated === item.totalStrings && outdated === 0) {
+                          badgeClass = 'bg-emerald-50 text-emerald-700';
+                          label = 'Complet';
+                        } else if (translated === 0) {
+                          badgeClass = 'bg-rose-50 text-rose-700';
+                          label = 'Manquant';
+                        } else {
+                          badgeClass = 'bg-amber-50 text-amber-700';
+                          label = 'Partiel';
+                        }
+                        if (outdated > 0) {
+                          label = `${label} (${outdated} obsolète${outdated > 1 ? 's' : ''})`;
+                        }
+                        return (
+                          <td key={lang.code} className="px-3 py-2 text-center text-xs">
+                            <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full ${badgeClass}`}>
+                              {label}
+                            </span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {job && (
