@@ -9,6 +9,7 @@ import {
   FileSpreadsheet,
   Lock,
   LogOut,
+  Download,
   UploadCloud,
   User,
   UserPlus
@@ -214,6 +215,39 @@ const parseJsonDrafts = (content: string): PartnerExerciseDraft[] => {
   return drafts;
 };
 
+const csvTemplateContent = [
+  'title,description,duration,situations,steps,tags,warning,imageUrl',
+  '"Respiration 4-7-8","Breathing exercise to calm the nervous system","4 min","Stress|Anxiety","Inhale for 4|Hold for 7|Exhale for 8","Breathing|Relaxation","Avoid if dizziness","https://placehold.co/600x400/0f172a/ffffff?text=Respiration"',
+  '"Routine vagale douce","Gentle vagus activation routine","6 min","Sensory overload|Stress","Neck massage|Yawning|Shoulder rolls","Somatic|Self-care","Stop if discomfort","https://placehold.co/600x400/0f172a/ffffff?text=Routine"'
+].join('\n');
+
+const jsonTemplateContent = JSON.stringify(
+  [
+    {
+      title: 'Respiration 4-7-8',
+      description: 'Breathing exercise to calm the nervous system',
+      duration: '4 min',
+      situations: ['Stress', 'Anxiety'],
+      steps: ['Inhale for 4', 'Hold for 7', 'Exhale for 8'],
+      tags: ['Breathing', 'Relaxation'],
+      warning: 'Avoid if dizziness',
+      imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Respiration'
+    },
+    {
+      title: 'Routine vagale douce',
+      description: 'Gentle vagus activation routine',
+      duration: '6 min',
+      situations: ['Sensory overload', 'Stress'],
+      steps: ['Neck massage', 'Yawning', 'Shoulder rolls'],
+      tags: ['Somatic', 'Self-care'],
+      warning: 'Stop if discomfort',
+      imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Routine'
+    }
+  ],
+  null,
+  2
+);
+
 interface PartnerFormState {
   title: string;
   description: string;
@@ -280,6 +314,23 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
     };
     checkSession();
   }, []);
+
+  const handleDownloadTemplate = (format: 'csv' | 'json') => {
+    const content = format === 'csv' ? csvTemplateContent : jsonTemplateContent;
+    const blob = new Blob([content], {
+      type: format === 'csv' ? 'text/csv;charset=utf-8;' : 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = format === 'csv'
+      ? 'neurobox-partner-template.csv'
+      : 'neurobox-partner-template.json';
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
 
   const emitSessionChange = (session: PartnerAccount | null) => {
     if (typeof window !== 'undefined') {
@@ -746,21 +797,33 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="border border-dashed border-slate-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
-              <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.csvFormat')}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-slate-700 font-medium">
+                <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.csvFormat')}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => handleDownloadTemplate('csv')}>
+                <Download className="w-4 h-4 mr-1" /> {t('partner:import.downloadCsvTemplate')}
+              </Button>
             </div>
             <p className="text-sm text-slate-500 mb-2">{t('partner:import.csvHeaders')}</p>
             <p className="text-xs text-slate-400">{t('partner:import.csvSeparator')}</p>
           </div>
           <div className="border border-dashed border-slate-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
-              <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.jsonFormat')}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-slate-700 font-medium">
+                <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.jsonFormat')}
+              </div>
+              <Button variant="outline" size="sm" onClick={() => handleDownloadTemplate('json')}>
+                <Download className="w-4 h-4 mr-1" /> {t('partner:import.downloadJsonTemplate')}
+              </Button>
             </div>
             <p className="text-sm text-slate-500 mb-2">{t('partner:import.jsonStructure')}</p>
             <p className="text-xs text-slate-400">{t('partner:import.jsonExample')}
             </p>
           </div>
         </div>
+
+        <p className="text-xs text-slate-500">{t('partner:import.templateHelper')}</p>
 
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
           <p className="text-sm text-slate-600">{t('partner:import.fileInput')}</p>
