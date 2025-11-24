@@ -71,6 +71,9 @@
     "jsonFormat": "JSON Format",
     "jsonStructure": "Expected structure: array of objects with the same fields as above.",
     "jsonExample": "Example: [{\"title\":\"Vagal routine\",\"situations\":[\"Stress / Anxiety\"]}]",
+    "downloadCsvTemplate": "Download CSV template",
+    "downloadJsonTemplate": "Download JSON template",
+    "templateHelper": "Use the official template to start mapping your columns and reduce formatting errors.",
     "fileInput": "Choose a file (.csv or .json). Processing may take a few seconds depending on size.",
     "errors": {
       "csvHeader": "The CSV file must contain a header and at least one row.",

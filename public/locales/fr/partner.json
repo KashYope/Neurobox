@@ -71,6 +71,9 @@
     "jsonFormat": "Format JSON",
     "jsonStructure": "Structure attendue : tableau d'objets avec les mêmes champs que ci-dessus.",
     "jsonExample": "Exemple : [{\"title\":\"Routine vagale\",\"situations\":[\"Stress / Anxiété\"]}]",
+    "downloadCsvTemplate": "Télécharger le modèle CSV",
+    "downloadJsonTemplate": "Télécharger le modèle JSON",
+    "templateHelper": "Utilisez le modèle officiel pour mapper vos colonnes et limiter les erreurs de formatage.",
     "fileInput": "Choisissez un fichier (.csv ou .json). Le traitement peut prendre quelques secondes selon la taille.",
     "errors": {
       "csvHeader": "Le fichier CSV doit contenir un en-tête et au moins une ligne.",
