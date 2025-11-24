@@ -20,7 +20,8 @@ export default defineConfig(({ mode }) => {
             'icons/screenshot-onboarding.svg',
             'icons/screenshot-library.svg',
             'icons/screenshot-detail.svg',
-            'locales/**/*.json'
+            'locales/**/*.json',
+            'images/exercises/*.svg'
           ],
           srcDir: 'src',
           filename: 'sw.ts',
