@@ -41,11 +41,10 @@ registerRoute(
 
 // Cache external CDN resources (fonts, scripts, etc.)
 registerRoute(
-  ({ url }) => 
+  ({ url }) =>
     url.origin === 'https://cdn.tailwindcss.com' ||
     url.origin === 'https://fonts.googleapis.com' ||
     url.origin === 'https://fonts.gstatic.com' ||
-    url.origin === 'https://aistudiocdn.com' ||
     url.origin === 'https://cdnjs.buymeacoffee.com',
   new StaleWhileRevalidate({
     cacheName: 'external-resources',
