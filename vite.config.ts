@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => {
             'icons/maskable-icon.svg',
             'icons/screenshot-onboarding.svg',
             'icons/screenshot-library.svg',
-            'icons/screenshot-detail.svg'
+            'icons/screenshot-detail.svg',
+            'locales/**/*.json'
           ],
           srcDir: 'src',
           filename: 'sw.ts',
@@ -42,6 +43,7 @@ export default defineConfig(({ mode }) => {
             start_url: '/',
             lang: 'fr',
             orientation: 'portrait',
+            prefer_related_applications: false,
             icons: [
               { src: '/icons/app-icon.svg', sizes: '192x192', type: 'image/svg+xml' },
               { src: '/icons/app-icon.svg', sizes: '256x256', type: 'image/svg+xml' },
@@ -83,7 +85,10 @@ export default defineConfig(({ mode }) => {
             cleanupOutdatedCaches: true
           },
           injectManifest: {
-            globPatterns: ['**/*.{js,css,html,svg,png,ico,json,txt,woff,woff2}'],
+            globPatterns: [
+              '**/*.{js,css,html,svg,png,ico,txt,woff,woff2}',
+              'locales/**/*.json'
+            ],
             globIgnores: ['**/node_modules/**/*'],
             maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5MB
           }

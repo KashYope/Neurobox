@@ -8,8 +8,9 @@ import { requireRole } from '../auth.js';
 const router = Router();
 
 const findExercise = async (identifier: string): Promise<ExerciseRow | null> => {
+  // Try to match against client_id (text) first, then cast identifier to UUID if it's a valid UUID
   const result = await pool.query<ExerciseRow>(
-    `SELECT * FROM exercises WHERE id = $1 OR client_id = $1 LIMIT 1`,
+    `SELECT * FROM exercises WHERE client_id = $1 OR (id::text = $1) LIMIT 1`,
     [identifier]
   );
   return result.rows[0] ?? null;

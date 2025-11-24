@@ -25,8 +25,11 @@ function MyComponent() {
 
 ### Namespace Structure
 
-- **common**: UI labels, buttons, filters, dashboard, admin menu
-- **onboarding**: Onboarding screen specific content
+- **common**: UI labels, buttons, filters, dashboard, admin menu (103 lignes)
+- **onboarding**: Onboarding screen specific content (8 lignes)
+- **exercise**: Exercise cards, details, and interactions
+- **partner**: Partner portal, CSV import, and organization management
+- **moderation**: Moderation panel, review queue, and decisions
 
 ---
 
@@ -341,19 +344,17 @@ i18next: key "buttons.missing" not found in namespace "common"
 public/locales/
 ├── fr/
 │   ├── common.json         # 103 lines - Main UI
-│   └── onboarding.json     # 8 lines - Onboarding flow
+│   ├── onboarding.json     # 8 lines - Onboarding flow
+│   ├── exercise.json       # Exercise interface
+│   ├── partner.json        # Partner portal
+│   └── moderation.json     # Moderation panel
 ├── en/
 │   ├── common.json
-│   └── onboarding.json
-├── de/
-│   ├── common.json
-│   └── onboarding.json
-├── es/
-│   ├── common.json
-│   └── onboarding.json
-└── nl/
-    ├── common.json
-    └── onboarding.json
+│   ├── onboarding.json
+│   ├── exercise.json
+│   ├── partner.json
+│   └── moderation.json
+├── de/, es/, nl/           # Same 5 namespaces
 ```
 
 ### When to Create New Namespace
@@ -363,7 +364,12 @@ Create a new namespace when:
 - File exceeds ~200 lines
 - Content loads conditionally (admin vs user)
 
-Example: `public/locales/fr/partner.json`
+Current namespaces:
+- `common` - Core UI used everywhere
+- `onboarding` - Initial user setup
+- `exercise` - Exercise-specific interface
+- `partner` - Partner portal (already created)
+- `moderation` - Moderation panel (already created)
 
 ---
 

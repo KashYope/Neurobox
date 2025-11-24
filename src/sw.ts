@@ -91,19 +91,18 @@ registerRoute(
   })
 );
 
-// Cache locale files with stale-while-revalidate for instant language switching
-// Only caches files that are actually requested (lazy loading)
+// Locale files are precached via injectManifest, so we use CacheFirst for instant offline access
 registerRoute(
   ({ url }) => url.pathname.startsWith('/locales/'),
-  new StaleWhileRevalidate({
+  new CacheFirst({
     cacheName: 'locale-cache',
     plugins: [
       new CacheableResponsePlugin({
         statuses: [0, 200]
       }),
       new ExpirationPlugin({
-        maxEntries: 10, // 5 languages × 2 namespaces
-        maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
+        maxEntries: 30, // 5 languages × 5 namespaces + buffer
+        maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
       })
     ]
   })
@@ -111,11 +110,33 @@ registerRoute(
 
 // Fallback handler for offline scenarios
 setCatchHandler(async ({ event }) => {
+  const { request } = event;
+  
   // For navigation requests, return the cached index page
-  if (event.request.destination === 'document') {
+  if (request.destination === 'document') {
     const cache = await caches.open('shell-cache');
     const cachedResponse = await cache.match('/index.html');
-    return cachedResponse || Response.error();
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+  }
+  
+  // For locale files, try to serve from cache
+  if (request.url.includes('/locales/')) {
+    const cache = await caches.open('locale-cache');
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+  }
+  
+  // For API requests, return empty JSON response as fallback
+  if (request.url.includes('/api')) {
+    return new Response(JSON.stringify({ error: 'Offline' }), {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   // For other requests, return a network error
@@ -141,12 +162,26 @@ self.addEventListener('sync', event => {
 // Install event - cache essential resources immediately
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open('shell-cache').then((cache) => {
-      return cache.addAll([
-        '/',
-        '/index.html'
-      ]);
-    })
+    Promise.all([
+      // Cache shell
+      caches.open('shell-cache').then((cache) => {
+        return cache.addAll([
+          '/',
+          '/index.html'
+        ]);
+      }),
+      // Precache all locale files for offline support
+      caches.open('locale-cache').then((cache) => {
+        const languages = ['fr', 'en', 'de', 'es', 'nl'];
+        const namespaces = ['common', 'onboarding', 'exercise', 'partner', 'moderation'];
+        const localeUrls = languages.flatMap(lang => 
+          namespaces.map(ns => `/locales/${lang}/${ns}.json`)
+        );
+        return cache.addAll(localeUrls).catch(err => {
+          console.warn('Failed to precache some locale files:', err);
+        });
+      })
+    ])
   );
 });
 

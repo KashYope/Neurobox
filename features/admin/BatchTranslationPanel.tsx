@@ -25,6 +25,7 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
   const [job, setJob] = useState<BatchTranslationJob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   const progressPercent = useMemo(() => {
     if (!job || job.progress.total === 0) return 0;
@@ -51,9 +52,12 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
         targetLangs: selectedLangs,
         perimeter: perimeter.trim() || undefined
       };
+      console.log('[BatchTranslation UI] Submitting batch translation:', payload);
       const newJob = await apiClient.startBatchTranslation(payload);
+      console.log('[BatchTranslation UI] Job started:', newJob);
       setJob(newJob);
     } catch (err: any) {
+      console.error('[BatchTranslation UI] Failed to start job:', err);
       setError(err?.message || 'Impossible de démarrer la traduction.');
     } finally {
       setIsSubmitting(false);
@@ -62,19 +66,35 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
 
   useEffect(() => {
     if (!job || job.status === 'completed' || job.status === 'failed') {
+      console.log('[BatchTranslation UI] Stopping polling. Status:', job?.status);
       return;
     }
 
+    console.log('[BatchTranslation UI] Starting polling for job:', job.id);
+    setIsPolling(true);
     const interval = setInterval(async () => {
       try {
         const nextStatus = await apiClient.fetchBatchTranslationStatus(job.id);
+        console.log('[BatchTranslation UI] Status update:', {
+          status: nextStatus.status,
+          progress: nextStatus.progress,
+          errors: nextStatus.errors
+        });
         setJob(nextStatus);
+        if (nextStatus.status === 'completed' || nextStatus.status === 'failed') {
+          setIsPolling(false);
+        }
       } catch (err: any) {
+        console.error('[BatchTranslation UI] Failed to fetch status:', err);
         setError(err?.message || 'Erreur lors du rafraîchissement du statut.');
       }
     }, 1500);
 
-    return () => clearInterval(interval);
+    return () => {
+      console.log('[BatchTranslation UI] Cleaning up polling interval');
+      setIsPolling(false);
+      clearInterval(interval);
+    };
   }, [job]);
 
   return (
@@ -97,6 +117,13 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        {isPolling && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+            <span className="text-sm text-blue-700">Connexion active - Surveillance du statut en cours...</span>
+          </div>
+        )}
+
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center gap-3 mb-4">
             <BadgeCheck className="w-5 h-5 text-teal-600" />

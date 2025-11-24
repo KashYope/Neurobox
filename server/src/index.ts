@@ -18,29 +18,45 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Security headers with Content Security Policy
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], // React with inline scripts in dev
-        styleSrc: ["'self'", "'unsafe-inline'"], // Inline styles for React components
-        imgSrc: ["'self'", "data:", "blob:"],
-        fontSrc: ["'self'", "data:"],
-        connectSrc: ["'self'", "https://generativelanguage.googleapis.com"], // For Gemini API
-        manifestSrc: ["'self'"],
-        workerSrc: ["'self'", "blob:"], // For service workers
-        frameSrc: ["'none'"],
-        objectSrc: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-        upgradeInsecureRequests: [], // Enable HTTPS upgrade
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+console.log(`🚀 Starting server in ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
+
+if (isDevelopment) {
+  // Disable CSP completely in development
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
+} else {
+  // Strict CSP for production
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "blob:"],
+          fontSrc: ["'self'", "data:"],
+          connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
+          manifestSrc: ["'self'"],
+          workerSrc: ["'self'", "blob:"],
+          frameSrc: ["'none'"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          upgradeInsecureRequests: [],
+        },
       },
-    },
-    crossOriginEmbedderPolicy: false, // Avoid breaking external resources
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
-);
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
+}
 
 app.use(
   cors({

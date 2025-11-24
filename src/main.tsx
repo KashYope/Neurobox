@@ -1,8 +1,9 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
+import './index.css';
 
-import './i18n';
+import { I18nProvider } from './i18nContext';
 import App from './App';
 
 if (typeof window !== 'undefined') {
@@ -19,14 +20,8 @@ const container = document.getElementById('root');
 if (container) {
   const root = createRoot(container);
   root.render(
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-50">
-          <div className="text-slate-600">Loading...</div>
-        </div>
-      }
-    >
+    <I18nProvider>
       <App />
-    </Suspense>
+    </I18nProvider>
   );
 }

@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from './env.js';
 
-export type ActorRole = 'partner' | 'moderator';
+export type ActorRole = 'partner' | 'moderator' | 'admin';
 
 export interface TokenPayload {
   sub: string;

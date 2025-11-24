@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from './i18nContext';
+import { App as CapacitorApp } from '@capacitor/app';
 
 import {
   AlertTriangle,
@@ -101,7 +102,7 @@ const ExerciseDetail: React.FC<{
             </div>
             <div className="flex items-center gap-1 text-sm font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
               <Heart className="w-4 h-4 fill-rose-600" />
-              <span>{t('exercise:detail.peopleHelped', { count: exercise.thanksCount + (hasThanked ? 1 : 0) })}</span>
+              <span>{t('exercise:detail.peopleHelped', { count: exercise.thanksCount })}</span>
             </div>
           </div>
           
@@ -1427,7 +1428,13 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   if (viewMode === 'batchTranslation') {
-    return <BatchTranslationPanel onBack={() => setViewMode('accounts')} />;
+    return <BatchTranslationPanel onBack={() => {
+      if (window.history.state?.view) {
+        window.history.back();
+      } else {
+        setViewMode('accounts');
+      }
+    }} />;
   }
 
   if (viewMode === 'moderation') {
@@ -1437,7 +1444,13 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         reviewedExercises={reviewedExercises}
         onApprove={(ex, notes) => handleModerationDecision(ex, 'approved', notes)}
         onReject={(ex, notes) => handleModerationDecision(ex, 'rejected', notes)}
-        onBack={() => setViewMode('accounts')}
+        onBack={() => {
+          if (window.history.state?.view) {
+            window.history.back();
+          } else {
+            setViewMode('accounts');
+          }
+        }}
         statusNote={moderationStatus}
       />
     );
@@ -1619,6 +1632,39 @@ const App: React.FC = () => {
     reviewed: Exercise[];
   } | null>(null);
   const [moderationStatusMessage, setModerationStatusMessage] = useState<string | null>(null);
+  const isNavigatingRef = useRef(false);
+
+  // Navigation handler to update view based on history state
+  const navigateTo = useCallback((newView: typeof view, exerciseId?: string) => {
+    if (isNavigatingRef.current) return;
+    
+    isNavigatingRef.current = true;
+    const state = { view: newView, exerciseId };
+    window.history.pushState(state, '', window.location.pathname);
+    setView(newView);
+    
+    if (newView === 'detail' && exerciseId) {
+      const exercise = allExercises.find(ex => ex.id === exerciseId);
+      if (exercise) setSelectedExercise(exercise);
+    }
+    
+    setTimeout(() => {
+      isNavigatingRef.current = false;
+    }, 100);
+  }, [allExercises]);
+
+  const navigateBack = useCallback(() => {
+    if (isNavigatingRef.current) return;
+    
+    // Determine where to go back to
+    if (view === 'detail' || view === 'add' || view === 'moderation' || view === 'partner' || view === 'admin') {
+      setView('dashboard');
+      setSelectedExercise(null);
+    } else if (view === 'onboarding') {
+      // Can't go back from onboarding
+      return;
+    }
+  }, [view]);
 
   useEffect(() => {
     syncService.init();
@@ -1629,6 +1675,43 @@ const App: React.FC = () => {
       unsubscribeCache();
       unsubscribeStatus();
     };
+  }, []);
+
+  // Handle browser back button and native back gesture
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      event.preventDefault();
+      navigateBack();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Handle native back button for Capacitor (Android/iOS)
+    const backButtonListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (view === 'dashboard' || view === 'onboarding') {
+        // Allow app to exit on dashboard or onboarding
+        if (canGoBack) {
+          window.history.back();
+        } else {
+          CapacitorApp.exitApp();
+        }
+      } else {
+        // Navigate back within the app
+        navigateBack();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      backButtonListener.remove();
+    };
+  }, [navigateBack, view]);
+
+  // Push initial history state
+  useEffect(() => {
+    if (window.history.state === null) {
+      window.history.replaceState({ view: 'dashboard' }, '', window.location.pathname);
+    }
   }, []);
 
   useEffect(() => {
@@ -1759,7 +1842,7 @@ const App: React.FC = () => {
 
   const handleExerciseClick = (ex: Exercise) => {
     setSelectedExercise(ex);
-    setView('detail');
+    navigateTo('detail', ex.id);
   };
 
   const handleAddExercise = (newEx: Exercise) => {
@@ -1774,25 +1857,25 @@ const App: React.FC = () => {
   const handlePartnerAccess = () => {
     // If already logged in as admin, go to admin dashboard
     if (partnerSession?.role === 'admin') {
-        setView('admin');
+        navigateTo('admin');
     } else {
-        setView('partner');
+        navigateTo('partner');
     }
     setIsAdminMenuOpen(false);
   };
 
   const handleModerationAccess = () => {
     if (partnerSession) {
-      setView('moderation');
+      navigateTo('moderation');
     } else {
       setPendingAdminAction('moderation');
-      setView('partner');
+      navigateTo('partner');
     }
     setIsAdminMenuOpen(false);
   };
 
   const handleContributionAccess = () => {
-    setView('add');
+    navigateTo('add');
     setIsAdminMenuOpen(false);
   };
 
@@ -1828,11 +1911,15 @@ const App: React.FC = () => {
 
   // Render Helpers
   if (view === 'admin') {
-      return <AdminDashboard onBack={() => setView('dashboard')} />;
+      return <AdminDashboard onBack={() => {
+        window.history.back();
+      }} />;
   }
 
   if (view === 'partner') {
-    return <PartnerPortal onBack={() => setView('dashboard')} />;
+    return <PartnerPortal onBack={() => {
+      window.history.back();
+    }} />;
   }
 
   if (view === 'moderation') {
@@ -1842,7 +1929,9 @@ const App: React.FC = () => {
         reviewedExercises={effectiveReviewedExercises}
         onApprove={(exercise, notes) => handleModerationDecision(exercise, 'approved', notes)}
         onReject={(exercise, notes) => handleModerationDecision(exercise, 'rejected', notes)}
-        onBack={() => setView('dashboard')}
+        onBack={() => {
+          window.history.back();
+        }}
         statusNote={moderationStatusMessage}
       />
     );
@@ -1856,7 +1945,9 @@ const App: React.FC = () => {
     return (
       <ExerciseDetail 
         exercise={selectedExercise} 
-        onBack={() => setView('dashboard')}
+        onBack={() => {
+          window.history.back();
+        }}
         onThanks={() => handleThanks(selectedExercise.id)}
       />
     );
@@ -1865,7 +1956,9 @@ const App: React.FC = () => {
   if (view === 'add') {
     return (
       <AddExerciseForm 
-        onCancel={() => setView('dashboard')} 
+        onCancel={() => {
+          window.history.back();
+        }} 
         onSubmit={handleAddExercise} 
       />
     );

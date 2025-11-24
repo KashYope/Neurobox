@@ -26,28 +26,51 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
 ├── components/
 │   └── Button.tsx
 ├── constants.ts                # Exercices préchargés
-├── index.tsx                   # Arbre React principal (dashboard, formulaires, panels)
+├── index.tsx                   # Export de l'app (point d'entrée alternatif)
+├── features/
+│   ├── admin/                  # Panel de modération et outils admin
+│   ├── dashboard/              # Tableau de bord principal
+│   └── partners/               # Portail partenaires
 ├── services/
 │   ├── apiClient.ts            # Client HTTP + gestion des tokens
 │   ├── dataService.ts          # Accès données + algorithme de recommandation
 │   ├── syncService.ts          # Cache offline, file de mutations, background sync
 │   ├── languageService.ts      # Gestion préférences langues + chargement lazy
 │   ├── translationService.ts   # Traduction dynamique via Google Translate API
-│   └── storage/offlineDb.ts    # Adaptateur Dexie + migration depuis localStorage
+│   ├── contentResolver.ts      # Résolution des IDs de chaînes traduites
+│   ├── tokenStore.ts           # Stockage sécurisé des jetons JWT
+│   └── storage/
+│       ├── offlineDb.ts        # Adaptateur IndexedDB + migration localStorage
+│       └── dexieShim.ts        # Implémentation légère compatible Dexie
 ├── src/
+│   ├── App.tsx                 # Composant React principal (dashboard, formulaires, panels)
+│   ├── main.tsx                # Point d'entrée React (rendu, service worker)
 │   ├── i18n.ts                 # Configuration i18next (lazy loading)
+│   ├── i18nContext.tsx         # Contexte React pour i18n (compatible React 19)
+│   ├── index.css               # Styles Tailwind + styles personnalisés
 │   └── sw.ts                   # Service worker Workbox + BackgroundSync
 ├── public/
+│   ├── offline.html            # Page de fallback hors-ligne
 │   └── locales/
 │       ├── fr/
-│       │   ├── common.json
-│       │   └── onboarding.json
-│       ├── en/, de/, es/, nl/  # Mêmes namespaces
+│       │   ├── common.json     # Labels UI, boutons, filtres
+│       │   ├── onboarding.json # Écran d'accueil
+│       │   ├── exercise.json   # Interface exercices
+│       │   ├── partner.json    # Portail partenaires
+│       │   └── moderation.json # Panel de modération
+│       ├── en/, de/, es/, nl/  # Mêmes 5 namespaces
 ├── tests/
 │   └── syncService.test.ts     # Tests node:test des scénarios offline/online
 └── server/
     ├── src/                    # API Express (routes, auth, db, validation)
-    └── migrations/001_init.sql
+    │   ├── index.ts            # Serveur Express principal
+    │   ├── auth.ts             # Middleware d'authentification JWT
+    │   ├── db.ts               # Connexion PostgreSQL
+    │   ├── routes/             # Routes API (exercises, moderation, strings)
+    │   ├── services/           # Services métier (batchTranslation, etc.)
+    │   └── utils/              # Utilitaires (validation Zod, etc.)
+    ├── scripts/                # Scripts d'initialisation et seed
+    └── migrations/             # Migrations SQL PostgreSQL
 ```
 
 ## Guide de démarrage
@@ -64,7 +87,7 @@ NeuroSooth est une application Vite + React pensée comme une boîte à outils p
    ```bash
    npm run dev
    ```
-3. Ouvrir [http://localhost:5173](http://localhost:5173), compléter l’onboarding et explorer les filtres/suggestions.
+3. Ouvrir [http://localhost:3000](http://localhost:3000), compléter l'onboarding et explorer les filtres/suggestions.
 
 Pour préparer une version de production, exécutez `npm run build` puis `npm run preview` afin de vérifier le bundle statique.
 
@@ -88,10 +111,11 @@ L'application supporte 5 langues avec chargement lazy (optimisé pour réduire l
 - **Nederlands** (Néerlandais)
 
 ### Architecture
-- **Bibliothèque** : `react-i18next` + `i18next` pour les traductions statiques UI
-- **Lazy loading** : Seule la langue sélectionnée est chargée (2 fichiers JSON au lieu de 10)
+- **Bibliothèque** : `i18next` + `i18next-http-backend` + contexte React personnalisé (`src/i18nContext.tsx`) compatible React 19
+- **Lazy loading** : Seule la langue sélectionnée est chargée (5 fichiers JSON au lieu de 25)
+- **Namespaces** : 5 namespaces (common, onboarding, exercise, partner, moderation) pour organisation modulaire
 - **Stockage prioritaire** : `localStorage.neurobox_user_language` avec timestamp
-- **Cache service worker** : `StaleWhileRevalidate` pour les fichiers `/locales/*` (7 jours, max 10 entrées)
+- **Cache service worker** : `CacheFirst` avec précaching pour les fichiers `/locales/*` (30 jours, max 10 entrées par langue)
 - **Traduction dynamique** : `services/translationService.ts` pour contenu généré (exercices) via Google Cloud Translation API
 
 ### Configuration utilisateur
@@ -103,12 +127,15 @@ L'application supporte 5 langues avec chargement lazy (optimisé pour réduire l
 ```
 public/locales/
 ├── fr/
-│   ├── common.json       # Labels UI, boutons, filtres, menu admin
-│   └── onboarding.json   # Écran d'accueil
-├── en/, de/, es/, nl/    # Mêmes namespaces
+│   ├── common.json       # Labels UI, boutons, filtres, menu admin (103 lignes)
+│   ├── onboarding.json   # Écran d'accueil (8 lignes)
+│   ├── exercise.json     # Interface exercices et détails
+│   ├── partner.json      # Portail partenaires et import CSV
+│   └── moderation.json   # Panel de modération
+├── en/, de/, es/, nl/    # Mêmes 5 namespaces
 ```
 
-Tout le contenu statique (boutons, filtres, états de modération, menus) est traduit. Pour ajouter une clé, éditez les 5 fichiers `common.json` puis utilisez `t('cle')` dans les composants React.
+Tout le contenu statique (boutons, filtres, états de modération, menus) est traduit. Pour ajouter une clé, éditez les 5 fichiers du namespace approprié puis utilisez `t('namespace:cle')` dans les composants React via `useTranslation(['common', 'exercise'])`.
 
 ### Traduction de contenu dynamique (optionnel)
 Pour traduire les exercices (titres, descriptions, étapes) créés par la communauté :
@@ -135,11 +162,12 @@ testLazyLoading.clearStorage()        // Réinitialiser les préférences
 Voir `LAZY_LOADING_TEST.md` pour le guide complet et `LANGUAGE_OPTIMIZATION_COMPLETE.md` pour les détails d'implémentation.
 
 ## Synchronisation & stockage hors-ligne
-- `services/storage/offlineDb` utilise Dexie/IndexedDB pour stocker exercices, profil utilisateur, pièces jointes, traductions et file `PendingMutationRecord`.
+- `services/storage/offlineDb` utilise un shim IndexedDB léger (`dexieShim.ts`, compatible Dexie) pour stocker exercices, profil utilisateur, pièces jointes, traductions et file `PendingMutationRecord`.
 - `syncService` garde le cache en mémoire, notifie l'UI (`subscribe`/`subscribeStatus`) et met en file les mutations (`createExercise`, `incrementThanks`, `moderateExercise`).
 - Les mutations sont rejouées quand `navigator.onLine` redevient `true` ou lorsqu'un `background sync` est déclenché par `src/sw.ts`.
 - `services/dataService` expose des helpers (enregistrement utilisateur, scoring personnalisé via neurotypes, modération locale) et délègue la persistance à `syncService`.
 - `services/languageService` gère les préférences linguistiques avec chargement lazy pour optimiser les performances.
+- `services/contentResolver` résout les IDs de chaînes traduites pour le contenu des exercices depuis la base de données.
 
 ## API backend Express + PostgreSQL
 
