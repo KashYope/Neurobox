@@ -20,5 +20,7 @@ export const env = {
     'postgresql://postgres:postgres@localhost:5432/neurobox',
   jwtSecret: process.env.JWT_SECRET || 'local-dev-secret',
   allowedOrigins: list(process.env.CORS_ORIGINS),
-  googleTranslateApiKey: process.env.GOOGLE_TRANSLATE_API_KEY
+  googleTranslateApiKey: process.env.GOOGLE_TRANSLATE_API_KEY,
+  recaptchaSecret: process.env.RECAPTCHA_SECRET,
+  emailVerificationRequired: process.env.EMAIL_VERIFICATION_REQUIRED === 'true'
 };

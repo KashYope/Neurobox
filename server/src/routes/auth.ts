@@ -8,6 +8,54 @@ import { optionalAuth } from '../auth.js';
 
 const router = Router();
 
+const COMMON_PASSWORDS = new Set([
+  '123456',
+  'password',
+  '123456789',
+  '12345678',
+  '12345',
+  'qwerty',
+  'abc123',
+  'football',
+  '123123',
+  'admin'
+]);
+
+const validatePassword = (password?: string): string[] => {
+  const errors: string[] = [];
+
+  if (!password) {
+    errors.push('Password is required');
+    return errors;
+  }
+
+  if (password.length < 12) {
+    errors.push('Password must be at least 12 characters long');
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must include an uppercase letter');
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must include a lowercase letter');
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must include a number');
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    errors.push('Password must include a special character');
+  }
+
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+    errors.push('Password is too common');
+  }
+
+  return errors;
+};
+
 // Helper to set cookie
 const setAuthCookie = (res: any, token: string) => {
   res.cookie('token', token, {
@@ -18,17 +66,74 @@ const setAuthCookie = (res: any, token: string) => {
   });
 };
 
+const verifyRecaptcha = async (token?: string) => {
+  if (!env.recaptchaSecret) return { success: true };
+
+  if (!token) {
+    return { success: false, error: 'Missing reCAPTCHA token' };
+  }
+
+  try {
+    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      body: new URLSearchParams({
+        secret: env.recaptchaSecret,
+        response: token
+      })
+    });
+
+    if (!response.ok) {
+      return { success: false, error: 'Unable to verify reCAPTCHA' };
+    }
+
+    const data = (await response.json()) as { success: boolean };
+    if (!data.success) {
+      return { success: false, error: 'Failed reCAPTCHA verification' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: 'Unexpected error during reCAPTCHA verification' };
+  }
+};
+
 router.post('/register', async (req, res, next) => {
   try {
-    const { organization, contactName, email, password } = req.body;
+    const { organization, contactName, email, password, recaptchaToken } = req.body;
+    const errors: Record<string, string[]> = {};
 
-    if (!organization || !contactName || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
+    if (!organization) {
+      errors.organization = ['Organization is required'];
+    }
+
+    if (!contactName) {
+      errors.contactName = ['Contact name is required'];
+    }
+
+    if (!email) {
+      errors.email = ['Email is required'];
+    }
+
+    const passwordErrors = validatePassword(password);
+    if (passwordErrors.length > 0) {
+      errors.password = passwordErrors;
+    }
+
+    const recaptchaResult = await verifyRecaptcha(recaptchaToken);
+    if (!recaptchaResult.success && recaptchaResult.error) {
+      errors.recaptcha = [recaptchaResult.error];
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({ message: 'Validation failed', errors });
     }
 
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ message: 'Email already registered' });
+      return res.status(409).json({
+        message: 'Validation failed',
+        errors: { email: ['Email already registered'] }
+      });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -41,7 +146,18 @@ router.post('/register', async (req, res, next) => {
       [id, organization, contactName, email, hash]
     );
 
-    res.status(201).json({ message: 'Registration successful. Please wait for approval.' });
+    const verificationSteps = [
+      'Registration submitted and pending approval'
+    ];
+
+    if (env.emailVerificationRequired) {
+      verificationSteps.push('Check your email to complete verification');
+    }
+
+    res.status(201).json({
+      message: 'Registration successful. Please wait for approval.',
+      nextSteps: verificationSteps
+    });
   } catch (error) {
     next(error);
   }
