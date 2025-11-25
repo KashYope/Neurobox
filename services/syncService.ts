@@ -1,6 +1,6 @@
 import { INITIAL_EXERCISES } from '../constants';
 import { Exercise, ModerationStatus, ServerExercise } from '../types';
-import { apiClient, ApiClientType } from './apiClient';
+import { apiClient, ApiClientType, ApiError } from './apiClient';
 import {
   getInitialSnapshot,
   PendingMutationRecord,
@@ -324,6 +324,7 @@ export class SyncService {
         const mutation = this.pendingMutations[index];
         try {
           await this.dispatchMutation(mutation);
+          this.markOnline();
           this.pendingMutations.splice(index, 1);
           await this.storage.setPendingMutations(this.pendingMutations);
           this.updateStatus({ pendingMutations: this.pendingMutations.length });
@@ -335,7 +336,7 @@ export class SyncService {
           const delay = Math.min(2 ** mutation.attempts * 1000, 30000);
           await this.delay(delay);
 
-          if (!this.status.isOnline) {
+          if (this.markOfflineIfNeeded(error) || !this.status.isOnline) {
             break;
           }
 
@@ -377,6 +378,7 @@ export class SyncService {
 
     try {
       const serverExercises = await this.api.fetchExercises();
+      this.markOnline();
       if (serverExercises && serverExercises.length > 0) {
         this.cache = this.mergeServerAndLocal(serverExercises);
         await this.storage.replaceExercises(this.cache);
@@ -384,6 +386,7 @@ export class SyncService {
       }
       didSync = true;
     } catch (error) {
+      this.markOfflineIfNeeded(error);
       console.warn('Failed to hydrate exercises', error);
     } finally {
       this.finishSync(didSync);
@@ -535,6 +538,29 @@ export class SyncService {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private markOnline(): void {
+    if (!this.status.isOnline) {
+      this.updateStatus({ isOnline: true });
+    }
+  }
+
+  private markOfflineIfNeeded(error: unknown): boolean {
+    if (error instanceof ApiError) {
+      if (typeof error.status === 'number' && (error.status === 0 || error.status >= 500)) {
+        this.updateStatus({ isOnline: false });
+        return true;
+      }
+      return false;
+    }
+
+    if (error instanceof TypeError) {
+      this.updateStatus({ isOnline: false });
+      return true;
+    }
+
+    return false;
   }
 
   private handleOnline = () => {
