@@ -1,5 +1,8 @@
 import type { ExerciseRow } from '../db.js';
-import type { ServerExercise } from '../../../types.ts';
+import { NeuroType, Situation, type ServerExercise } from '../shared/types.js';
+
+const toEnumArray = <T extends string>(values: string[], allowed: readonly T[]): T[] =>
+  values.filter((value): value is T => allowed.includes(value as T));
 
 const toIso = (value: Date | null | undefined): string | undefined =>
   value ? value.toISOString() : undefined;
@@ -13,8 +16,8 @@ export const mapExerciseRow = (row: ExerciseRow): ServerExercise => {
     duration: row.duration,
     steps: row.steps,
     tags: row.tags,
-    situation: row.situation,
-    neurotypes: row.neurotypes,
+    situation: toEnumArray(row.situation, Object.values(Situation)),
+    neurotypes: toEnumArray(row.neurotypes, Object.values(NeuroType)),
     warning: row.warning || undefined,
     imageUrl: row.image_url,
     thanksCount: row.thanks_count,
