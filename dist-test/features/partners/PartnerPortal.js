@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Building2, Button, ClipboardList, FileSpreadsheet, Lock, LogOut, UploadCloud, User, UserPlus } from '../../components/ui';
+import { ArrowLeft, Building2, Button, ClipboardList, FileSpreadsheet, Lock, LogOut, Download, UploadCloud, User, UserPlus } from '../../components/ui';
 import { saveExercise } from '../../services/dataService';
 import { apiClient } from '../../services/apiClient';
 import { NeuroType, Situation } from '../../types';
@@ -166,6 +166,23 @@ const parseJsonDrafts = (content) => {
     }).filter((draft) => Boolean(draft && draft.title && draft.description));
     return drafts;
 };
+const csvTemplateContent = [
+    'title,description,duration,situations,steps,tags,neurotypes,warning,imageUrl',
+    '"Respiration 5-5-5","Breathing exercise to calm the nervous system","5 min","Stress|Anxiety","Inhale for 5|Hold for 5|Exhale for 5","Breathing|Relaxation","ADHD|ASD","Avoid if dizziness","https://placehold.co/600x400/0f172a/ffffff?text=Respiration"'
+].join('\n');
+const jsonTemplateContent = JSON.stringify([
+    {
+        title: 'Respiration 5-5-5',
+        description: 'Breathing exercise to calm the nervous system',
+        duration: '5 min',
+        situations: ['Stress', 'Anxiety'],
+        steps: ['Inhale for 5', 'Hold for 5', 'Exhale for 5'],
+        tags: ['Breathing', 'Relaxation'],
+        neurotypes: ['ADHD', 'ASD'],
+        warning: 'Avoid if dizziness',
+        imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Respiration'
+    }
+], null, 2);
 const createEmptyPartnerForm = () => ({
     title: '',
     description: '',
@@ -216,6 +233,20 @@ export const PartnerPortal = ({ onBack }) => {
         };
         checkSession();
     }, []);
+    const handleDownloadTemplate = (format) => {
+        const content = format === 'csv' ? csvTemplateContent : jsonTemplateContent;
+        const blob = new Blob([content], {
+            type: format === 'csv' ? 'text/csv;charset=utf-8;' : 'application/json'
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = format === 'csv'
+            ? 'neurobox-partner-template.csv'
+            : 'neurobox-partner-template.json';
+        link.click();
+        URL.revokeObjectURL(url);
+    };
     const emitSessionChange = (session) => {
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('partner-session-change', { detail: session }));
@@ -383,6 +414,6 @@ export const PartnerPortal = ({ onBack }) => {
                                                 ? 'bg-indigo-600 text-white border-indigo-600'
                                                 : 'bg-white border-slate-200 text-slate-600'}`, children: t(`neuroTypes.${type}`) }, type))) })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('partner:manual.form.detailedSteps') }), _jsx("div", { className: "space-y-2", children: manualForm.steps.map((step, index) => (_jsxs("div", { className: "flex gap-2", children: [_jsx("input", { className: "flex-1 border border-slate-200 rounded-lg px-3 py-2", value: step, onChange: e => handleStepChange(index, e.target.value), placeholder: t('partner:manual.form.stepPlaceholder', { number: index + 1 }) }), manualForm.steps.length > 1 && (_jsx(Button, { type: "button", variant: "ghost", onClick: () => removeStepField(index), children: t('partner:manual.form.deleteStep') }))] }, index))) }), _jsx(Button, { type: "button", variant: "secondary", size: "sm", className: "mt-3", onClick: addStepField, children: t('partner:manual.form.addStep') })] }), _jsx("div", { className: "pt-4", children: _jsx(Button, { type: "submit", size: "lg", className: "w-full", children: t('partner:manual.publish') }) })] })] }), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 space-y-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(UploadCloud, { className: "w-6 h-6 text-teal-600" }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-900", children: t('partner:import.title') }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:import.subtitle') })] })] }), importFeedback && (_jsx("div", { className: `text-sm rounded-xl border px-4 py-3 ${importFeedback.type === 'success'
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-rose-50 border-rose-200 text-rose-700'}`, children: importFeedback.text })), _jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [_jsxs("div", { className: "border border-dashed border-slate-200 rounded-xl p-4", children: [_jsxs("div", { className: "flex items-center gap-2 text-slate-700 font-medium mb-2", children: [_jsx(FileSpreadsheet, { className: "w-4 h-4" }), " ", t('partner:import.csvFormat')] }), _jsx("p", { className: "text-sm text-slate-500 mb-2", children: t('partner:import.csvHeaders') }), _jsx("p", { className: "text-xs text-slate-400", children: t('partner:import.csvSeparator') })] }), _jsxs("div", { className: "border border-dashed border-slate-200 rounded-xl p-4", children: [_jsxs("div", { className: "flex items-center gap-2 text-slate-700 font-medium mb-2", children: [_jsx(FileSpreadsheet, { className: "w-4 h-4" }), " ", t('partner:import.jsonFormat')] }), _jsx("p", { className: "text-sm text-slate-500 mb-2", children: t('partner:import.jsonStructure') }), _jsx("p", { className: "text-xs text-slate-400", children: t('partner:import.jsonExample') })] })] }), _jsxs("div", { className: "bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3", children: [_jsx("p", { className: "text-sm text-slate-600", children: t('partner:import.fileInput') }), _jsx("input", { type: "file", accept: ".csv,.json,application/json,text/csv", onChange: handleFileUpload, className: "w-full text-sm" }, fileInputKey)] })] })] }));
+                            : 'bg-rose-50 border-rose-200 text-rose-700'}`, children: importFeedback.text })), _jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [_jsxs("div", { className: "border border-dashed border-slate-200 rounded-xl p-4", children: [_jsxs("div", { className: "flex items-center justify-between gap-2 mb-2", children: [_jsxs("div", { className: "flex items-center gap-2 text-slate-700 font-medium", children: [_jsx(FileSpreadsheet, { className: "w-4 h-4" }), " ", t('partner:import.csvFormat')] }), _jsxs(Button, { variant: "outline", size: "sm", onClick: () => handleDownloadTemplate('csv'), children: [_jsx(Download, { className: "w-4 h-4 mr-1" }), " ", t('partner:import.downloadCsvTemplate')] })] }), _jsx("p", { className: "text-sm text-slate-500 mb-2", children: t('partner:import.csvHeaders') }), _jsx("p", { className: "text-xs text-slate-400", children: t('partner:import.csvSeparator') })] }), _jsxs("div", { className: "border border-dashed border-slate-200 rounded-xl p-4", children: [_jsxs("div", { className: "flex items-center justify-between gap-2 mb-2", children: [_jsxs("div", { className: "flex items-center gap-2 text-slate-700 font-medium", children: [_jsx(FileSpreadsheet, { className: "w-4 h-4" }), " ", t('partner:import.jsonFormat')] }), _jsxs(Button, { variant: "outline", size: "sm", onClick: () => handleDownloadTemplate('json'), children: [_jsx(Download, { className: "w-4 h-4 mr-1" }), " ", t('partner:import.downloadJsonTemplate')] })] }), _jsx("p", { className: "text-sm text-slate-500 mb-2", children: t('partner:import.jsonStructure') }), _jsx("p", { className: "text-xs text-slate-400", children: t('partner:import.jsonExample') })] })] }), _jsx("p", { className: "text-xs text-slate-500", children: t('partner:import.templateHelper') }), _jsxs("div", { className: "bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3", children: [_jsx("p", { className: "text-sm text-slate-600", children: t('partner:import.fileInput') }), _jsx("input", { type: "file", accept: ".csv,.json,application/json,text/csv", onChange: handleFileUpload, className: "w-full text-sm" }, fileInputKey)] })] })] }));
     return (_jsxs("div", { className: "min-h-screen bg-slate-50", children: [_jsx("header", { className: "bg-white border-b border-slate-100", children: _jsxs("div", { className: "max-w-5xl mx-auto px-4 py-4 flex items-center justify-between", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx("div", { className: "bg-teal-600 text-white rounded-xl p-2", children: _jsx(Building2, { className: "w-6 h-6" }) }), _jsxs("div", { children: [_jsx("p", { className: "text-xs uppercase tracking-wide text-slate-400", children: t('partner:workspace.backoffice') }), _jsx("h1", { className: "text-2xl font-semibold text-slate-900", children: t('partner:workspace.partnerSpace') })] })] }), _jsx("div", { className: "flex gap-2", children: _jsxs(Button, { variant: "outline", onClick: onBack, children: [_jsx(ArrowLeft, { className: "w-4 h-4 mr-2" }), " ", t('partner:workspace.backToCatalog')] }) })] }) }), _jsx("main", { className: "max-w-5xl mx-auto px-4 py-8", children: isLoading ? _jsx("div", { className: "text-center py-8", children: "Loading..." }) : (activeAccount ? renderWorkspace() : renderAuthForm()) })] }));
 };

@@ -39,8 +39,6 @@ export const setUserLanguage = (language) => {
     try {
         localStorage.setItem(LANGUAGE_KEY, language);
         localStorage.setItem(LANGUAGE_TIMESTAMP_KEY, new Date().toISOString());
-        // Also update i18n
-        i18n.changeLanguage(language);
     }
     catch (error) {
         console.error('Error saving language preference:', error);

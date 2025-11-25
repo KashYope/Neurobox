@@ -17,6 +17,14 @@ const defaultFetchImpl = (...args) => {
     }
     return fetch(...args);
 };
+export class ApiError extends Error {
+    constructor(message, status, body) {
+        super(message);
+        this.status = status;
+        this.body = body;
+        this.name = 'ApiError';
+    }
+}
 class ApiClient {
     constructor({ baseUrl = DEFAULT_BASE_URL, fetchImpl = defaultFetchImpl } = {}) {
         this.authTokens = {};
@@ -46,7 +54,7 @@ class ApiClient {
         });
         if (!response.ok) {
             const message = await response.text();
-            throw new Error(message || `API request failed: ${response.status}`);
+            throw new ApiError(message || `API request failed: ${response.status}`, response.status, message);
         }
         if (response.status === 204) {
             return undefined;
