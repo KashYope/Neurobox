@@ -14,23 +14,44 @@ export default defineConfig(({ mode }) => {
         react(),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: [
-            'icons/app-icon.svg',
-            'icons/maskable-icon.svg',
-            'icons/screenshot-onboarding.svg',
-            'icons/screenshot-library.svg',
-            'icons/screenshot-detail.svg',
-            'locales/**/*.json',
-            'images/exercises/*.svg'
-          ],
-          srcDir: 'src',
-          filename: 'sw.ts',
-          strategies: 'injectManifest',
           injectRegister: 'auto',
           devOptions: {
             enabled: true,
             suppressWarnings: true,
             type: 'module'
+          },
+          includeAssets: ['offline.html', 'images/*.png', 'images/*.svg', 'icons/*.svg'],
+          workbox: {
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}'],
+            cleanupOutdatedCaches: true,
+            runtimeCaching: [
+              {
+                urlPattern: ({ url }) => url.pathname.startsWith('/api/exercises'),
+                handler: 'NetworkFirst',
+                options: {
+                  cacheName: 'api-exercises-cache',
+                  networkTimeoutSeconds: 10,
+                  cacheableResponse: {
+                    statuses: [0, 200]
+                  },
+                  expiration: {
+                    maxEntries: 50,
+                    maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                  }
+                }
+              },
+              {
+                urlPattern: ({ url }) => url.pathname.startsWith('/api'),
+                handler: 'NetworkFirst',
+                options: {
+                  cacheName: 'api-runtime-cache',
+                  networkTimeoutSeconds: 10,
+                  cacheableResponse: {
+                    statuses: [0, 200]
+                  }
+                }
+              }
+            ]
           },
           manifest: {
             name: 'NeuroSooth - Régulation Somatique',
@@ -68,28 +89,6 @@ export default defineConfig(({ mode }) => {
               }
             ]
           },
-          workbox: {
-            runtimeCaching: [
-              {
-                urlPattern: ({ url }) => url.pathname.startsWith('/api'),
-                handler: 'NetworkFirst',
-                options: {
-                  cacheName: 'api-runtime-cache',
-                  networkTimeoutSeconds: 10
-                }
-              }
-            ],
-            navigateFallback: '/index.html',
-            cleanupOutdatedCaches: true
-          },
-          injectManifest: {
-            globPatterns: [
-              '**/*.{js,css,html,svg,png,ico,txt,woff,woff2}',
-              'locales/**/*.json'
-            ],
-            globIgnores: ['**/node_modules/**/*'],
-            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5MB
-          }
         })
       ],
       define: {

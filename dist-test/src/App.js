@@ -27,7 +27,7 @@ const ExerciseDetail = ({ exercise, onBack, onThanks }) => {
 };
 const AddExerciseForm = ({ onCancel, onSubmit }) => {
     const { t } = useTranslation(['common', 'exercise']);
-    const [formData, setFormData] = useState({
+    const createInitialFormState = () => ({
         title: '',
         description: '',
         duration: '',
@@ -37,6 +37,8 @@ const AddExerciseForm = ({ onCancel, onSubmit }) => {
         tags: [],
         imageUrl: ''
     });
+    const [formData, setFormData] = useState(createInitialFormState());
+    const [feedback, setFeedback] = useState(null);
     const handleStepChange = (idx, val) => {
         const newSteps = [...(formData.steps || [])];
         newSteps[idx] = val;
@@ -56,8 +58,10 @@ const AddExerciseForm = ({ onCancel, onSubmit }) => {
     };
     const doSubmit = (e) => {
         e.preventDefault();
-        if (!formData.title || !formData.description)
+        if (!formData.title || !formData.description) {
+            setFeedback({ type: 'error', message: t('exercise:creation.feedback.missingFields') });
             return;
+        }
         const timestamp = new Date().toISOString();
         const newEx = {
             id: Date.now().toString(),
@@ -75,9 +79,19 @@ const AddExerciseForm = ({ onCancel, onSubmit }) => {
             createdAt: timestamp,
             updatedAt: timestamp
         };
-        onSubmit(newEx);
+        try {
+            onSubmit(newEx);
+            setFeedback({ type: 'success', message: t('exercise:creation.feedback.success') });
+            setFormData(createInitialFormState());
+        }
+        catch (error) {
+            console.error('Failed to submit exercise', error);
+            setFeedback({ type: 'error', message: t('exercise:creation.feedback.error') });
+        }
     };
-    return (_jsx("div", { className: "fixed inset-0 bg-slate-50 z-50 overflow-y-auto animate-slide-in", children: _jsxs("div", { className: "max-w-2xl mx-auto bg-white min-h-screen shadow-xl", children: [_jsxs("div", { className: "sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-10", children: [_jsx("h2", { className: "text-lg font-bold", children: t('exercise:creation.title') }), _jsx(Button, { variant: "ghost", size: "sm", onClick: onCancel, children: t('exercise:creation.cancel') })] }), _jsxs("form", { onSubmit: doSubmit, className: "p-6 space-y-6", children: [_jsxs("div", { className: "bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex gap-3", children: [_jsx(Clock, { className: "w-5 h-5 flex-shrink-0 mt-0.5" }), _jsx("p", { children: t('exercise:creation.communityNote') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('exercise:creation.form.title') }), _jsx("input", { className: "w-full border p-2 rounded-lg", value: formData.title, onChange: e => setFormData({ ...formData, title: e.target.value }), placeholder: t('exercise:creation.form.titlePlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('exercise:creation.form.description') }), _jsx("textarea", { className: "w-full border p-2 rounded-lg", value: formData.description, onChange: e => setFormData({ ...formData, description: e.target.value }), placeholder: t('exercise:creation.form.descriptionPlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('exercise:creation.form.image') }), _jsx("div", { className: "flex gap-2", children: _jsxs("div", { className: "relative flex-1", children: [_jsx(ImageIcon, { className: "absolute left-3 top-2.5 w-5 h-5 text-gray-400" }), _jsx("input", { className: "w-full border p-2 pl-10 rounded-lg", value: formData.imageUrl, onChange: e => setFormData({ ...formData, imageUrl: e.target.value }), placeholder: "https://..." })] }) }), _jsx("p", { className: "text-xs text-slate-500 mt-1", children: t('exercise:creation.form.imageHelper') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('exercise:creation.form.situation') }), _jsx("div", { className: "flex flex-wrap gap-2", children: Object.values(Situation).map(s => (_jsx("button", { type: "button", onClick: () => toggleSituation(s), className: `px-3 py-1 rounded-full text-xs border transition-colors ${formData.situation?.includes(s)
+    return (_jsx("div", { className: "fixed inset-0 bg-slate-50 z-50 overflow-y-auto animate-slide-in", children: _jsxs("div", { className: "max-w-2xl mx-auto bg-white min-h-screen shadow-xl", children: [_jsxs("div", { className: "sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-10", children: [_jsx("h2", { className: "text-lg font-bold", children: t('exercise:creation.title') }), _jsx(Button, { variant: "ghost", size: "sm", onClick: onCancel, children: t('exercise:creation.cancel') })] }), _jsxs("form", { onSubmit: doSubmit, className: "p-6 space-y-6", children: [_jsxs("div", { className: "bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex gap-3", children: [_jsx(Clock, { className: "w-5 h-5 flex-shrink-0 mt-0.5" }), _jsx("p", { children: t('exercise:creation.communityNote') })] }), feedback && (_jsx("div", { className: `rounded-xl border px-4 py-3 text-sm ${feedback.type === 'success'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                : 'bg-rose-50 border-rose-200 text-rose-700'}`, children: feedback.message })), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('exercise:creation.form.title') }), _jsx("input", { className: "w-full border p-2 rounded-lg", value: formData.title, onChange: e => setFormData({ ...formData, title: e.target.value }), placeholder: t('exercise:creation.form.titlePlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('exercise:creation.form.description') }), _jsx("textarea", { className: "w-full border p-2 rounded-lg", value: formData.description, onChange: e => setFormData({ ...formData, description: e.target.value }), placeholder: t('exercise:creation.form.descriptionPlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('exercise:creation.form.image') }), _jsx("div", { className: "flex gap-2", children: _jsxs("div", { className: "relative flex-1", children: [_jsx(ImageIcon, { className: "absolute left-3 top-2.5 w-5 h-5 text-gray-400" }), _jsx("input", { className: "w-full border p-2 pl-10 rounded-lg", value: formData.imageUrl, onChange: e => setFormData({ ...formData, imageUrl: e.target.value }), placeholder: "https://..." })] }) }), _jsx("p", { className: "text-xs text-slate-500 mt-1", children: t('exercise:creation.form.imageHelper') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('exercise:creation.form.situation') }), _jsx("div", { className: "flex flex-wrap gap-2", children: Object.values(Situation).map(s => (_jsx("button", { type: "button", onClick: () => toggleSituation(s), className: `px-3 py-1 rounded-full text-xs border transition-colors ${formData.situation?.includes(s)
                                             ? 'bg-teal-600 text-white border-teal-600'
                                             : 'bg-white text-slate-600 border-slate-200'}`, children: t(`situations.${s}`) }, s))) })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('exercise:creation.form.duration') }), _jsx("input", { className: "w-full border p-2 rounded-lg", value: formData.duration, onChange: e => setFormData({ ...formData, duration: e.target.value }), placeholder: t('exercise:creation.form.durationPlaceholder') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('exercise:creation.form.steps') }), formData.steps?.map((step, i) => (_jsxs("div", { className: "flex gap-2 mb-2", children: [_jsx("span", { className: "pt-2 text-xs text-slate-400", children: i + 1 }), _jsx("input", { className: "w-full border p-2 rounded-lg", value: step, onChange: e => handleStepChange(i, e.target.value), placeholder: t('exercise:creation.form.stepPlaceholder', { number: i + 1 }) })] }, i))), _jsx(Button, { type: "button", variant: "secondary", size: "sm", onClick: addStep, className: "mt-2", children: t('exercise:creation.form.addStep') })] }), _jsx("div", { className: "pt-6", children: _jsx(Button, { type: "submit", className: "w-full", size: "lg", children: t('exercise:creation.form.submit') }) })] })] }) }));
 };
@@ -494,6 +508,7 @@ const AdminDashboard = ({ onBack }) => {
     const [metricsError, setMetricsError] = useState(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
     const [metricsUpdatedAt, setMetricsUpdatedAt] = useState(null);
+    const [adminFeedback, setAdminFeedback] = useState(null);
     // Dummy state for moderation panel props since we reuse it
     const [pendingExercises, setPendingExercises] = useState([]);
     const [reviewedExercises, setReviewedExercises] = useState([]);
@@ -605,6 +620,7 @@ const AdminDashboard = ({ onBack }) => {
     const handleUpdateStatus = async (id, status) => {
         setActionInProgress(id);
         setAccountsError(null);
+        setAdminFeedback(null);
         try {
             if (status === 'active') {
                 await apiClient.approvePartner(id);
@@ -613,9 +629,19 @@ const AdminDashboard = ({ onBack }) => {
                 await apiClient.rejectPartner(id);
             }
             await loadAccounts();
+            setAdminFeedback({
+                type: 'success',
+                message: status === 'active'
+                    ? t('common:adminFeedback.approved')
+                    : t('common:adminFeedback.rejected')
+            });
         }
         catch (error) {
             setAccountsError(error.message || 'Unable to update account status');
+            setAdminFeedback({
+                type: 'error',
+                message: error.message || t('common:adminFeedback.updateError')
+            });
         }
         finally {
             setActionInProgress(null);
@@ -665,7 +691,9 @@ const AdminDashboard = ({ onBack }) => {
     }
     const pendingAccounts = accounts.filter(a => a.status === 'pending');
     const activeAccounts = accounts.filter(a => a.status === 'active');
-    return (_jsxs("div", { className: "min-h-screen bg-slate-50", children: [_jsx("header", { className: "bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-20", children: _jsxs("div", { className: "max-w-6xl mx-auto px-4 py-4 flex items-center justify-between", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(ShieldCheck, { className: "w-8 h-8 text-teal-400" }), _jsxs("div", { children: [_jsx("p", { className: "text-xs uppercase tracking-widest text-slate-400", children: "NeuroSooth" }), _jsx("h1", { className: "text-xl font-bold", children: "Admin Dashboard" })] })] }), _jsxs("div", { className: "flex gap-3", children: [_jsxs(Button, { variant: "secondary", size: "sm", onClick: () => setViewMode('batchTranslation'), children: [_jsx(Languages, { className: "w-4 h-4 mr-2" }), "Batch Traductions"] }), _jsxs(Button, { variant: "secondary", size: "sm", onClick: () => setViewMode('moderation'), children: [_jsx(ClipboardList, { className: "w-4 h-4 mr-2" }), "Moderation Content"] }), _jsxs(Button, { variant: "outline", size: "sm", onClick: handleLogout, className: "border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800", children: [_jsx(LogOut, { className: "w-4 h-4 mr-2" }), "Logout"] })] })] }) }), _jsxs("main", { className: "max-w-6xl mx-auto px-4 py-8 space-y-8", children: [_jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 border border-slate-200", children: [_jsxs("div", { className: "flex items-center justify-between mb-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(Activity, { className: "w-6 h-6 text-emerald-600" }), _jsxs("div", { children: [_jsx("p", { className: "text-xs uppercase tracking-wide text-slate-400", children: "Live overview" }), _jsx("h2", { className: "text-lg font-bold text-slate-900", children: "Platform metrics" })] })] }), _jsx("div", { className: "text-xs text-slate-500", children: metricsUpdatedAt
+    return (_jsxs("div", { className: "min-h-screen bg-slate-50", children: [_jsx("header", { className: "bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-20", children: _jsxs("div", { className: "max-w-6xl mx-auto px-4 py-4 flex items-center justify-between", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(ShieldCheck, { className: "w-8 h-8 text-teal-400" }), _jsxs("div", { children: [_jsx("p", { className: "text-xs uppercase tracking-widest text-slate-400", children: "NeuroSooth" }), _jsx("h1", { className: "text-xl font-bold", children: "Admin Dashboard" })] })] }), _jsxs("div", { className: "flex gap-3", children: [_jsxs(Button, { variant: "secondary", size: "sm", onClick: () => setViewMode('batchTranslation'), children: [_jsx(Languages, { className: "w-4 h-4 mr-2" }), "Batch Traductions"] }), _jsxs(Button, { variant: "secondary", size: "sm", onClick: () => setViewMode('moderation'), children: [_jsx(ClipboardList, { className: "w-4 h-4 mr-2" }), "Moderation Content"] }), _jsxs(Button, { variant: "outline", size: "sm", onClick: handleLogout, className: "border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800", children: [_jsx(LogOut, { className: "w-4 h-4 mr-2" }), "Logout"] })] })] }) }), _jsxs("main", { className: "max-w-6xl mx-auto px-4 py-8 space-y-8", children: [adminFeedback && (_jsx("div", { className: `rounded-xl border px-4 py-3 text-sm ${adminFeedback.type === 'success'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-rose-50 border-rose-200 text-rose-700'}`, children: adminFeedback.message })), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 border border-slate-200", children: [_jsxs("div", { className: "flex items-center justify-between mb-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(Activity, { className: "w-6 h-6 text-emerald-600" }), _jsxs("div", { children: [_jsx("p", { className: "text-xs uppercase tracking-wide text-slate-400", children: "Live overview" }), _jsx("h2", { className: "text-lg font-bold text-slate-900", children: "Platform metrics" })] })] }), _jsx("div", { className: "text-xs text-slate-500", children: metricsUpdatedAt
                                             ? `Updated ${new Date(metricsUpdatedAt).toLocaleTimeString()}`
                                             : 'Awaiting first sync' })] }), metricsError && (_jsx("div", { className: "mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800", children: metricsError })), isLoadingMetrics && !metrics ? (_jsx("p", { className: "text-slate-500 italic", children: "Loading platform metrics..." })) : (_jsx("div", { className: "grid gap-4 md:grid-cols-2 lg:grid-cols-4", children: metricCards.map(card => (_jsxs("div", { className: "p-4 border border-slate-100 rounded-xl bg-slate-50/60 flex items-center justify-between", children: [_jsxs("div", { children: [_jsx("p", { className: "text-xs uppercase tracking-wide text-slate-500", children: card.label }), _jsx("p", { className: "text-2xl font-bold text-slate-900", children: formatNumber(card.value) }), card.subLabel && _jsx("p", { className: "text-xs text-slate-500", children: card.subLabel })] }), _jsx("div", { className: `p-3 rounded-lg ${card.iconBg}`, children: _jsx(card.icon, { className: `w-6 h-6 ${card.iconColor}` }) })] }, card.label))) }))] }), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 border border-slate-200", children: [_jsx("div", { className: "flex items-center justify-between mb-6", children: _jsxs("div", { className: "flex items-center gap-3", children: [_jsx(UserPlus, { className: "w-6 h-6 text-amber-500" }), _jsxs("h2", { className: "text-lg font-bold text-slate-900", children: ["Pending Registrations (", pendingAccounts.length, ")"] })] }) }), accountsError && (_jsx("div", { className: "mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700", children: accountsError })), isLoadingAccounts ? (_jsx("p", { className: "text-slate-500 italic", children: "Loading partner accounts..." })) : pendingAccounts.length === 0 ? (_jsx("p", { className: "text-slate-500 italic", children: "No pending account requests." })) : (_jsx("div", { className: "overflow-x-auto", children: _jsxs("table", { className: "w-full text-left text-sm text-slate-600", children: [_jsx("thead", { className: "bg-slate-50 text-xs uppercase font-semibold text-slate-500", children: _jsxs("tr", { children: [_jsx("th", { className: "px-4 py-3 rounded-l-lg", children: "Organization" }), _jsx("th", { className: "px-4 py-3", children: "Contact" }), _jsx("th", { className: "px-4 py-3", children: "Email" }), _jsx("th", { className: "px-4 py-3 rounded-r-lg text-right", children: "Actions" })] }) }), _jsx("tbody", { className: "divide-y divide-slate-100", children: pendingAccounts.map(acc => (_jsxs("tr", { children: [_jsx("td", { className: "px-4 py-3 font-medium text-slate-900", children: acc.organization }), _jsx("td", { className: "px-4 py-3", children: acc.contactName }), _jsx("td", { className: "px-4 py-3", children: acc.email }), _jsxs("td", { className: "px-4 py-3 text-right flex justify-end gap-2", children: [_jsx(Button, { size: "sm", variant: "ghost", className: "text-rose-600 hover:bg-rose-50", onClick: () => handleUpdateStatus(acc.id, 'rejected'), disabled: actionInProgress === acc.id, children: actionInProgress === acc.id ? 'Processing...' : 'Reject' }), _jsx(Button, { size: "sm", onClick: () => handleUpdateStatus(acc.id, 'active'), disabled: actionInProgress === acc.id, children: actionInProgress === acc.id ? 'Saving...' : 'Approve' })] })] }, acc.id))) })] }) }))] }), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 border border-slate-200", children: [_jsxs("div", { className: "flex items-center gap-3 mb-6", children: [_jsx(Building2, { className: "w-6 h-6 text-teal-600" }), _jsxs("h2", { className: "text-lg font-bold text-slate-900", children: ["Active Partners (", activeAccounts.length, ")"] })] }), isLoadingAccounts ? (_jsx("p", { className: "text-slate-500 italic", children: "Loading partner accounts..." })) : activeAccounts.length === 0 ? (_jsx("p", { className: "text-slate-500 italic", children: "No active partners yet." })) : (_jsx("div", { className: "grid gap-4 md:grid-cols-2 lg:grid-cols-3", children: activeAccounts.map(acc => (_jsxs("div", { className: "p-4 border border-slate-100 rounded-xl hover:border-teal-200 transition-colors", children: [_jsx("h3", { className: "font-semibold text-slate-900", children: acc.organization }), _jsx("p", { className: "text-xs text-slate-500 mt-1", children: acc.contactName }), _jsx("p", { className: "text-xs text-slate-400", children: acc.email }), acc.role === 'admin' && _jsx("span", { className: "inline-block mt-2 px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded", children: "Admin" })] }, acc.id))) }))] })] })] }));
 };
