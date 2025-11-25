@@ -92,6 +92,54 @@ const clearFailedAttempts = (key?: string) => {
   }
 };
 
+const COMMON_PASSWORDS = new Set([
+  'password',
+  '123456',
+  '123456789',
+  'qwerty',
+  'abc123',
+  'letmein',
+  'monkey',
+  'dragon',
+  '111111',
+  'iloveyou'
+]);
+
+const validatePasswordComplexity = (password: string, email?: string) => {
+  const errors: string[] = [];
+  const normalizedPassword = password.trim();
+
+  if (normalizedPassword.length < 12) {
+    errors.push('Password must be at least 12 characters long.');
+  }
+
+  if (!/[a-z]/.test(normalizedPassword)) {
+    errors.push('Password must include at least one lowercase letter.');
+  }
+
+  if (!/[A-Z]/.test(normalizedPassword)) {
+    errors.push('Password must include at least one uppercase letter.');
+  }
+
+  if (!/[0-9]/.test(normalizedPassword)) {
+    errors.push('Password must include at least one number.');
+  }
+
+  if (!/[!@#$%^&*(),.?":{}|<>\-_[\]`;'/\\+=]/.test(normalizedPassword)) {
+    errors.push('Password must include at least one special character.');
+  }
+
+  if (COMMON_PASSWORDS.has(normalizedPassword.toLowerCase())) {
+    errors.push('Password is too common and easily guessable.');
+  }
+
+  if (email && normalizedPassword.toLowerCase().includes(email.toLowerCase())) {
+    errors.push('Password must not contain your email address.');
+  }
+
+  return errors;
+};
+
 // Helper to set cookie
 const setAuthCookie = (res: any, token: string) => {
   res.cookie('token', token, {
@@ -113,6 +161,34 @@ router.post('/register', authLockMiddleware, async (req, res, next) => {
         res.set('Retry-After', retryAfter.toString());
       }
       return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const passwordErrors = validatePasswordComplexity(password, email);
+    if (passwordErrors.length > 0) {
+      const lockUntil = registerFailedAttempt(res.locals.authAttemptKey);
+      if (lockUntil) {
+        const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
+        res.set('Retry-After', retryAfter.toString());
+      }
+
+      return res.status(400).json({
+        message: 'Password requirements not met',
+        errors: {
+          password: passwordErrors
+        },
+        requirements: {
+          minLength: 12,
+          requiresUppercase: true,
+          requiresLowercase: true,
+          requiresNumber: true,
+          requiresSpecialCharacter: true,
+          commonPasswordBlacklist: true
+        },
+        recommendedSecurity: {
+          recaptcha: 'Consider adding server-side reCAPTCHA verification to reduce automated abuse.',
+          emailVerification: 'Consider requiring email verification to activate accounts.'
+        }
+      });
     }
 
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
