@@ -10,6 +10,11 @@
     "title": "Ajouter une technique",
     "cancel": "Annuler",
     "communityNote": "Les contributions communautaires passent désormais par une revue humaine. Votre proposition apparaîtra dans la grille une fois validée par l'équipe de modération.",
+    "feedback": {
+      "success": "Votre technique a été envoyée en relecture.",
+      "error": "Impossible d'envoyer votre technique. Merci de réessayer.",
+      "missingFields": "Ajoutez un titre et une description avant de publier."
+    },
     "form": {
       "title": "Titre",
       "titlePlaceholder": "Ex: Respiration Carrée",

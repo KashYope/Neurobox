@@ -75,6 +75,11 @@
     "tokenRemoved": "Token removed.",
     "helpedPeople": "{{count}} people helped"
   },
+  "adminFeedback": {
+    "approved": "Partner account approved.",
+    "rejected": "Partner account rejected.",
+    "updateError": "Unable to update account status. Please try again."
+  },
   "neuroTypes": {
     "ADHD": "ADHD",
     "ASD": "ASD (Autism)",

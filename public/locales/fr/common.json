@@ -75,6 +75,11 @@
     "tokenRemoved": "Jeton supprimé.",
     "helpedPeople": "{{count}} personnes aidées"
   },
+  "adminFeedback": {
+    "approved": "Compte partenaire approuvé.",
+    "rejected": "Compte partenaire rejeté.",
+    "updateError": "Impossible de mettre à jour le statut du compte. Merci de réessayer."
+  },
   "neuroTypes": {
     "ADHD": "TDAH",
     "ASD": "TSA (Autisme)",

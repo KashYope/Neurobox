@@ -10,6 +10,11 @@
     "title": "Add a Technique",
     "cancel": "Cancel",
     "communityNote": "Community contributions now go through human review. Your proposal will appear in the grid once validated by the moderation team.",
+    "feedback": {
+      "success": "Your technique has been submitted for review.",
+      "error": "Unable to submit your technique. Please try again.",
+      "missingFields": "Please add a title and description before submitting."
+    },
     "form": {
       "title": "Title",
       "titlePlaceholder": "Ex: Box Breathing",
