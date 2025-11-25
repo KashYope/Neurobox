@@ -8,7 +8,7 @@ import { ZodError } from 'zod';
 import { exercisesRouter } from './routes/exercises.js';
 import { moderationRouter } from './routes/moderation.js';
 import { stringsRouter } from './routes/strings.js';
-import { authRouter } from './routes/auth.js';
+import { authLimiter, authRouter } from './routes/auth.js';
 import { adminRouter } from './routes/admin.js';
 import { env } from './env.js';
 import { optionalAuth } from './auth.js';
@@ -90,7 +90,7 @@ app.use(express.static(distPath, {
 }));
 
 // API routes (with auth middleware applied only to API routes)
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/exercises', optionalAuth, exercisesRouter);
 app.use('/api/moderation', optionalAuth, moderationRouter);
 app.use('/api/strings', optionalAuth, stringsRouter);
