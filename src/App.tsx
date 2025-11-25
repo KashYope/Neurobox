@@ -154,7 +154,7 @@ const ExerciseDetail: React.FC<{
 
 const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise) => void }> = ({ onCancel, onSubmit }) => {
   const { t } = useTranslation(['common', 'exercise']);
-  const [formData, setFormData] = useState<Partial<Exercise>>({
+  const createInitialFormState = (): Partial<Exercise> => ({
     title: '',
     description: '',
     duration: '',
@@ -164,6 +164,9 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
     tags: [],
     imageUrl: ''
   });
+
+  const [formData, setFormData] = useState<Partial<Exercise>>(createInitialFormState());
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const handleStepChange = (idx: number, val: string) => {
     const newSteps = [...(formData.steps || [])];
@@ -186,7 +189,10 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
 
   const doSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.description) return;
+    if (!formData.title || !formData.description) {
+      setFeedback({ type: 'error', message: t('exercise:creation.feedback.missingFields') });
+      return;
+    }
 
     const timestamp = new Date().toISOString();
     const newEx: Exercise = {
@@ -206,7 +212,14 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
       updatedAt: timestamp
     };
 
-    onSubmit(newEx);
+    try {
+      onSubmit(newEx);
+      setFeedback({ type: 'success', message: t('exercise:creation.feedback.success') });
+      setFormData(createInitialFormState());
+    } catch (error) {
+      console.error('Failed to submit exercise', error);
+      setFeedback({ type: 'error', message: t('exercise:creation.feedback.error') });
+    }
   };
 
   return (
@@ -224,6 +237,18 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
               {t('exercise:creation.communityNote')}
             </p>
           </div>
+
+          {feedback && (
+            <div
+              className={`rounded-xl border px-4 py-3 text-sm ${
+                feedback.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-rose-50 border-rose-200 text-rose-700'
+              }`}
+            >
+              {feedback.message}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.title')}</label>
             <input
@@ -1270,6 +1295,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [metricsError, setMetricsError] = useState<string | null>(null);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [metricsUpdatedAt, setMetricsUpdatedAt] = useState<number | null>(null);
+  const [adminFeedback, setAdminFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Dummy state for moderation panel props since we reuse it
   const [pendingExercises, setPendingExercises] = useState<Exercise[]>([]);
@@ -1389,6 +1415,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleUpdateStatus = async (id: string, status: 'active' | 'rejected') => {
      setActionInProgress(id);
      setAccountsError(null);
+     setAdminFeedback(null);
      try {
        if (status === 'active') {
          await apiClient.approvePartner(id);
@@ -1396,8 +1423,18 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
          await apiClient.rejectPartner(id);
        }
        await loadAccounts();
+       setAdminFeedback({
+         type: 'success',
+         message: status === 'active'
+           ? t('common:adminFeedback.approved')
+           : t('common:adminFeedback.rejected')
+       });
      } catch (error: any) {
        setAccountsError(error.message || 'Unable to update account status');
+       setAdminFeedback({
+         type: 'error',
+         message: error.message || t('common:adminFeedback.updateError')
+       });
      } finally {
        setActionInProgress(null);
      }
@@ -1489,6 +1526,18 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {adminFeedback && (
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              adminFeedback.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                : 'bg-rose-50 border-rose-200 text-rose-700'
+            }`}
+          >
+            {adminFeedback.message}
+          </div>
+        )}
+
         <section className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
