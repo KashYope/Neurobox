@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db.js';
@@ -7,6 +7,90 @@ import { env } from '../env.js';
 import { optionalAuth } from '../auth.js';
 
 const router = Router();
+
+const AUTH_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const AUTH_MAX_ATTEMPTS = 20;
+const MAX_FAILURES_BEFORE_LOCK = 5;
+const BASE_LOCK_MS = 60_000; // 1 minute
+const MAX_LOCK_MS = 15 * 60_000; // 15 minutes
+
+type AttemptWindow = {
+  count: number;
+  resetTime: number;
+};
+
+type FailureRecord = {
+  failures: number;
+  lockUntil?: number;
+};
+
+const requestWindows = new Map<string, AttemptWindow>();
+const failedAttempts = new Map<string, FailureRecord>();
+
+const getAttemptKey = (req: any) => `${req.ip}:${(req.body?.email ?? 'unknown').toLowerCase()}`;
+
+export const authLimiter: RequestHandler = (req, res, next) => {
+  const key = getAttemptKey(req);
+  const now = Date.now();
+  const window = requestWindows.get(key);
+
+  if (!window || window.resetTime <= now) {
+    requestWindows.set(key, { count: 1, resetTime: now + AUTH_WINDOW_MS });
+    return next();
+  }
+
+  if (window.count >= AUTH_MAX_ATTEMPTS) {
+    const retryAfter = Math.max(1, Math.ceil((window.resetTime - now) / 1000));
+    res.set('Retry-After', retryAfter.toString());
+    return res.status(429).json({ message: 'Too many authentication attempts. Please try again later.' });
+  }
+
+  window.count += 1;
+  next();
+};
+
+const authLockMiddleware: RequestHandler = (req, res, next) => {
+  const key = getAttemptKey(req);
+  const record = failedAttempts.get(key);
+  const now = Date.now();
+
+  if (record?.lockUntil && record.lockUntil > now) {
+    const retryAfter = Math.max(1, Math.ceil((record.lockUntil - now) / 1000));
+    res.set('Retry-After', retryAfter.toString());
+    return res
+      .status(429)
+      .json({ message: `Too many failed attempts. Try again in ${retryAfter} seconds.` });
+  }
+
+  res.locals.authAttemptKey = key;
+  next();
+};
+
+const registerFailedAttempt = (key?: string) => {
+  if (!key) return undefined;
+
+  const now = Date.now();
+  const existing = failedAttempts.get(key);
+
+  const baselineFailures = existing?.lockUntil && existing.lockUntil <= now ? 0 : existing?.failures ?? 0;
+  const failures = baselineFailures + 1;
+  let lockUntil: number | undefined;
+
+  if (failures >= MAX_FAILURES_BEFORE_LOCK) {
+    const backoffStep = failures - MAX_FAILURES_BEFORE_LOCK;
+    const lockDuration = Math.min(BASE_LOCK_MS * 2 ** backoffStep, MAX_LOCK_MS);
+    lockUntil = now + lockDuration;
+  }
+
+  failedAttempts.set(key, { failures, lockUntil });
+  return lockUntil;
+};
+
+const clearFailedAttempts = (key?: string) => {
+  if (key) {
+    failedAttempts.delete(key);
+  }
+};
 
 // Helper to set cookie
 const setAuthCookie = (res: any, token: string) => {
@@ -18,16 +102,26 @@ const setAuthCookie = (res: any, token: string) => {
   });
 };
 
-router.post('/register', async (req, res, next) => {
+router.post('/register', authLockMiddleware, async (req, res, next) => {
   try {
     const { organization, contactName, email, password } = req.body;
 
     if (!organization || !contactName || !email || !password) {
+      const lockUntil = registerFailedAttempt(res.locals.authAttemptKey);
+      if (lockUntil) {
+        const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
+        res.set('Retry-After', retryAfter.toString());
+      }
       return res.status(400).json({ message: 'All fields are required' });
     }
 
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
+      const lockUntil = registerFailedAttempt(res.locals.authAttemptKey);
+      if (lockUntil) {
+        const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
+        res.set('Retry-After', retryAfter.toString());
+      }
       return res.status(409).json({ message: 'Email already registered' });
     }
 
@@ -41,24 +135,44 @@ router.post('/register', async (req, res, next) => {
       [id, organization, contactName, email, hash]
     );
 
+    clearFailedAttempts(res.locals.authAttemptKey);
     res.status(201).json({ message: 'Registration successful. Please wait for approval.' });
   } catch (error) {
     next(error);
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', authLockMiddleware, async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      const lockUntil = registerFailedAttempt(res.locals.authAttemptKey);
+      if (lockUntil) {
+        const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
+        res.set('Retry-After', retryAfter.toString());
+      }
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     const user = result.rows[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      const lockUntil = registerFailedAttempt(res.locals.authAttemptKey);
+      if (lockUntil) {
+        const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
+        res.set('Retry-After', retryAfter.toString());
+      }
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     if (user.status !== 'active') {
+      const lockUntil = registerFailedAttempt(res.locals.authAttemptKey);
+      if (lockUntil) {
+        const retryAfter = Math.max(1, Math.ceil((lockUntil - Date.now()) / 1000));
+        res.set('Retry-After', retryAfter.toString());
+      }
       return res.status(403).json({ message: 'Account is not active' });
     }
 
@@ -72,6 +186,7 @@ router.post('/login', async (req, res, next) => {
       { expiresIn: '24h' }
     );
 
+    clearFailedAttempts(res.locals.authAttemptKey);
     setAuthCookie(res, token);
     res.json({
       user: {
