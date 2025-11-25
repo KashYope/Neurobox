@@ -216,32 +216,22 @@ const parseJsonDrafts = (content: string): PartnerExerciseDraft[] => {
 };
 
 const csvTemplateContent = [
-  'title,description,duration,situations,steps,tags,warning,imageUrl',
-  '"Respiration 4-7-8","Breathing exercise to calm the nervous system","4 min","Stress|Anxiety","Inhale for 4|Hold for 7|Exhale for 8","Breathing|Relaxation","Avoid if dizziness","https://placehold.co/600x400/0f172a/ffffff?text=Respiration"',
-  '"Routine vagale douce","Gentle vagus activation routine","6 min","Sensory overload|Stress","Neck massage|Yawning|Shoulder rolls","Somatic|Self-care","Stop if discomfort","https://placehold.co/600x400/0f172a/ffffff?text=Routine"'
+  'title,description,duration,situations,steps,tags,neurotypes,warning,imageUrl',
+  '"Respiration 5-5-5","Breathing exercise to calm the nervous system","5 min","Stress|Anxiety","Inhale for 5|Hold for 5|Exhale for 5","Breathing|Relaxation","ADHD|ASD","Avoid if dizziness","https://placehold.co/600x400/0f172a/ffffff?text=Respiration"'
 ].join('\n');
 
 const jsonTemplateContent = JSON.stringify(
   [
     {
-      title: 'Respiration 4-7-8',
+      title: 'Respiration 5-5-5',
       description: 'Breathing exercise to calm the nervous system',
-      duration: '4 min',
+      duration: '5 min',
       situations: ['Stress', 'Anxiety'],
-      steps: ['Inhale for 4', 'Hold for 7', 'Exhale for 8'],
+      steps: ['Inhale for 5', 'Hold for 5', 'Exhale for 5'],
       tags: ['Breathing', 'Relaxation'],
+      neurotypes: ['ADHD', 'ASD'],
       warning: 'Avoid if dizziness',
       imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Respiration'
-    },
-    {
-      title: 'Routine vagale douce',
-      description: 'Gentle vagus activation routine',
-      duration: '6 min',
-      situations: ['Sensory overload', 'Stress'],
-      steps: ['Neck massage', 'Yawning', 'Shoulder rolls'],
-      tags: ['Somatic', 'Self-care'],
-      warning: 'Stop if discomfort',
-      imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Routine'
     }
   ],
   null,
