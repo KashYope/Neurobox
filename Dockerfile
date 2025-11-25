@@ -11,36 +11,6 @@ RUN npm install
 # Copy all source files
 COPY . .
 
-# Copy types.ts to server/src to satisfy rootDir constraint
-RUN cp types.ts server/src/
-
-# Update server tsconfig - create a new one that doesn't extend parent
-RUN cat > server/tsconfig.json << TSCONFIG
-{
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "target": "ES2022",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "types": ["node"],
-    "skipLibCheck": true,
-    "noEmit": false
-  },
-  "include": ["./src/**/*.ts"]
-}
-TSCONFIG
-
-# Update imports - now it's one level up from utils/
-RUN sed -i "s|from '../../types.js'|from '../types.js'|g" server/src/utils/serializers.ts
-RUN sed -i "s|from '../../types.js'|from '../types.js'|g" server/src/utils/validation.ts
-
-# Fix type assertions in serializers
-RUN sed -i 's|situation: row.situation,|situation: row.situation as any,|g' server/src/utils/serializers.ts
-RUN sed -i 's|neurotypes: row.neurotypes,|neurotypes: row.neurotypes as any,|g' server/src/utils/serializers.ts
-
 # Build frontend
 RUN npm run build
 
