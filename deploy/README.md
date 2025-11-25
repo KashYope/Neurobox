@@ -6,8 +6,8 @@ This document walks through executing the approved plan so the Neurobox API and 
 
 1. Copy `deploy/env.server.example` to `.env.server` on your workstation.
 2. Fill in production values for:
-   - `DATABASE_URL` – point to the managed or self-hosted PostgreSQL instance. The schema is defined in `server/migrations/001_init.sql`.
-   - `JWT_SECRET` – generate a long random string (e.g. `openssl rand -hex 32`).
+   - `DATABASE_URL` – point to the managed or self-hosted PostgreSQL instance. The schema is defined in `server/migrations/001_init.sql`. The server exits at startup if this is missing in production.
+   - `JWT_SECRET` – generate a long random string (e.g. `openssl rand -hex 32`). The server exits at startup if this is missing in production.
    - `CORS_ORIGINS` – comma-separated list of HTTPS origins allowed to hit the API.
    - Optional overrides like `PORT` if 4000 is already taken in the container.
 3. Store the file safely (`chmod 600 .env.server`) and keep it out of version control.

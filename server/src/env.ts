@@ -13,12 +13,23 @@ const list = (value: string | undefined): string[] => {
   return value.split(',').map(entry => entry.trim()).filter(Boolean);
 };
 
+const requireEnv = (name: string, fallback?: string): string => {
+  const value = process.env[name] ?? fallback;
+  if (!value) {
+    throw new Error(`${name} is required${process.env.NODE_ENV === 'production' ? ' in production' : ''}`);
+  }
+
+  if (process.env.NODE_ENV === 'production' && !process.env[name]) {
+    throw new Error(`${name} must be set in the environment for production deployments.`);
+  }
+
+  return value;
+};
+
 export const env = {
   port: int(process.env.PORT, 4000),
-  databaseUrl:
-    process.env.DATABASE_URL ||
-    'postgresql://postgres:postgres@localhost:5432/neurobox',
-  jwtSecret: process.env.JWT_SECRET || 'local-dev-secret',
+  databaseUrl: requireEnv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/neurobox'),
+  jwtSecret: requireEnv('JWT_SECRET', 'local-dev-secret'),
   allowedOrigins: list(process.env.CORS_ORIGINS),
   googleTranslateApiKey: process.env.GOOGLE_TRANSLATE_API_KEY
 };
