@@ -6,7 +6,7 @@ export const exercisePayloadSchema = z.object({
   title: z.string().min(3),
   description: z.string().min(10),
   situation: z.array(z.nativeEnum(Situation)).min(1),
-  neurotypes: z.array(z.nativeEnum(NeuroType)).min(1),
+  neurotypes: z.array(z.nativeEnum(NeuroType)).default([]),
   duration: z.string().min(1),
   steps: z.array(z.string().min(2)).min(1),
   warning: z.string().optional(),
