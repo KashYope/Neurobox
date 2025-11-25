@@ -66,3 +66,4 @@ Logs stay isolated (`docker compose -f docker-compose.neurobox.yml logs -f neuro
 
 This sequence keeps the Neurobox services isolated from any existing Docker workloads on the VPS while remaining easy to maintain. Update this document if the deployment architecture evolves (e.g. you migrate to Kubernetes or add a CDN).
 
+
