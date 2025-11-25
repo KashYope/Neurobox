@@ -42,3 +42,30 @@
     animation: slideInRight 0.3s ease-out forwards;
   }
 }
+
+@layer components {
+  .progress-bar {
+    @apply w-full h-2 rounded-full overflow-hidden bg-slate-100;
+    appearance: none;
+  }
+
+  .progress-bar::-webkit-progress-bar {
+    background-color: #e2e8f0;
+  }
+
+  .progress-bar--success::-webkit-progress-value {
+    background-color: #14b8a6;
+  }
+
+  .progress-bar--error::-webkit-progress-value {
+    background-color: #f43f5e;
+  }
+
+  .progress-bar::-moz-progress-bar {
+    background-color: #14b8a6;
+  }
+
+  .progress-bar--error::-moz-progress-bar {
+    background-color: #f43f5e;
+  }
+}
