@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { ZodError } from 'zod';
 import { exercisesRouter } from './routes/exercises.js';
 import { moderationRouter } from './routes/moderation.js';
 import { stringsRouter } from './routes/strings.js';
@@ -101,6 +102,16 @@ app.get('*', (_req, res) => {
 });
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      message: 'Invalid request payload',
+      issues: err.errors.map(issue => ({
+        path: issue.path.join('.') || undefined,
+        message: issue.message
+      }))
+    });
+  }
+
   console.error(err);
   res.status(500).json({ message: 'Unexpected server error' });
 });
