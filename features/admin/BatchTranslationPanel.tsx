@@ -354,12 +354,15 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
               {job.perimeter && <p className="text-sm text-slate-600">Périmètre : {job.perimeter}</p>}
 
               <div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${job.status === 'failed' ? 'bg-rose-500' : 'bg-teal-500'}`}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+                <progress
+                  className={`progress-bar ${job.status === 'failed' ? 'progress-bar--error' : 'progress-bar--success'}`}
+                  value={job.progress.processed}
+                  max={job.progress.total}
+                  aria-valuemin={0}
+                  aria-valuemax={job.progress.total}
+                  aria-valuenow={job.progress.processed}
+                  aria-label="Progression de la traduction batch"
+                />
                 <p className="text-xs text-slate-500 mt-1">
                   {job.progress.processed}/{job.progress.total} - {progressPercent}%
                 </p>

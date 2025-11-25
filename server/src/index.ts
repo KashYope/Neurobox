@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { ZodError } from 'zod';
@@ -24,41 +25,42 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 console.log(`🚀 Starting server in ${isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION'} mode`);
 
-if (isDevelopment) {
-  // Disable CSP completely in development
-  app.use(
-    helmet({
-      contentSecurityPolicy: false,
-      crossOriginEmbedderPolicy: false,
-      crossOriginResourcePolicy: { policy: "cross-origin" },
-    })
-  );
-} else {
-  // Strict CSP for production
-  app.use(
-    helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", "data:", "blob:"],
-          fontSrc: ["'self'", "data:"],
-          connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
-          manifestSrc: ["'self'"],
-          workerSrc: ["'self'", "blob:"],
-          frameSrc: ["'none'"],
-          objectSrc: ["'none'"],
-          baseUri: ["'self'"],
-          formAction: ["'self'"],
-          upgradeInsecureRequests: [],
-        },
-      },
-      crossOriginEmbedderPolicy: false,
-      crossOriginResourcePolicy: { policy: "cross-origin" },
-    })
-  );
-}
+const buildContentSecurityPolicy = (nonce: string) => {
+  const directives = {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", `'nonce-${nonce}'`],
+    styleSrc: ["'self'", 'https://fonts.googleapis.com', `'nonce-${nonce}'`],
+    imgSrc: ["'self'", "data:", "blob:"],
+    fontSrc: ["'self'", 'https://fonts.gstatic.com', "data:"],
+    connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
+    manifestSrc: ["'self'"],
+    workerSrc: ["'self'", "blob:"],
+    frameSrc: ["'none'"],
+    objectSrc: ["'none'"],
+    baseUri: ["'self'"],
+    formAction: ["'self'"],
+    upgradeInsecureRequests: [],
+  };
+
+  if (isDevelopment) {
+    directives.scriptSrc?.push("'unsafe-eval'");
+    directives.connectSrc?.push('ws:', 'http://localhost:3000', 'https://localhost:3000');
+  }
+
+  return directives;
+};
+
+app.use((req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+
+  helmet({
+    contentSecurityPolicy: {
+      directives: buildContentSecurityPolicy(res.locals.cspNonce),
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })(req, res, next);
+});
 
 app.use(
   cors({
