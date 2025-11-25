@@ -1,7 +1,10 @@
 import { Pool } from 'pg';
 import { env } from './env.js';
 
-export const pool = new Pool({ connectionString: env.databaseUrl });
+export const pool = new Pool({
+  connectionString: env.databaseUrl,
+  allowExitOnIdle: process.env.NODE_ENV === 'test'
+});
 
 export type ExerciseRow = {
   id: string;

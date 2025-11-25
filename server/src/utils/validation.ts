@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NeuroType, Situation, type ModerationStatus } from '../../types.js';
+import { NeuroType, Situation, type ModerationStatus } from '../../../types.ts';
 
 export const exercisePayloadSchema = z.object({
   id: z.string().min(3),

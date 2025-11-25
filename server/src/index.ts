@@ -62,9 +62,11 @@ app.use((req, res, next) => {
   })(req, res, next);
 });
 
+const corsOrigins = env.allowedOrigins.length ? env.allowedOrigins : true;
+
 app.use(
   cors({
-    origin: env.allowedOrigins.length ? env.allowedOrigins : undefined,
+    origin: corsOrigins,
     credentials: true
   })
 );
@@ -119,10 +121,14 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // Seed database on startup if empty
-seedDatabaseIfEmpty().catch(error => {
-  console.error('Failed to seed database:', error);
-});
+if (process.env.NODE_ENV !== 'test') {
+  seedDatabaseIfEmpty().catch(error => {
+    console.error('Failed to seed database:', error);
+  });
 
-app.listen(env.port, () => {
-  console.log(`API listening on port ${env.port}`);
-});
+  app.listen(env.port, () => {
+    console.log(`API listening on port ${env.port}`);
+  });
+}
+
+export { app };

@@ -1,5 +1,5 @@
 import type { ExerciseRow } from '../db.js';
-import type { ServerExercise } from '../../types.js';
+import type { ServerExercise } from '../../../types.ts';
 
 const toIso = (value: Date | null | undefined): string | undefined =>
   value ? value.toISOString() : undefined;
