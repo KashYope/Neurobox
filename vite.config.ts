@@ -42,16 +42,13 @@ export default defineConfig(({ mode }) => {
             display: 'standalone',
             scope: '/',
             start_url: '/',
+            id: '/',
             lang: 'fr',
             orientation: 'portrait',
             prefer_related_applications: false,
             icons: [
-              { src: '/icons/app-icon.svg', sizes: '192x192', type: 'image/svg+xml' },
-              { src: '/icons/app-icon.svg', sizes: '256x256', type: 'image/svg+xml' },
-              { src: '/icons/app-icon.svg', sizes: '512x512', type: 'image/svg+xml' },
-              { src: '/icons/app-icon.svg', sizes: '1024x1024', type: 'image/svg+xml' },
-              { src: '/icons/maskable-icon.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' },
-              { src: '/icons/app-icon.svg', sizes: '180x180', type: 'image/svg+xml' }
+              { src: '/icons/app-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+              { src: '/icons/maskable-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }
             ],
             screenshots: [
               {
