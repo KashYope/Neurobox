@@ -30,7 +30,7 @@ const buildContentSecurityPolicy = (nonce: string) => {
     defaultSrc: ["'self'"],
     scriptSrc: ["'self'", `'nonce-${nonce}'`],
     styleSrc: ["'self'", 'https://fonts.googleapis.com', `'nonce-${nonce}'`],
-    imgSrc: ["'self'", "data:", "blob:"],
+    imgSrc: ["'self'", "data:", "blob:", "https://placehold.co"],
     fontSrc: ["'self'", 'https://fonts.gstatic.com', "data:"],
     connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
     manifestSrc: ["'self'"],
