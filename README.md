@@ -235,6 +235,27 @@ npm run server:start
   docker run --env-file .env -p 4000:4000 neurosooth-api
   ```
 
+### Content Security Policy (CSP)
+
+La politique de sécurité du contenu (Content Security Policy) est gérée côté serveur pour renforcer la sécurité de l'application. Elle est configurée dans le fichier `server/src/index.ts` via le middleware `helmet`.
+
+La configuration se trouve dans la fonction `buildContentSecurityPolicy`. Pour autoriser une nouvelle source pour un type de contenu (par exemple, une image), ajoutez le domaine à la directive correspondante.
+
+**Exemple : Autoriser une nouvelle source d'images**
+
+Pour autoriser les images provenant de `https://example.com`, modifiez la directive `imgSrc` comme suit :
+
+```typescript
+// in server/src/index.ts
+const directives = {
+  // ... autres directives
+  imgSrc: ["'self'", "data:", "blob:", "https://placehold.co", "https://example.com"],
+  // ... autres directives
+};
+```
+
+Après avoir modifié la politique, vous devrez redéployer l'application pour que les changements prennent effet.
+
 ## Déploiement VPS (Docker + nginx)
 
 Un guide détaillé est disponible dans `deploy/README.md`. Il couvre :
