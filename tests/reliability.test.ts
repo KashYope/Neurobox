@@ -8,7 +8,7 @@ import { getIllustrationModel } from '../components/exercises/ExerciseIllustrati
 import { getRecommendedExercises } from '../services/dataService';
 import { exercisePayloadSchema, thankExerciseSchema } from '../server/src/utils/validation';
 import { sanitizeImagePath } from '../server/src/utils/serializers';
-import { Exercise } from '../types';
+import { Exercise, NeuroType, Situation } from '../types';
 
 const flattenKeys = (value: unknown, prefix = ''): string[] => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return [prefix];
@@ -17,11 +17,11 @@ const flattenKeys = (value: unknown, prefix = ''): string[] => {
   );
 };
 
-test('official seed data starts with truthful zero counts and local artwork', () => {
+test('official seed data starts with truthful zero counts and always has procedural artwork', () => {
   assert.ok(INITIAL_EXERCISES.length > 0);
   INITIAL_EXERCISES.forEach(exercise => {
     assert.equal(exercise.thanksCount, 0);
-    assert.match(exercise.imageUrl || '', /^\/images\/exercises\/[a-z0-9-]+\.svg$/);
+    assert.match(getIllustrationModel(exercise).primary, /^#[0-9a-f]{6}$/i);
   });
 });
 
@@ -50,6 +50,30 @@ test('procedural illustration models are deterministic and use approved colors',
   assert.match(first.accent, /^#[0-9a-f]{6}$/i);
 });
 
+test('illustrations share one palette per primary situation', () => {
+  const base = { ...INITIAL_EXERCISES[0], imageUrl: '/images/exercises/legacy-french.svg' };
+  const stressA = getIllustrationModel({ ...base, id: 'stress-a', situation: [Situation.Stress], neurotypes: [NeuroType.ADHD] });
+  const stressB = getIllustrationModel({ ...base, id: 'stress-b', situation: [Situation.Stress], neurotypes: [NeuroType.Trauma] });
+  const sleep = getIllustrationModel({ ...base, id: 'sleep', situation: [Situation.Sleep], neurotypes: [NeuroType.ADHD] });
+
+  assert.deepEqual(
+    [stressA.primary, stressA.secondary, stressA.accent],
+    [stressB.primary, stressB.secondary, stressB.accent]
+  );
+  assert.notEqual(stressA.primary, sleep.primary);
+});
+
+test('profile shapes are stable for reordered profile lists and future exercises', () => {
+  const base = { ...INITIAL_EXERCISES[0], situation: [Situation.Focus] };
+  const first = getIllustrationModel({ ...base, id: 'profile-a', neurotypes: [NeuroType.ASD, NeuroType.ADHD] });
+  const reordered = getIllustrationModel({ ...base, id: 'profile-b', neurotypes: [NeuroType.ADHD, NeuroType.ASD] });
+  const universal = getIllustrationModel({ ...base, id: 'profile-c', neurotypes: [] });
+
+  assert.equal(first.profile, NeuroType.ADHD);
+  assert.equal(reordered.profile, NeuroType.ADHD);
+  assert.equal(universal.profile, 'Universal');
+});
+
 test('exercise creation rejects client metrics, ownership flags, and external images', () => {
   const valid = {
     id: 'community-test',
@@ -63,6 +87,8 @@ test('exercise creation rejects client metrics, ownership flags, and external im
   };
 
   assert.equal(exercisePayloadSchema.safeParse(valid).success, true);
+  assert.equal(exercisePayloadSchema.safeParse({ ...valid, supportNeeds: ['Focus', 'TaskInitiation'] }).success, true);
+  assert.equal(exercisePayloadSchema.safeParse({ ...valid, supportNeeds: ['Diagnosis'] }).success, false);
   assert.equal(exercisePayloadSchema.safeParse({ ...valid, thanksCount: 250 }).success, false);
   assert.equal(exercisePayloadSchema.safeParse({ ...valid, isPartnerContent: true }).success, false);
   assert.equal(exercisePayloadSchema.safeParse({ ...valid, imageUrl: 'https://example.com/image.svg' }).success, false);

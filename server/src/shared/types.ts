@@ -6,6 +6,36 @@ export enum NeuroType {
   None = 'None'
 }
 
+export enum SupportNeed {
+  Focus = 'Focus',
+  TaskInitiation = 'TaskInitiation',
+  Organization = 'Organization',
+  WorkingMemory = 'WorkingMemory',
+  Movement = 'Movement',
+  SensoryRegulation = 'SensoryRegulation',
+  Recovery = 'Recovery',
+  Predictability = 'Predictability',
+  Communication = 'Communication',
+  ReadingWriting = 'ReadingWriting',
+  Sequencing = 'Sequencing',
+  MotorPlanning = 'MotorPlanning',
+  TaskSetup = 'TaskSetup',
+  NumberSupport = 'NumberSupport',
+  Confidence = 'Confidence'
+}
+
+export interface SupportNeedWeight {
+  need: SupportNeed;
+  weight: number;
+}
+
+export interface RecommendationProfile {
+  version: 1;
+  source: 'assessment' | 'manual';
+  needs: SupportNeedWeight[];
+  createdAt: string;
+}
+
 export enum Situation {
   Crisis = 'Crisis',
   Rumination = 'Rumination',
@@ -44,7 +74,7 @@ export interface Exercise {
   title: string;
   description: string;
   steps: string[];
-  warning?: string; // Critical clinical warnings from PDFs
+  warning?: string; // Optional safety information
 
   // String ID fields for translation system (new)
   titleStringId?: string;        // e.g., 'exercise.resp_478.title'
@@ -56,8 +86,9 @@ export interface Exercise {
   situation: Situation[];
   neurotypes: NeuroType[]; // Who is this best for?
   duration: string;
-  imageUrl?: string; // Optional first-party asset; otherwise artwork is generated locally
+  imageUrl?: string; // Legacy/custom media metadata; the NDee catalog renders its unified procedural artwork
   tags: string[];
+  supportNeeds: SupportNeed[];
   thanksCount: number;
   isCommunitySubmitted?: boolean;
   isPartnerContent?: boolean;

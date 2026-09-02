@@ -87,6 +87,7 @@ const createPartnerExercise = (draft: PartnerExerciseDraft, defaultStep: string,
     tags: tags.length ? tags : ['Partenaire'],
     situation,
     neurotypes: draft.neurotypes || [],
+    supportNeeds: [],
     warning: draft.warning,
     thanksCount: 0,
     author,
@@ -815,11 +816,11 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-100">
+    <div className="min-h-screen">
+      <header className="border-b bg-[rgba(248,245,239,0.92)] backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-teal-600 text-white rounded-xl p-2">
+            <div className="rounded-2xl bg-[var(--ndee-sage)] p-2 text-[var(--ndee-primary-strong)]">
               <Building2 className="w-6 h-6" />
             </div>
             <div>

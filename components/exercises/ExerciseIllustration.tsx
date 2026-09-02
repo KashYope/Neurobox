@@ -1,25 +1,42 @@
-import React, { useEffect, useState } from 'react';
-import { Exercise, Situation } from '../../types';
+import React from 'react';
+import { Exercise, NeuroType, Situation } from '../../types';
 
-type IllustrationKind = 'breath' | 'grounding' | 'movement' | 'sleep' | 'focus' | 'comfort';
+export type IllustrationCategory = Situation | 'General';
+export type IllustrationProfile = NeuroType | 'Universal';
 
 export interface IllustrationModel {
-  kind: IllustrationKind;
+  category: IllustrationCategory;
+  profile: IllustrationProfile;
   primary: string;
   secondary: string;
   accent: string;
-  rotation: number;
   variant: number;
 }
 
-const palettes: Record<IllustrationKind, [string, string, string]> = {
-  breath: ['#0f766e', '#5eead4', '#ccfbf1'],
-  grounding: ['#6d28d9', '#c4b5fd', '#f5f3ff'],
-  movement: ['#be123c', '#fda4af', '#fff1f2'],
-  sleep: ['#3730a3', '#a5b4fc', '#eef2ff'],
-  focus: ['#0369a1', '#7dd3fc', '#f0f9ff'],
-  comfort: ['#b45309', '#fcd34d', '#fffbeb']
+type Palette = readonly [primary: string, secondary: string, accent: string];
+
+/** One stable palette per exercise category. Keep this map exhaustive for future situations. */
+const CATEGORY_PALETTES: Record<IllustrationCategory, Palette> = {
+  [Situation.Crisis]: ['#f3d8d3', '#e8bbb6', '#744e4c'],
+  [Situation.Rumination]: ['#e9e3f1', '#d0c4df', '#5f5573'],
+  [Situation.Freeze]: ['#deebf0', '#bdd6df', '#476670'],
+  [Situation.Stress]: ['#dfece3', '#bed8c7', '#3f6258'],
+  [Situation.Anger]: ['#f5dfd5', '#e8c0af', '#79584d'],
+  [Situation.Sleep]: ['#e5e6f2', '#c5c9df', '#535970'],
+  [Situation.Pain]: ['#f3e8bd', '#e0cf91', '#705f32'],
+  [Situation.Focus]: ['#dcebf0', '#b8d5df', '#456874'],
+  [Situation.Trauma]: ['#eadfe7', '#d6becf', '#6f5265'],
+  General: ['#ebe8df', '#d8d4c8', '#59635f']
 };
+
+/** Fixed precedence makes a multi-profile exercise independent from array ordering. */
+const PROFILE_PRECEDENCE: NeuroType[] = [
+  NeuroType.ADHD,
+  NeuroType.ASD,
+  NeuroType.Trauma,
+  NeuroType.HighSensitivity,
+  NeuroType.None
+];
 
 const hashString = (value: string): number => {
   let hash = 2166136261;
@@ -30,27 +47,87 @@ const hashString = (value: string): number => {
   return hash >>> 0;
 };
 
-const kindForSituation = (situation?: Situation): IllustrationKind => {
-  if (situation === Situation.Sleep || situation === Situation.Rumination) return 'sleep';
-  if (situation === Situation.Anger || situation === Situation.Stress) return 'movement';
-  if (situation === Situation.Focus) return 'focus';
-  if (situation === Situation.Freeze || situation === Situation.Crisis || situation === Situation.Trauma) return 'grounding';
-  if (situation === Situation.Pain) return 'comfort';
-  return 'breath';
-};
+const resolveCategory = (exercise: Exercise): IllustrationCategory =>
+  exercise.situation[0] ?? 'General';
+
+const resolveProfile = (exercise: Exercise): IllustrationProfile =>
+  PROFILE_PRECEDENCE.find(profile => exercise.neurotypes.includes(profile)) ?? 'Universal';
 
 export const getIllustrationModel = (exercise: Exercise): IllustrationModel => {
-  const hash = hashString(`${exercise.id}:${exercise.situation[0] || 'breath'}`);
-  const kind = kindForSituation(exercise.situation[0]);
-  const [primary, secondary, accent] = palettes[kind];
+  const category = resolveCategory(exercise);
+  const profile = resolveProfile(exercise);
+  const [primary, secondary, accent] = CATEGORY_PALETTES[category];
+
   return {
-    kind,
+    category,
+    profile,
     primary,
     secondary,
     accent,
-    rotation: (hash % 19) - 9,
-    variant: hash % 4
+    variant: hashString(exercise.id) % 4
   };
+};
+
+const ProfileShape: React.FC<{ model: IllustrationModel }> = ({ model }) => {
+  const line = {
+    fill: 'none',
+    stroke: model.accent,
+    strokeWidth: 12,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const
+  };
+
+  if (model.profile === NeuroType.ADHD) {
+    return <g>
+      <ellipse cx="600" cy="400" rx="245" ry="125" {...line} transform="rotate(-18 600 400)" />
+      <ellipse cx="600" cy="400" rx="245" ry="125" {...line} transform="rotate(42 600 400)" opacity="0.62" />
+      <circle cx="600" cy="400" r="72" fill={model.accent} opacity="0.2" />
+      <circle cx="815" cy="310" r="25" fill={model.accent} />
+      <circle cx="420" cy="520" r="18" fill={model.accent} opacity="0.7" />
+    </g>;
+  }
+
+  if (model.profile === NeuroType.ASD) {
+    return <g>
+      {[0, 1, 2].map(row => [0, 1, 2].map(column => (
+        <rect key={`${row}-${column}`} x={430 + column * 125} y={230 + row * 125} width="92" height="92" rx="24" fill={model.accent} opacity={0.12 + ((row + column) % 3) * 0.12} />
+      )))}
+      <rect x="407" y="207" width="386" height="386" rx="76" {...line} />
+    </g>;
+  }
+
+  if (model.profile === NeuroType.Trauma) {
+    return <g>
+      <path d="M360 475 C405 245 795 245 840 475" {...line} />
+      <path d="M420 485 C455 330 745 330 780 485" {...line} opacity="0.68" />
+      <path d="M485 500 C515 420 685 420 715 500" {...line} opacity="0.42" />
+      <circle cx="600" cy="505" r="42" fill={model.accent} opacity="0.2" />
+    </g>;
+  }
+
+  if (model.profile === NeuroType.HighSensitivity) {
+    return <g transform="translate(600 400)">
+      {[0, 60, 120, 180, 240, 300].map(angle => (
+        <ellipse key={angle} cx="0" cy="-142" rx="64" ry="142" fill={model.accent} opacity="0.16" transform={`rotate(${angle})`} />
+      ))}
+      <circle r="82" {...line} />
+      <circle r="35" fill={model.accent} opacity="0.24" />
+    </g>;
+  }
+
+  if (model.profile === NeuroType.None) {
+    return <g>
+      <circle cx="530" cy="400" r="155" {...line} />
+      <circle cx="670" cy="400" r="155" {...line} opacity="0.58" />
+      <path d="M510 400 H690" {...line} opacity="0.45" />
+    </g>;
+  }
+
+  return <g>
+    <circle cx="600" cy="400" r="178" {...line} />
+    <path d="M455 400 C520 300 680 300 745 400 C680 500 520 500 455 400Z" fill={model.accent} opacity="0.16" />
+    <circle cx="600" cy="400" r="48" fill={model.accent} opacity="0.5" />
+  </g>;
 };
 
 const ProceduralArtwork: React.FC<{
@@ -59,14 +136,7 @@ const ProceduralArtwork: React.FC<{
   decorative?: boolean;
 }> = ({ exercise, className, decorative = false }) => {
   const model = getIllustrationModel(exercise);
-  const gradientId = `exercise-gradient-${hashString(exercise.id).toString(36)}`;
-  const shared = {
-    fill: 'none',
-    stroke: model.accent,
-    strokeWidth: 10,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const
-  };
+  const offset = model.variant * 26;
 
   return (
     <svg
@@ -77,84 +147,23 @@ const ProceduralArtwork: React.FC<{
       aria-hidden={decorative || undefined}
       aria-label={decorative ? undefined : exercise.title}
     >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={model.primary} />
-          <stop offset="100%" stopColor={model.secondary} />
-        </linearGradient>
-      </defs>
-      <rect width="1200" height="800" fill={`url(#${gradientId})`} />
-      <circle cx={180 + model.variant * 35} cy="145" r="95" fill={model.accent} opacity="0.12" />
-      <circle cx="1040" cy="650" r={155 + model.variant * 18} fill={model.accent} opacity="0.1" />
-      <g transform={`rotate(${model.rotation} 600 400)`}>
-        {model.kind === 'breath' && (
-          <>
-            <path d="M180 420 C300 270 420 570 540 420 S780 270 900 420 S1080 570 1140 420" {...shared} />
-            <circle cx="600" cy="400" r="135" fill={model.accent} opacity="0.14" />
-            <circle cx="600" cy="400" r="70" {...shared} />
-          </>
-        )}
-        {model.kind === 'grounding' && (
-          <>
-            {[190, 140, 90].map(radius => <circle key={radius} cx="600" cy="400" r={radius} {...shared} opacity={1 - radius / 500} />)}
-            <path d="M410 590 L600 400 L790 590" {...shared} />
-          </>
-        )}
-        {model.kind === 'movement' && (
-          <>
-            <path d="M250 520 C390 170 560 640 710 310 C790 140 930 210 1010 370" {...shared} />
-            <path d="M890 220 L1020 350 L845 390" {...shared} />
-            <circle cx="310" cy="300" r="70" fill={model.accent} opacity="0.16" />
-          </>
-        )}
-        {model.kind === 'sleep' && (
-          <>
-            <path d="M680 180 A250 250 0 1 0 880 555 A220 220 0 0 1 680 180Z" fill={model.accent} opacity="0.2" />
-            {[[350, 250], [820, 210], [930, 455], [430, 590]].map(([x, y]) => (
-              <path key={`${x}-${y}`} d={`M${x} ${y - 24} V${y + 24} M${x - 24} ${y} H${x + 24}`} {...shared} />
-            ))}
-          </>
-        )}
-        {model.kind === 'focus' && (
-          <>
-            {[0, 1, 2].map(row => [0, 1, 2].map(column => (
-              <rect key={`${row}-${column}`} x={410 + column * 130} y={210 + row * 130} width="82" height="82" rx="20" fill={model.accent} opacity={0.12 + (row + column + model.variant) % 3 * 0.12} />
-            )))}
-            <circle cx="600" cy="400" r="58" {...shared} />
-          </>
-        )}
-        {model.kind === 'comfort' && (
-          <>
-            <path d="M600 610 C520 520 330 410 330 275 C330 145 505 115 600 250 C695 115 870 145 870 275 C870 410 680 520 600 610Z" fill={model.accent} opacity="0.2" />
-            <path d="M420 430 C500 350 700 350 780 430" {...shared} />
-          </>
-        )}
-      </g>
+      <rect width="1200" height="800" fill={model.primary} />
+      <circle cx={165 + offset} cy="135" r="125" fill={model.secondary} opacity="0.62" />
+      <circle cx={1035 - offset} cy="670" r="190" fill={model.secondary} opacity="0.52" />
+      <path d="M0 690 C260 570 410 780 650 675 C865 580 990 615 1200 510 V800 H0Z" fill={model.secondary} opacity="0.34" />
+      <ProfileShape model={model} />
     </svg>
   );
 };
 
+/**
+ * All exercises use the same generated visual grammar. Legacy imageUrl values stay in
+ * the data model for backwards compatibility but are intentionally not rendered here.
+ */
 export const ExerciseIllustration: React.FC<{
   exercise: Exercise;
   className?: string;
   decorative?: boolean;
-}> = ({ exercise, className = 'w-full h-full object-cover', decorative = false }) => {
-  const [assetFailed, setAssetFailed] = useState(false);
-  useEffect(() => setAssetFailed(false), [exercise.id, exercise.imageUrl]);
-
-  const isGeneratedContent = exercise.isCommunitySubmitted || exercise.isPartnerContent;
-  const hasSafeAsset = Boolean(exercise.imageUrl?.startsWith('/images/'));
-
-  if (!isGeneratedContent && hasSafeAsset && !assetFailed) {
-    return (
-      <img
-        src={exercise.imageUrl}
-        alt={decorative ? '' : exercise.title}
-        className={className}
-        onError={() => setAssetFailed(true)}
-      />
-    );
-  }
-
-  return <ProceduralArtwork exercise={exercise} className={className} decorative={decorative} />;
-};
+}> = ({ exercise, className = 'w-full h-full object-cover', decorative = false }) => (
+  <ProceduralArtwork exercise={exercise} className={className} decorative={decorative} />
+);

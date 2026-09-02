@@ -1,48 +1,49 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: neurobox_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: neurobox
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
     volumes:
-      - neurobox_postgres_data:/var/lib/postgresql/data
-    networks:
-      - neurobox_network
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d neurobox"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: neurobox_app
     restart: unless-stopped
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/neurobox
-      PORT: 4000
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      NODE_ENV: ${NODE_ENV:-development}
-      GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY}
+      NODE_ENV: production
+      PORT: "4000"
+      DATABASE_URL: postgresql://postgres:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/neurobox
+      JWT_SECRET: ${SERVICE_PASSWORD_64_JWT}
+      CORS_ORIGINS: ${SERVICE_URL_APP_4000}
+      GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY:-}
+      SERVICE_URL_APP_4000: ${SERVICE_URL_APP_4000}
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - neurobox_network
-
-networks:
-  neurobox_network:
-    name: neurobox_network
-    driver: bridge
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:4000/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    stop_grace_period: 20s
 
 volumes:
-  neurobox_postgres_data:
-    name: neurobox_postgres_data
+  postgres-data:

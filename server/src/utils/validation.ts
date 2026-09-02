@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { NeuroType, Situation, type ModerationStatus } from '../shared/types.js';
+import { NeuroType, Situation, SupportNeed, type ModerationStatus } from '../shared/types.js';
 
 export const exercisePayloadSchema = z.object({
   id: z.string().min(3),
@@ -12,6 +12,7 @@ export const exercisePayloadSchema = z.object({
   warning: z.string().optional(),
   imageUrl: z.string().regex(/^\/(?!\/)[A-Za-z0-9/_.,()'%-]+$/, 'Image must be a same-origin path').optional(),
   tags: z.array(z.string().min(1)).default([]),
+  supportNeeds: z.array(z.nativeEnum(SupportNeed)).default([]),
   author: z.string().optional()
 }).strict();
 

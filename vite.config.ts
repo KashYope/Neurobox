@@ -53,12 +53,12 @@ export default defineConfig(() => {
             ]
           },
           manifest: {
-            name: 'NeuroSooth - Régulation Somatique',
-            short_name: 'NeuroSooth',
+            name: 'NDee - La boîte à outils de la neurodiversité',
+            short_name: 'NDee',
             description:
-              'Programme somatique et exercices guidés pour apaiser le système nerveux et suivre sa progression.',
-            theme_color: '#0f172a',
-            background_color: '#f8fafc',
+              'Auto-réflexion privée et exercices pratiques pour la neurodiversité.',
+            theme_color: '#f8f5ef',
+            background_color: '#f8f5ef',
             display: 'standalone',
             scope: '/',
             start_url: '/',

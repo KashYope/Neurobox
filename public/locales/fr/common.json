@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "NeuroSooth",
-    "tagline": "Régulation somatique"
+    "name": "NDee",
+    "tagline": "La boîte à outils de la neurodiversité"
   },
   "buttons": {
     "submit": "Valider",
@@ -23,7 +23,7 @@
     "addStep": "Ajouter une étape",
     "sendThanks": "Dire Merci",
     "thanksSent": "Merci envoyé !",
-    "start": "Commencer l'aventure"
+    "start": "Continuer"
   },
   "languageSelector": {
     "label": "Langue / Language"
@@ -56,6 +56,7 @@
     "rejected": "Refusée"
   },
   "menu": {
+    "open": "Ouvrir les options",
     "adminSpace": "Espace admin",
     "quickActions": "Actions rapides",
     "sync": "Synchronisation",
@@ -66,7 +67,7 @@
     "moderatorToken": "Jeton modérateur"
   },
   "badges": {
-    "editorialPick": "Sélection NeuroSooth",
+    "editorialPick": "Sélection NDee",
     "teamApproved": "Validé par l’équipe"
   },
   "messages": {
@@ -121,8 +122,16 @@
     "None": "Neurotypique"
   },
   "dashboard": {
+    "backHome": "Retour à l’accueil NDee",
+    "toolboxEyebrow": "Votre boîte à outils",
+    "filterPrompt": "Comment vous sentez-vous maintenant ?",
+    "gentleStartingPoint": "Un point de départ en douceur",
+    "exerciseList": "Pratiques proposées",
     "recommendedForYou": "Recommandé pour vous",
-    "basedOnProfile": "Basé sur votre profil {{neurotypes}}",
+    "basedOnProfile": "Basé sur vos préférences {{neurotypes}}",
+    "basedOnReflection": "Suggestions issues du profil de soutien enregistré sur cet appareil.",
+    "guestCatalog": "Tous les exercices, sans compte ni questionnaire.",
+    "suggestedBecause": "Suggéré pour : {{reasons}}",
     "specificTechniques": "Techniques de régulation spécifiques",
     "noTechniquesFound": "Aucune technique trouvée",
     "tryChangeFilter": "Essayez de changer de filtre ou ajoutez votre propre technique."
@@ -137,7 +146,7 @@
     "syncing": "Synchronisation…",
     "dataSynced": "Données parfaitement synchronisées",
     "apiTokens": "Jetons API",
-    "apiTokensDesc": "Collez les tokens signés fournis par NeuroSooth pour publier et modérer via le backend sécurisé.",
+    "apiTokensDesc": "Collez les jetons signés fournis par NDee pour publier et modérer via le backend sécurisé.",
     "partnerToken": "Jeton partenaire",
     "moderatorToken": "Jeton modérateur",
     "partnerAccessDescription": "Accédez à l’espace partenaire et à l’administration.",
@@ -146,6 +155,9 @@
     "buyCoffee": "Nourrir une licorne 🦄",
     "feedback": "Feedback / Contact",
     "openSource": "Open Source"
+  },
+  "supportNeeds": {
+    "Focus": "concentration", "TaskInitiation": "démarrage", "Organization": "organisation", "WorkingMemory": "mémoire de travail", "Movement": "mouvement", "SensoryRegulation": "confort sensoriel", "Recovery": "récupération", "Predictability": "prévisibilité", "Communication": "communication", "ReadingWriting": "lecture et écriture", "Sequencing": "séquençage", "MotorPlanning": "planification motrice", "TaskSetup": "préparation", "NumberSupport": "repères numériques", "Confidence": "confiance"
   },
   "situations": {
     "Crisis": "Crise / Panique",

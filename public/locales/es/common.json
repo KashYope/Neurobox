@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "NeuroSooth",
-    "tagline": "Regulación Somática"
+    "name": "NDee",
+    "tagline": "La caja de herramientas para la neurodiversidad"
   },
   "buttons": {
     "submit": "Enviar",
@@ -23,7 +23,7 @@
     "addStep": "Añadir paso",
     "sendThanks": "Dar las gracias",
     "thanksSent": "¡Gracias enviadas!",
-    "start": "Comenzar el viaje"
+    "start": "Continuar"
   },
   "labels": {
     "name": "Nombre",
@@ -53,6 +53,7 @@
     "rejected": "Rechazado"
   },
   "menu": {
+    "open": "Abrir opciones",
     "adminSpace": "Espacio admin",
     "quickActions": "Acciones rápidas",
     "sync": "Sincronización",
@@ -63,7 +64,7 @@
     "moderatorToken": "Token de moderador"
   },
   "badges": {
-    "editorialPick": "Selección NeuroSooth",
+    "editorialPick": "Selección NDee",
     "teamApproved": "Validado por el equipo"
   },
   "messages": {
@@ -118,8 +119,16 @@
     "None": "Neurotípico"
   },
   "dashboard": {
+    "backHome": "Volver al inicio de NDee",
+    "toolboxEyebrow": "Tu caja de herramientas",
+    "filterPrompt": "¿Cómo te sientes ahora?",
+    "gentleStartingPoint": "Un comienzo suave",
+    "exerciseList": "Prácticas sugeridas",
     "recommendedForYou": "Recomendado para ti",
-    "basedOnProfile": "Basado en tu perfil {{neurotypes}}",
+    "basedOnProfile": "Basado en tus preferencias {{neurotypes}}",
+    "basedOnReflection": "Sugerencias del perfil de apoyo guardado en este dispositivo.",
+    "guestCatalog": "Todos los ejercicios, sin cuenta ni cuestionario.",
+    "suggestedBecause": "Sugerido para: {{reasons}}",
     "specificTechniques": "Técnicas de regulación específicas",
     "noTechniquesFound": "No se encontró ninguna técnica",
     "tryChangeFilter": "Intente cambiar el filtro o añada su propia técnica."
@@ -134,7 +143,7 @@
     "syncing": "Sincronizando…",
     "dataSynced": "Datos perfectamente sincronizados",
     "apiTokens": "Tokens API",
-    "apiTokensDesc": "Pegue los tokens firmados proporcionados por NeuroSooth para publicar y moderar a través del backend seguro.",
+    "apiTokensDesc": "Pegue los tokens firmados proporcionados por NDee para publicar y moderar a través del backend seguro.",
     "partnerToken": "Token de socio",
     "moderatorToken": "Token de moderador",
     "partnerAccessDescription": "Accede al espacio de socios y a la administración.",
@@ -143,6 +152,9 @@
     "buyCoffee": "Alimentar a un unicornio 🦄",
     "feedback": "Comentarios / Contacto",
     "openSource": "Código abierto"
+  },
+  "supportNeeds": {
+    "Focus": "concentración", "TaskInitiation": "inicio", "Organization": "organización", "WorkingMemory": "memoria de trabajo", "Movement": "movimiento", "SensoryRegulation": "comodidad sensorial", "Recovery": "recuperación", "Predictability": "previsibilidad", "Communication": "comunicación", "ReadingWriting": "lectura y escritura", "Sequencing": "secuenciación", "MotorPlanning": "planificación motora", "TaskSetup": "preparación", "NumberSupport": "apoyo numérico", "Confidence": "confianza"
   },
   "situations": {
     "Crisis": "Crisis / Pánico",

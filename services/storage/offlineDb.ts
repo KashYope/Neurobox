@@ -1,6 +1,6 @@
 import Dexie from './dexieShim';
 import { INITIAL_EXERCISES } from '../../constants';
-import { Exercise, ModerationStatus, UserProfile } from '../../types';
+import { Exercise, ModerationStatus, RecommendationProfile, UserProfile } from '../../types';
 
 const LEGACY_KEYS = {
   EXERCISES: 'neurosooth_exercises_cache_v2',
@@ -45,6 +45,29 @@ export type PendingMutationRecord =
 interface UserRow {
   id: string;
   profile: UserProfile;
+}
+
+export interface AssessmentAnswerRecord {
+  questionId: string;
+  score: number;
+}
+
+export interface AssessmentProgress {
+  version: 1;
+  answers: AssessmentAnswerRecord[];
+  currentIndex: number;
+  isComplete: boolean;
+  locale: 'en' | 'fr';
+  updatedAt: string;
+}
+
+interface AssessmentProgressRow extends AssessmentProgress {
+  id: 'current';
+}
+
+interface RecommendationProfileRow {
+  id: 'current';
+  profile: RecommendationProfile;
 }
 
 export interface AttachmentRecord {
@@ -133,6 +156,8 @@ class OfflineDexieDB extends Dexie {
   translations: DexieTable<TranslationRecord>;
   exerciseStrings: DexieTable<ExerciseStringRecord>;
   exerciseStringTranslations: DexieTable<ExerciseStringTranslationRecord>;
+  assessmentProgress: DexieTable<AssessmentProgressRow>;
+  recommendationProfiles: DexieTable<RecommendationProfileRow>;
 
   constructor() {
     super('neurobox_offline');
@@ -163,6 +188,18 @@ class OfflineDexieDB extends Dexie {
       exerciseStringTranslations: '[stringId+lang], stringId, lang'
     });
 
+    this.version(4).stores({
+      exercises: '&id, serverId, updatedAt',
+      users: '&id',
+      pendingMutations: '&id, createdAt',
+      attachments: '&key, updatedAt',
+      translations: '&key, targetLang, createdAt',
+      exerciseStrings: '&id, context, updatedAt',
+      exerciseStringTranslations: '[stringId+lang], stringId, lang',
+      assessmentProgress: '&id, updatedAt',
+      recommendationProfiles: '&id'
+    });
+
     this.exercises = this.table<Exercise>('exercises');
     this.users = this.table<UserRow>('users');
     this.pendingMutations = this.table<PendingMutationRecord>('pendingMutations');
@@ -170,6 +207,8 @@ class OfflineDexieDB extends Dexie {
     this.translations = this.table<TranslationRecord>('translations');
     this.exerciseStrings = this.table<ExerciseStringRecord>('exerciseStrings');
     this.exerciseStringTranslations = this.table<ExerciseStringTranslationRecord>('exerciseStringTranslations');
+    this.assessmentProgress = this.table<AssessmentProgressRow>('assessmentProgress');
+    this.recommendationProfiles = this.table<RecommendationProfileRow>('recommendationProfiles');
   }
 }
 
@@ -419,6 +458,86 @@ export const saveAttachment = async (key: string, data: AttachmentData, mimeType
 export const readAttachment = async (key: string): Promise<AttachmentRecord | undefined> => {
   const adapter = await getStorageAdapter();
   return adapter.getAttachment(key);
+};
+
+const getNdeeDb = (adapter: StorageAdapter): OfflineDexieDB =>
+  (adapter as unknown as { db: OfflineDexieDB }).db;
+
+const LEGACY_ASSESSMENT_KEY = 'neuroalign_secure_data_v1';
+const LEGACY_ASSESSMENT_SECRET = 'neuroalign_internal_privacy_key_2025';
+
+const decodeLegacyAssessment = (value: string): Partial<AssessmentProgress> | null => {
+  try {
+    const encoded = atob(value);
+    const decoded = encoded
+      .split('')
+      .map((character, index) => String.fromCharCode(
+        character.charCodeAt(0) ^ LEGACY_ASSESSMENT_SECRET.charCodeAt(index % LEGACY_ASSESSMENT_SECRET.length)
+      ))
+      .join('');
+    return JSON.parse(decoded) as Partial<AssessmentProgress>;
+  } catch {
+    return null;
+  }
+};
+
+export const getAssessmentProgress = async (): Promise<AssessmentProgress | null> => {
+  const adapter = await getStorageAdapter();
+  const db = getNdeeDb(adapter);
+  let record = await db.assessmentProgress.get('current');
+  if (!record && typeof localStorage !== 'undefined') {
+    const legacy = localStorage.getItem(LEGACY_ASSESSMENT_KEY);
+    if (legacy) {
+      const decoded = decodeLegacyAssessment(legacy);
+      if (decoded?.answers) {
+        record = {
+          id: 'current',
+          version: 1,
+          answers: decoded.answers,
+          currentIndex: Number((decoded as { index?: number }).index ?? decoded.currentIndex ?? 0),
+          isComplete: Boolean(decoded.isComplete),
+          locale: decoded.locale === 'en' ? 'en' : 'fr',
+          updatedAt: new Date().toISOString()
+        };
+        await db.assessmentProgress.put(record);
+      }
+      localStorage.removeItem(LEGACY_ASSESSMENT_KEY);
+    }
+  }
+  if (!record) return null;
+  const { id: _id, ...progress } = record;
+  return progress;
+};
+
+export const saveAssessmentProgress = async (progress: AssessmentProgress): Promise<void> => {
+  const adapter = await getStorageAdapter();
+  const db = getNdeeDb(adapter);
+  await db.assessmentProgress.put({ id: 'current', ...progress });
+};
+
+export const clearAssessmentProgress = async (): Promise<void> => {
+  const adapter = await getStorageAdapter();
+  const db = getNdeeDb(adapter);
+  await db.assessmentProgress.delete('current');
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(LEGACY_ASSESSMENT_KEY);
+};
+
+export const getRecommendationProfile = async (): Promise<RecommendationProfile | null> => {
+  const adapter = await getStorageAdapter();
+  const db = getNdeeDb(adapter);
+  return (await db.recommendationProfiles.get('current'))?.profile ?? null;
+};
+
+export const saveRecommendationProfile = async (profile: RecommendationProfile): Promise<void> => {
+  const adapter = await getStorageAdapter();
+  const db = getNdeeDb(adapter);
+  await db.recommendationProfiles.put({ id: 'current', profile });
+};
+
+export const clearRecommendationProfile = async (): Promise<void> => {
+  const adapter = await getStorageAdapter();
+  const db = getNdeeDb(adapter);
+  await db.recommendationProfiles.delete('current');
 };
 
 export const removeAttachment = async (key: string): Promise<void> => {

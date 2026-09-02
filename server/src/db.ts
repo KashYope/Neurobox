@@ -18,6 +18,7 @@ export type ExerciseRow = {
   warning: string | null;
   image_url: string | null;
   tags: string[];
+  support_needs: string[];
   thanks_count: number;
   is_partner_content: boolean;
   is_community_submitted: boolean;

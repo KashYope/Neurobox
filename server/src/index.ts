@@ -28,10 +28,10 @@ export const createApp = (config: LoadEnvResult = env) => {
     const directives = {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", `'nonce-${nonce}'`],
-      styleSrc: ["'self'", 'https://fonts.googleapis.com', `'nonce-${nonce}'`],
+      styleSrc: ["'self'", `'nonce-${nonce}'`],
       imgSrc: ["'self'", 'data:', 'blob:'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      connectSrc: ["'self'", 'https://generativelanguage.googleapis.com'],
+      fontSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
       manifestSrc: ["'self'"],
       workerSrc: ["'self'", 'blob:'],
       frameSrc: ["'none'"],

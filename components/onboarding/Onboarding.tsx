@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../../src/i18nContext';
 
-import { Brain, Button, Check } from '../ui';
+import { BrandLogo, Button, Check } from '../ui';
 import { saveUser } from '../../services/dataService';
 import { getSupportedLanguages, loadLanguageTranslations, type SupportedLanguage } from '../../services/languageService';
 import { NeuroType, type UserProfile } from '../../types';
@@ -50,19 +50,19 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="ndee-surface w-full max-w-lg rounded-[2rem] p-6 sm:p-9">
         {/* Language Selector */}
         <div className="mb-6">
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {Object.entries(languages).map(([code, name]) => (
               <button
                 key={code}
                 onClick={() => handleLanguageChange(code)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   currentLang === code
-                    ? 'bg-teal-600 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-[var(--ndee-primary)] text-white'
+                    : 'border bg-white/70 text-[var(--ndee-muted)] hover:bg-white'
                 }`}
               >
                 {name}
@@ -71,39 +71,37 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           </div>
         </div>
 
-        <div className="text-center mb-8">
-          <div className="mx-auto bg-teal-100 w-16 h-16 rounded-full flex items-center justify-center mb-4">
-            <Brain className="w-8 h-8 text-teal-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">{t('onboarding:title')}</h1>
-          <p className="text-slate-600 mt-2">{t('onboarding:subtitle')}</p>
+        <div className="mb-8 text-center">
+          <BrandLogo className="mx-auto" />
+          <h1 className="mt-2 text-2xl font-bold text-[var(--ndee-ink)]">{t('onboarding:title')}</h1>
+          <p className="mt-2 leading-relaxed text-[var(--ndee-muted)]">{t('onboarding:subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('onboarding:nameQuestion')}</label>
+            <label className="mb-2 block text-sm font-semibold text-[var(--ndee-ink)]">{t('onboarding:nameQuestion')}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+              className="w-full rounded-2xl border px-4 py-3"
               placeholder={t('onboarding:namePlaceholder')}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-3">{t('onboarding:neuroProfile')}</label>
+            <label className="mb-3 block text-sm font-semibold text-[var(--ndee-ink)]">{t('onboarding:neuroProfile')}</label>
             <div className="grid grid-cols-1 gap-2">
               {Object.values(NeuroType).filter(nt => nt !== NeuroType.None).map((type) => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => toggleNeurotype(type)}
-                  className={`flex items-center justify-between px-4 py-3 rounded-lg border transition-all ${
+                  className={`ndee-focus flex min-h-12 items-center justify-between rounded-2xl border px-4 py-3 transition ${
                     selectedNeurotypes.includes(type)
-                      ? 'border-teal-500 bg-teal-50 text-teal-800'
-                      : 'border-gray-200 hover:bg-gray-50 text-slate-600'
+                      ? 'border-[var(--ndee-primary)] bg-[var(--ndee-sage)] text-[var(--ndee-ink)]'
+                      : 'bg-white/65 text-[var(--ndee-muted)] hover:bg-white'
                   }`}
                 >
                   <span>{t(`neuroTypes.${type}`)}</span>

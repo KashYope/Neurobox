@@ -67,10 +67,10 @@ router.post('/', async (req, res, next) => {
     const result = await pool.query<ExerciseRow>(
       `INSERT INTO exercises (
         id, client_id, title, description, situation, neurotypes, duration, steps,
-        warning, image_url, tags, thanks_count, is_partner_content,
+        warning, image_url, tags, support_needs, thanks_count, is_partner_content,
         is_community_submitted, author, moderation_status, created_at, updated_at
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19
       ) RETURNING *`,
       [
         id,
@@ -84,6 +84,7 @@ router.post('/', async (req, res, next) => {
         payload.warning ?? null,
         payload.imageUrl ?? null,
         payload.tags,
+        payload.supportNeeds,
         0,
         isPartner,
         !isPartner,

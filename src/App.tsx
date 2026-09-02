@@ -18,14 +18,13 @@ import {
   ShieldCheck,
   Users,
   UserPlus,
-  XCircle,
-  Zap
+  XCircle
 } from '../components/ui';
 import { Onboarding } from '../components/onboarding/Onboarding';
 import { Dashboard } from '../features/dashboard/Dashboard';
 import { PartnerPortal } from '../features/partners/PartnerPortal';
 import { BatchTranslationPanel } from '../features/admin/BatchTranslationPanel';
-import { Exercise, Situation, UserProfile, PartnerAccount } from '../types';
+import { Exercise, Situation, UserProfile, PartnerAccount, RecommendationProfile } from '../types';
 import {
   getUser,
   getExercises,
@@ -34,17 +33,19 @@ import {
   incrementThanks,
   moderateExercise
 } from '../services/dataService';
+import { getRecommendationProfile } from '../services/storage/offlineDb';
 import { syncService, SyncStatus } from '../services/syncService';
 import { apiClient, type AdminMetricsResponse } from '../services/apiClient';
 import { useExerciseTranslation } from '../hooks/useExerciseTranslation';
 import { ExerciseIllustration } from '../components/exercises/ExerciseIllustration';
 import { THANKS_VISIBILITY_THRESHOLD } from '../constants';
 import { hasThankedExercise } from '../services/helpfulVotes';
+import { getSituationFilterFromSearch } from '../services/navigation';
 
 // --- Components ---
 
 const TagBadge: React.FC<{ text: string }> = ({ text }) => (
-  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 mr-2 mb-2">
+  <span className="mb-2 mr-2 inline-flex items-center rounded-full bg-[var(--ndee-lilac)] px-2.5 py-1 text-xs font-semibold text-[var(--ndee-ink)]">
     {text}
   </span>
 );
@@ -76,91 +77,45 @@ const ExerciseDetail: React.FC<{
   };
 
   return (
-    <div className="animate-slide-in bg-white min-h-screen md:min-h-0 pb-20">
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100 p-4 flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={onBack} className="!p-2" aria-label={t('buttons.back')}>
-          <ArrowLeft className="w-6 h-6" />
-        </Button>
-        <h2 className="text-lg font-bold truncate">{exercise.title}</h2>
-      </div>
-
-      <div className="max-w-3xl mx-auto p-4 md:p-8">
-        {/* Hero Image/GIF */}
-        <div className="rounded-2xl overflow-hidden shadow-lg mb-8 aspect-video bg-gray-100 relative">
-          <ExerciseIllustration exercise={exercise} className="w-full h-full object-cover" />
-          <div className="absolute bottom-4 left-4 flex gap-2">
-            {exercise.situation.map(s => (
-              <span key={s} className="bg-black/70 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm">
-                {t(`situations.${s}`)}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Header Info */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Zap className="w-4 h-4 text-amber-500" />
-              <span>{exercise.duration}</span>
-            </div>
-            {exercise.thanksCount >= THANKS_VISIBILITY_THRESHOLD ? (
-              <div className="flex items-center gap-1 text-sm font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
-                <Heart className="w-4 h-4 fill-rose-600" />
-                <span>{t('exercise:detail.peopleFoundHelpful', { count: exercise.thanksCount })}</span>
-              </div>
-            ) : (
-              <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-3 py-1 rounded-full">
-                {t(exercise.isCommunitySubmitted || exercise.isPartnerContent ? 'badges.teamApproved' : 'badges.editorialPick')}
-              </span>
-            )}
-          </div>
-          
-          <p className="text-lg text-slate-700 leading-relaxed">
-            {exercise.description}
-          </p>
-          <p className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600" role="note">
-            {t('exercise:detail.safetyNote')}
-          </p>
-        </div>
-
-        {/* Warning Box */}
-        {exercise.warning && (
-          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg mb-8 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800">{exercise.warning}</p>
-          </div>
-        )}
-
-        {/* Steps */}
-        <div className="space-y-6 mb-12">
-          <h3 className="text-xl font-bold text-slate-900 mb-4">{t('exercise:detail.instructions')}</h3>
-          {exercise.steps.map((step, idx) => (
-            <div key={idx} className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">
-                {idx + 1}
-              </div>
-              <p className="text-slate-700 mt-1">{step}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Action */}
-        <div className="border-t border-gray-100 pt-8 text-center">
-          <p className="text-slate-500 mb-4 text-sm">{t('exercise:detail.wasItHelpful')}</p>
-          <Button 
-            size="lg" 
-            variant={hasThanked ? "outline" : "primary"}
-            onClick={handleThanks}
-            disabled={hasThanked}
-            className={hasThanked ? "bg-rose-50 border-rose-200 text-rose-600" : "bg-rose-600 hover:bg-rose-700 text-white"}
-          >
-            <Heart className={`w-5 h-5 mr-2 ${hasThanked ? 'fill-rose-600' : ''}`} />
-            {hasThanked ? t('exercise:detail.thanksSent') : t('exercise:detail.sayThanks')}
-          </Button>
-          {thanksError && <p className="mt-3 text-sm text-rose-700" role="alert">{thanksError}</p>}
+    <div className="min-h-screen pb-20 motion-safe:animate-slide-in">
+      <div className="sticky top-0 z-10 border-b bg-[rgba(248,245,239,0.92)] backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-4xl items-center gap-3 px-4">
+          <Button variant="ghost" size="sm" onClick={onBack} className="!min-h-11 !w-11 !p-0" aria-label={t('buttons.back')}><ArrowLeft className="h-5 w-5" /></Button>
+          <h1 className="truncate text-base font-bold sm:text-lg">{exercise.title}</h1>
         </div>
       </div>
+
+      <main className="mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
+        <div className="overflow-hidden rounded-[2rem] bg-[var(--ndee-sage)]">
+          <div className="aspect-[16/8] min-h-52"><ExerciseIllustration exercise={exercise} className="h-full w-full object-cover" /></div>
+        </div>
+
+        <div className="mx-auto max-w-3xl">
+          <div className="mt-6 flex flex-wrap gap-2">
+            {exercise.situation.map(s => <span key={s} className="rounded-full bg-[var(--ndee-sky)] px-3 py-1.5 text-xs font-semibold text-[var(--ndee-ink)]">{t(`situations.${s}`)}</span>)}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ndee-sun)] px-3 py-1.5 text-xs font-semibold"><Clock className="h-3.5 w-3.5" />{exercise.duration}</span>
+          </div>
+
+          <h2 className="mt-6 text-3xl font-bold leading-tight sm:text-4xl">{exercise.title}</h2>
+          <p className="mt-4 text-lg leading-relaxed text-[var(--ndee-muted)]">{exercise.description}</p>
+
+          <div className="mt-6 rounded-2xl border bg-white/65 p-4 text-sm leading-relaxed text-[var(--ndee-muted)]" role="note">{t('exercise:detail.safetyNote')}</div>
+          {exercise.warning && <div className="mt-4 flex items-start gap-3 rounded-2xl bg-[var(--ndee-sun)] p-4"><AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#7a632c]" /><p className="text-sm leading-relaxed text-[#5f522f]">{exercise.warning}</p></div>}
+
+          <section className="mt-10" aria-labelledby="exercise-steps-title">
+            <p className="ndee-eyebrow">{t('exercise:detail.takeYourTime')}</p>
+            <h3 id="exercise-steps-title" className="mt-2 text-2xl font-bold">{t('exercise:detail.instructions')}</h3>
+            <ol className="mt-6 space-y-4">{exercise.steps.map((step, idx) => <li key={idx} className="ndee-surface flex gap-4 rounded-2xl p-4 sm:p-5"><span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[var(--ndee-sage)] text-sm font-bold text-[var(--ndee-primary-strong)]">{idx + 1}</span><p className="pt-1.5 leading-relaxed text-[var(--ndee-ink)]">{step}</p></li>)}</ol>
+          </section>
+
+          <div className="mt-10 rounded-[2rem] bg-[var(--ndee-peach)] p-6 text-center sm:p-8">
+            <p className="mb-4 text-sm text-[var(--ndee-muted)]">{t('exercise:detail.wasItHelpful')}</p>
+            <Button size="lg" variant={hasThanked ? 'outline' : 'primary'} onClick={handleThanks} disabled={hasThanked} className={hasThanked ? 'bg-white/65' : ''}><Heart className={`mr-2 h-5 w-5 ${hasThanked ? 'fill-current' : ''}`} />{hasThanked ? t('exercise:detail.thanksSent') : t('exercise:detail.sayThanks')}</Button>
+            {exercise.thanksCount >= THANKS_VISIBILITY_THRESHOLD && <p className="mt-3 text-xs text-[var(--ndee-muted)]">{t('exercise:detail.peopleFoundHelpful', { count: exercise.thanksCount })}</p>}
+            {thanksError && <p className="mt-3 text-sm text-[var(--ndee-danger)]" role="alert">{thanksError}</p>}
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
@@ -258,6 +213,7 @@ const AddExerciseForm: React.FC<{
       duration: formData.duration || '5 min',
       steps: formData.steps?.filter(s => s.trim() !== '') || [],
       tags: ['Community'],
+      supportNeeds: [],
       thanksCount: 0,
       isCommunitySubmitted: true,
       moderationStatus: 'pending',
@@ -279,21 +235,21 @@ const AddExerciseForm: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-50 z-50 overflow-y-auto motion-safe:animate-slide-in">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--ndee-canvas)] motion-safe:animate-slide-in">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="contribution-dialog-title"
-        className="max-w-2xl mx-auto bg-white min-h-screen shadow-xl"
+        className="mx-auto min-h-screen max-w-2xl bg-[var(--ndee-surface)] shadow-xl"
       >
-        <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-[rgba(255,253,249,0.94)] p-4 backdrop-blur-md">
           <h2 id="contribution-dialog-title" className="text-lg font-bold">{t('exercise:creation.title')}</h2>
           <Button variant="ghost" size="sm" onClick={onCancel}>{t('exercise:creation.cancel')}</Button>
         </div>
 
-        <form onSubmit={doSubmit} className="p-6 space-y-6">
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-sm flex gap-3">
+        <form onSubmit={doSubmit} className="space-y-6 p-6 sm:p-8">
+          <div className="flex gap-3 rounded-2xl bg-[var(--ndee-sun)] p-4 text-sm leading-relaxed text-[#5f522f]">
             <Clock className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <p>
               {t('exercise:creation.communityNote')}
@@ -316,7 +272,7 @@ const AddExerciseForm: React.FC<{
           <div>
             <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.title')}</label>
             <input
-              className="w-full border p-2 rounded-lg" 
+              className="w-full rounded-2xl border p-3"
               value={formData.title} 
               onChange={e => setFormData({...formData, title: e.target.value})} 
               placeholder={t('exercise:creation.form.titlePlaceholder')}
@@ -327,7 +283,7 @@ const AddExerciseForm: React.FC<{
           <div>
             <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.description')}</label>
             <textarea 
-              className="w-full border p-2 rounded-lg" 
+              className="w-full rounded-2xl border p-3"
               value={formData.description} 
               onChange={e => setFormData({...formData, description: e.target.value})} 
               placeholder={t('exercise:creation.form.descriptionPlaceholder')}
@@ -345,8 +301,8 @@ const AddExerciseForm: React.FC<{
                   onClick={() => toggleSituation(s)}
                   className={`px-3 py-1 rounded-full text-xs border transition-colors ${
                     formData.situation?.includes(s) 
-                      ? 'bg-teal-600 text-white border-teal-600' 
-                      : 'bg-white text-slate-600 border-slate-200'
+                      ? 'border-[var(--ndee-primary)] bg-[var(--ndee-primary)] text-white'
+                      : 'border-[var(--ndee-border)] bg-white text-[var(--ndee-muted)]'
                   }`}
                 >
                   {t(`situations.${s}`)}
@@ -358,7 +314,7 @@ const AddExerciseForm: React.FC<{
           <div>
             <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.duration')}</label>
             <input 
-              className="w-full border p-2 rounded-lg" 
+              className="w-full rounded-2xl border p-3"
               value={formData.duration} 
               onChange={e => setFormData({...formData, duration: e.target.value})} 
               placeholder={t('exercise:creation.form.durationPlaceholder')}
@@ -371,7 +327,7 @@ const AddExerciseForm: React.FC<{
               <div key={i} className="flex gap-2 mb-2">
                 <span className="pt-2 text-xs text-slate-400">{i+1}</span>
                 <input 
-                  className="w-full border p-2 rounded-lg"
+                  className="w-full rounded-2xl border p-3"
                   value={step}
                   onChange={e => handleStepChange(i, e.target.value)}
                   placeholder={t('exercise:creation.form.stepPlaceholder', { number: i + 1 })}
@@ -420,8 +376,8 @@ const ModerationPanel: React.FC<{
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-20">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-20 border-b bg-[rgba(248,245,239,0.92)] backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-8 h-8 text-teal-600" />
@@ -767,13 +723,13 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const activeAccounts = accounts.filter(a => a.status === 'active');
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-20">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-20 border-b bg-[rgba(248,245,239,0.92)] text-[var(--ndee-ink)] backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-8 h-8 text-teal-400" />
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-400">NeuroSooth</p>
+              <p className="ndee-eyebrow">NDee</p>
               <h1 className="text-xl font-bold">{t('adminDashboard.title')}</h1>
             </div>
           </div>
@@ -786,7 +742,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <ClipboardList className="w-4 h-4 mr-2" />
               {t('adminDashboard.moderationContent')}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleLogout} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
+            <Button variant="outline" size="sm" onClick={handleLogout}>
                <LogOut className="w-4 h-4 mr-2" />
                {t('buttons.logout')}
             </Button>
@@ -941,6 +897,7 @@ const isAppView = (value: unknown): value is AppView =>
 const App: React.FC = () => {
   const { t } = useTranslation(['common']);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [recommendationProfile, setRecommendationProfile] = useState<RecommendationProfile | null>(null);
   const [allExercises, setAllExercises] = useState<Exercise[]>(() => getExercises());
   
   // Apply translations to exercises based on current language
@@ -951,7 +908,9 @@ const App: React.FC = () => {
   );
   const [view, setView] = useState<AppView>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-  const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
+  const [situationFilter, setSituationFilter] = useState<Situation | 'All'>(() =>
+    typeof window === 'undefined' ? 'All' : getSituationFilterFromSearch(window.location.search)
+  );
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [partnerSession, setPartnerSession] = useState<PartnerAccount | null>(null);
@@ -1075,10 +1034,18 @@ const App: React.FC = () => {
     const loadedUser = getUser();
     if (loadedUser) {
       setUser(loadedUser);
-    } else {
-      replaceView('onboarding');
     }
   }, [replaceView]);
+
+  useEffect(() => {
+    const refreshProfile = () => {
+      setUser(getUser());
+      void getRecommendationProfile().then(setRecommendationProfile);
+    };
+    refreshProfile();
+    window.addEventListener('ndee-personalization-change', refreshProfile);
+    return () => window.removeEventListener('ndee-personalization-change', refreshProfile);
+  }, []);
 
   useEffect(() => {
     if (pendingAdminAction === 'moderation' && partnerSession) {
@@ -1148,9 +1115,9 @@ const App: React.FC = () => {
 
   // Refresh recommendations when filters or user changes
   useEffect(() => {
-    const recs = getRecommendedExercises(translatedExercises, user, situationFilter);
+    const recs = getRecommendedExercises(translatedExercises, user, situationFilter, recommendationProfile);
     setExercises(recs);
-  }, [translatedExercises, user, situationFilter]);
+  }, [translatedExercises, user, situationFilter, recommendationProfile]);
 
   useEffect(() => {
     if (!selectedExercise) return;
@@ -1223,7 +1190,7 @@ const App: React.FC = () => {
   const displayPendingCount = effectivePendingExercises.length;
 
   const handleModerationDecision = (exercise: Exercise, status: 'approved' | 'rejected', notes?: string) => {
-    const moderator = user?.name || 'Équipe NeuroSooth';
+    const moderator = user?.name || 'Équipe NDee';
     const targetId = exercise.serverId ?? exercise.id;
     moderateExercise(targetId, status, {
       moderator,
@@ -1231,6 +1198,15 @@ const App: React.FC = () => {
       shouldDelete: status === 'rejected'
     });
   };
+
+  const handleSituationFilterChange = useCallback((filter: Situation | 'All') => {
+    setSituationFilter(filter);
+    const search = new URLSearchParams(window.location.search);
+    if (filter === 'All') search.delete('situation');
+    else search.set('situation', filter);
+    const query = search.toString();
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  }, []);
 
   // Render Helpers
   if (view === 'admin') {
@@ -1291,9 +1267,10 @@ const App: React.FC = () => {
   return (
     <Dashboard
       user={user}
+      recommendationProfile={recommendationProfile}
       exercises={exercises}
       situationFilter={situationFilter}
-      onFilterChange={setSituationFilter}
+      onFilterChange={handleSituationFilterChange}
       onExerciseClick={handleExerciseClick}
       onAddTechnique={handleContributionAccess}
       onPartnerAccess={handlePartnerAccess}

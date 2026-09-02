@@ -66,31 +66,31 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
   return (
     <div className="fixed inset-0 z-40 flex" aria-modal="true" role="dialog">
       <div
-        className="flex-1 bg-slate-900/40 backdrop-blur-sm"
+        className="flex-1 bg-[#26332f]/35 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
         id="admin-menu"
         ref={drawerRef}
-        className="w-full max-w-xs bg-white h-full shadow-2xl border-l border-slate-100 flex flex-col"
+        className="flex h-full w-full max-w-sm flex-col border-l bg-[var(--ndee-canvas)] shadow-2xl"
       >
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b p-5">
           <div>
-            <p className="text-xs uppercase tracking-widest text-slate-400">{t('adminMenu.adminSpace')}</p>
-            <h2 className="text-lg font-semibold text-slate-900">{t('adminMenu.quickActions')}</h2>
+            <p className="ndee-eyebrow">{t('adminMenu.adminSpace')}</p>
+            <h2 className="mt-1 text-lg font-bold text-[var(--ndee-ink)]">{t('adminMenu.quickActions')}</h2>
           </div>
           <button
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+            className="ndee-focus flex h-11 w-11 items-center justify-center rounded-full border bg-white/70 text-[var(--ndee-muted)] hover:bg-white"
             aria-label={t('buttons.close')}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+        <div className="flex-1 space-y-5 overflow-y-auto p-5">
           <Button
             variant="primary"
             className="w-full justify-center gap-2"
@@ -103,7 +103,7 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
           <LanguageSelector />
 
           {showSyncStatus && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600" role="status" aria-live="polite">
+            <div className="rounded-2xl border bg-[var(--ndee-sky)] p-4 text-xs text-[var(--ndee-muted)]" role="status" aria-live="polite">
               {syncStatus.lastError
                 ? syncStatus.lastError
                 : !syncStatus.isOnline
@@ -114,16 +114,16 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
             </div>
           )}
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t('adminMenu.adminSpace')}</p>
-            <p className="text-xs text-slate-500">{t('adminMenu.partnerAccessDescription')}</p>
+          <div className="space-y-3 rounded-2xl border bg-white/65 p-4">
+            <p className="ndee-eyebrow">{t('adminMenu.adminSpace')}</p>
+            <p className="text-xs leading-relaxed text-[var(--ndee-muted)]">{t('adminMenu.partnerAccessDescription')}</p>
             <Button variant="outline" className="w-full justify-center" onClick={onPartnerAccess}>
               <Building2 className="w-4 h-4 mr-2" />
               {partnerSession ? t('adminMenu.myWorkspace') : t('adminMenu.partnerLogin')}
             </Button>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4">
+          <div className="rounded-2xl border bg-white/65 p-4">
             <BuyMeACoffeeButton onSupport={onClose} />
           </div>
         </div>

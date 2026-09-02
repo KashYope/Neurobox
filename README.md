@@ -1,6 +1,6 @@
-# NeuroSooth – Boîte à outils somatique pour profils neurodivergents
+# NDee – La boîte à outils de la neurodiversité
 
-NeuroSooth est une application Vite + React pensée comme une boîte à outils pour les personnes neuro-atypiques. Les exercices somatiques sont présentés sous forme de cartes triables par situation émotionnelle (crise, stress, sommeil, etc.). Chaque carte ouvre un parcours détaillé étape par étape et les membres de la communauté peuvent ajouter leurs propres pratiques, remercier celles qui les ont aidés ou — côté pros — injecter des fiches partenaires validées.
+NDee est une application Vite + React qui associe une auto-réflexion privée à une boîte à outils pratique pour la neurodiversité. Chaque partie reste utilisable séparément. Les données de réflexion et la personnalisation restent sur l’appareil et NDee n’est pas un outil médical.
 
 ## Fonctionnalités principales
 - **Onboarding personnalisé** – Collecte du prénom et des neuroprofils (`NeuroType`) pour adapter les recommandations via `getRecommendedExercises`.
@@ -187,16 +187,8 @@ La clé n'est jamais exposée au bundle Vite ni stockée dans le navigateur.
 Sans clé API, le système affiche un message d'erreur lors des traductions batch et le contenu reste en français.
 
 ### Tests & débogage
-Un script de validation est fourni dans `test-lazy-loading.js` :
 
-```js
-// Dans la console navigateur, coller le contenu du fichier puis :
-testLazyLoading.inspectCache()        // Voir les langues en cache
-testLazyLoading.simulateSwitch('de')  // Tester le switch allemand
-testLazyLoading.clearStorage()        // Réinitialiser les préférences
-```
-
-Voir `LAZY_LOADING_TEST.md` pour le guide complet et `LANGUAGE_OPTIMIZATION_COMPLETE.md` pour les détails d'implémentation.
+Exécutez `npm test` pour compiler et lancer la suite automatisée. Pour vérifier le chargement différé des langues dans le navigateur, utilisez l'onglet Réseau et IndexedDB des outils de développement après un changement de langue.
 
 ## Synchronisation & stockage hors-ligne
 - `services/storage/offlineDb` utilise un shim IndexedDB léger (`dexieShim.ts`, compatible Dexie) pour stocker exercices, profil utilisateur, pièces jointes, traductions et file `PendingMutationRecord`.
@@ -244,22 +236,13 @@ La configuration se trouve dans la fonction `buildContentSecurityPolicy`. Pour a
 
 Les illustrations publiques sont limitées aux ressources de même origine et aux SVG procéduraux générés localement. Les URL d'images externes ne sont pas acceptées dans les contributions.
 
-## Déploiement VPS (Docker + nginx)
+## Déploiement Coolify
 
-### Déploiement Coolify
+Créez une ressource **Docker Compose** depuis ce dépôt et utilisez `docker-compose.yml`. Le manifeste construit l'application, garde PostgreSQL privé, conserve ses données dans le volume `postgres-data` et route le service `app` vers son port interne `4000`.
 
-Créez une ressource **Docker Compose** depuis ce dépôt et sélectionnez `docker-compose.yaml`. Le fichier utilise les variables magiques de Coolify pour générer le mot de passe PostgreSQL, le secret JWT et le domaine routé vers le port interne `4000`. PostgreSQL reste privé et ses données sont conservées dans le volume `postgres-data`.
+Coolify génère `SERVICE_URL_APP_4000`, `SERVICE_PASSWORD_POSTGRES` et `SERVICE_PASSWORD_64_JWT`. Associez votre domaine au service `app` sur le port `4000`; `GOOGLE_TRANSLATE_API_KEY` reste facultative. Les migrations sont exécutées automatiquement au démarrage du conteneur applicatif.
 
-Dans Coolify, affectez le domaine au service `app` sur le port `4000`. `SERVICE_URL_APP_4000`, `SERVICE_PASSWORD_POSTGRES` et `SERVICE_PASSWORD_64_JWT` sont générées par Coolify; `GOOGLE_TRANSLATE_API_KEY` reste facultative. Les migrations sont exécutées automatiquement au démarrage du conteneur applicatif.
-
-Un guide détaillé est disponible dans `deploy/README.md`. Il couvre :
-
-- La génération d’un fichier `.env.server` à partir de `deploy/env.server.example`
-- La construction/pousse de l’image (`docker build -t neurobox:latest .`)
-- L’utilisation du manifeste `docker-compose.neurobox.yml` pour exposer l’API sur un port dédié (`4400`) et un réseau isolé (`neurobox_net`) afin de ne pas perturber les autres services Docker du VPS
-- La configuration nginx (`deploy/nginx.conf.example`) qui sert les fichiers `dist/` et proxifie `/api/` vers l’API
-
-Suivez ce guide pour installer Docker/compose sur l’hôte, exécuter les migrations (`docker compose -f docker-compose.neurobox.yml run --rm neurobox-api npm run server:migrate`), démarrer le service (`... up -d`) puis activer HTTPS avec certbot.
+Consultez `deploy/README.md` pour la configuration, la première mise en production et les contrôles après déploiement.
 
 ### Routes exposées (préfixe `/api`)
 

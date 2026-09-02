@@ -132,15 +132,15 @@ export const BatchTranslationPanel: React.FC<BatchTranslationPanelProps> = ({ on
   }, [job]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-20">
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-20 border-b bg-[rgba(248,245,239,0.92)] text-[var(--ndee-ink)] backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-slate-800" onClick={onBack}>
+            <Button variant="ghost" size="sm" onClick={onBack}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-              <p className="text-xs uppercase tracking-widest text-slate-400">NeuroSooth</p>
+              <p className="text-xs uppercase tracking-widest text-slate-400">NDee</p>
               <h1 className="text-xl font-bold flex items-center gap-2">
                 <Languages className="w-5 h-5 text-teal-300" />
                 Orchestration des traductions

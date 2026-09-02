@@ -41,11 +41,13 @@ async function seedExercises(): Promise<void> {
     await pool.query(
       `INSERT INTO exercises (
         id, client_id, title, description, situation, neurotypes, duration, steps,
-        warning, image_url, tags, thanks_count, is_partner_content,
+        warning, image_url, tags, support_needs, thanks_count, is_partner_content,
         is_community_submitted, moderation_status, created_at, updated_at
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17
-      )`,
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
+      )
+      ON CONFLICT (client_id) DO UPDATE
+        SET support_needs = EXCLUDED.support_needs`,
       [
         id,
         exercise.id, // Use original ID as client_id for tracking
@@ -58,6 +60,7 @@ async function seedExercises(): Promise<void> {
         exercise.warning || null,
           `/images/exercises/${exercise.id}.svg`,
           exercise.tags,
+          exercise.supportNeeds,
           0,
         false, // is_partner_content
         false, // is_community_submitted (these are official seed exercises)
@@ -82,15 +85,9 @@ async function main() {
     await pool.connect();
     console.log('✓ Connected\n');
     
-    const isEmpty = await isDatabaseEmpty();
-    
-    if (isEmpty) {
-      console.log('Database is empty. Seeding initial exercises...\n');
-      await seedExercises();
-      console.log('\n=== Seeding Complete ===');
-    } else {
-      console.log('Database already contains exercises. Skipping seed.\n');
-    }
+    console.log('Synchronizing official NDee exercises...\n');
+    await seedExercises();
+    console.log('\n=== Seeding Complete ===');
     
   } catch (error) {
     console.error('Error during seeding:', error);

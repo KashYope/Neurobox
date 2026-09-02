@@ -4,7 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import './index.css';
 
 import { I18nProvider } from './i18nContext';
-import App from './App';
+import App from './NDeeApp';
 
 if (typeof window !== 'undefined') {
   registerSW({

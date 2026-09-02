@@ -30,7 +30,7 @@ interface ApiConfig {
 
 export type CreateExercisePayload = Pick<
   Exercise,
-  'id' | 'title' | 'description' | 'situation' | 'neurotypes' | 'duration' | 'steps' | 'tags'
+  'id' | 'title' | 'description' | 'situation' | 'neurotypes' | 'duration' | 'steps' | 'tags' | 'supportNeeds'
 > & Pick<Exercise, 'warning' | 'imageUrl' | 'author'>;
 
 export type MutationPayload =
@@ -186,6 +186,7 @@ class ApiClient {
       duration: exercise.duration,
       steps: exercise.steps,
       tags: exercise.tags,
+      supportNeeds: exercise.supportNeeds ?? [],
       ...(exercise.warning ? { warning: exercise.warning } : {}),
       ...(exercise.imageUrl?.startsWith('/') ? { imageUrl: exercise.imageUrl } : {}),
       ...(exercise.author ? { author: exercise.author } : {})

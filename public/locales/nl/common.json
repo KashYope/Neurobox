@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "NeuroSooth",
-    "tagline": "Somatische Regulatie"
+    "name": "NDee",
+    "tagline": "De toolbox voor neurodiversiteit"
   },
   "buttons": {
     "submit": "Verzenden",
@@ -23,7 +23,7 @@
     "addStep": "Stap toevoegen",
     "sendThanks": "Bedankt zeggen",
     "thanksSent": "Bedankt verzonden!",
-    "start": "Begin de reis"
+    "start": "Verder"
   },
   "labels": {
     "name": "Naam",
@@ -53,6 +53,7 @@
     "rejected": "Afgewezen"
   },
   "menu": {
+    "open": "Opties openen",
     "adminSpace": "Admin ruimte",
     "quickActions": "Snelle acties",
     "sync": "Synchronisatie",
@@ -63,7 +64,7 @@
     "moderatorToken": "Moderator Token"
   },
   "badges": {
-    "editorialPick": "NeuroSooth-keuze",
+    "editorialPick": "NDee-keuze",
     "teamApproved": "Door het team goedgekeurd"
   },
   "messages": {
@@ -118,8 +119,16 @@
     "None": "Neurotypisch"
   },
   "dashboard": {
+    "backHome": "Terug naar de NDee-startpagina",
+    "toolboxEyebrow": "Jouw toolbox",
+    "filterPrompt": "Hoe voel je je op dit moment?",
+    "gentleStartingPoint": "Een rustige plek om te beginnen",
+    "exerciseList": "Voorgestelde oefeningen",
     "recommendedForYou": "Aanbevolen voor u",
-    "basedOnProfile": "Op basis van uw profiel {{neurotypes}}",
+    "basedOnProfile": "Op basis van je voorkeuren {{neurotypes}}",
+    "basedOnReflection": "Suggesties uit het ondersteuningsprofiel op dit apparaat.",
+    "guestCatalog": "Alle oefeningen, zonder account of vragenlijst.",
+    "suggestedBecause": "Voorgesteld voor: {{reasons}}",
     "specificTechniques": "Specifieke regulatietechnieken",
     "noTechniquesFound": "Geen techniek gevonden",
     "tryChangeFilter": "Probeer het filter te wijzigen of voeg uw eigen techniek toe."
@@ -134,7 +143,7 @@
     "syncing": "Synchroniseren…",
     "dataSynced": "Gegevens perfect gesynchroniseerd",
     "apiTokens": "API Tokens",
-    "apiTokensDesc": "Plak de ondertekende tokens van NeuroSooth om te publiceren en te modereren via de beveiligde backend.",
+    "apiTokensDesc": "Plak de ondertekende tokens van NDee om te publiceren en te modereren via de beveiligde backend.",
     "partnerToken": "Partner Token",
     "moderatorToken": "Moderator Token",
     "partnerAccessDescription": "Open de partneromgeving en het beheer.",
@@ -143,6 +152,9 @@
     "buyCoffee": "Voer een eenhoorn 🦄",
     "feedback": "Feedback / Contact",
     "openSource": "Open source"
+  },
+  "supportNeeds": {
+    "Focus": "focus", "TaskInitiation": "beginnen", "Organization": "organisatie", "WorkingMemory": "werkgeheugen", "Movement": "beweging", "SensoryRegulation": "sensorisch comfort", "Recovery": "herstel", "Predictability": "voorspelbaarheid", "Communication": "communicatie", "ReadingWriting": "lezen en schrijven", "Sequencing": "volgorde", "MotorPlanning": "motorische planning", "TaskSetup": "voorbereiding", "NumberSupport": "getallensteun", "Confidence": "vertrouwen"
   },
   "situations": {
     "Crisis": "Crisis / Paniek",

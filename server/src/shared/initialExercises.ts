@@ -1,4 +1,4 @@
-import { Exercise, NeuroType, Situation } from './types.js';
+import { Exercise, NeuroType, Situation, SupportNeed } from './types.js';
 
 export const INITIAL_EXERCISES: Exercise[] = [
   {
@@ -17,6 +17,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Respirez sans forcer. Réduisez les temps ou arrêtez en cas de vertige, d’essoufflement ou d’inconfort.',
     imageUrl: '/images/exercises/resp-478.svg',
     tags: ['Respiration', 'Vagal', 'Sommeil'],
+    supportNeeds: [SupportNeed.Recovery, SupportNeed.SensoryRegulation],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -36,6 +37,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'N’immergez pas le visage et ne bloquez pas votre respiration. Évitez cette pratique en cas de problème cardiaque ou circulatoire, de malaise, d’intolérance au froid ou d’avis médical contraire.',
     imageUrl: '/images/exercises/ice-dive.svg',
     tags: ['Urgence', 'Bio-hack', 'Froid'],
+    supportNeeds: [SupportNeed.SensoryRegulation, SupportNeed.Recovery],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -56,6 +58,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Arrêtez en cas de douleur, de vertige ou de difficulté à respirer. Adaptez l’effort à vos capacités physiques.',
     imageUrl: '/images/exercises/wall-push.svg',
     tags: ['Décharge', 'Colère', 'Proprioception'],
+    supportNeeds: [SupportNeed.Movement, SupportNeed.SensoryRegulation],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -76,6 +79,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Ralentissez ou arrêtez si le tapotement augmente la détresse, la dissociation ou des souvenirs difficiles.',
     imageUrl: '/images/exercises/butterfly-hug.svg',
     tags: ['EMDR', 'Sécurité', 'Toucher'],
+    supportNeeds: [SupportNeed.SensoryRegulation, SupportNeed.Recovery],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -96,6 +100,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Arrêtez si vous vous sentez submergé, dissocié, étourdi ou douloureux. Cette pratique ne remplace pas un accompagnement professionnel du trauma.',
     imageUrl: '/images/exercises/shaking.svg',
     tags: ['Somatique', 'Mouvement', 'Ancrage'],
+    supportNeeds: [SupportNeed.Movement, SupportNeed.MotorPlanning],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -115,6 +120,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Pratiquez assis et sans forcer. Arrêtez en cas de vertige, de douleur ou d’essoufflement.',
     imageUrl: '/images/exercises/physio-sigh.svg',
     tags: ['Respiration', 'Science', 'Rapide'],
+    supportNeeds: [SupportNeed.Focus, SupportNeed.Recovery],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -134,6 +140,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: '/images/exercises/54321.svg',
     tags: ['Cognitif', 'Sensoriel', 'Dissociation'],
+    supportNeeds: [SupportNeed.SensoryRegulation, SupportNeed.Focus],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -154,6 +161,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Le son doit rester confortable. Arrêtez en cas de vertige, de douleur, de gêne respiratoire ou vocale.',
     imageUrl: '/images/exercises/voo-sound.svg',
     tags: ['Vagal', 'Son', 'Vibration'],
+    supportNeeds: [SupportNeed.SensoryRegulation, SupportNeed.Recovery],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -174,6 +182,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Changez de position ou arrêtez en cas de douleur, d’engourdissement ou d’inconfort. Demandez un avis professionnel pour une douleur persistante.',
     imageUrl: '/images/exercises/psoas-release.svg',
     tags: ['Douleur', 'Posture', 'Détente'],
+    supportNeeds: [SupportNeed.Recovery, SupportNeed.MotorPlanning],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -192,6 +201,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     ],
     imageUrl: '/images/exercises/brain-dump.svg',
     tags: ['Cognitif', 'Organisation', 'Écriture'],
+    supportNeeds: [SupportNeed.WorkingMemory, SupportNeed.Organization, SupportNeed.TaskInitiation],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -212,6 +222,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Si fermer les yeux augmente l’inconfort ou les images difficiles, gardez-les ouverts et choisissez un repère visuel neutre.',
     imageUrl: '/images/exercises/visual-countdown.svg',
     tags: ['Visualisation', 'Sommeil', 'Mental'],
+    supportNeeds: [SupportNeed.Focus, SupportNeed.Sequencing],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -232,6 +243,7 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Relâchez la pression ou arrêtez si le contact est inconfortable, douloureux ou déclenche une détresse.',
     imageUrl: '/images/exercises/self-hug.svg',
     tags: ['Proprioception', 'Sécurité', 'Toucher'],
+    supportNeeds: [SupportNeed.SensoryRegulation, SupportNeed.Recovery],
     thanksCount: 0,
     moderationStatus: 'approved'
   },
@@ -251,6 +263,137 @@ export const INITIAL_EXERCISES: Exercise[] = [
     warning: 'Ne contractez pas une zone blessée ou douloureuse. Arrêtez si la pratique augmente la douleur ou provoque des crampes.',
     imageUrl: '/images/exercises/pmr-jacobson.svg',
     tags: ['Corps', 'Détente', 'Sommeil'],
+    supportNeeds: [SupportNeed.Recovery, SupportNeed.SensoryRegulation],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'five-minute-launch',
+    title: 'Le lancement de cinq minutes',
+    description: 'Réduire une tâche à un premier pas minuscule pour rendre le démarrage plus accessible.',
+    situation: [Situation.Focus, Situation.Freeze],
+    neurotypes: [NeuroType.ADHD],
+    duration: '5 minutes',
+    steps: ['Choisissez une seule tâche.', 'Écrivez la plus petite action visible.', 'Lancez un minuteur de cinq minutes.', 'À la fin, décidez librement de continuer ou d’arrêter.'],
+    tags: ['Démarrage', 'Fonctions exécutives'],
+    supportNeeds: [SupportNeed.TaskInitiation, SupportNeed.Focus, SupportNeed.TaskSetup],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'visual-task-strip',
+    title: 'Bande de tâches visuelle',
+    description: 'Transformer une séquence en quelques cartes visibles et faciles à suivre.',
+    situation: [Situation.Focus],
+    neurotypes: [NeuroType.ADHD, NeuroType.ASD],
+    duration: '5-10 minutes',
+    steps: ['Notez trois à cinq étapes.', 'Dessinez une case devant chaque étape.', 'Cachez les étapes suivantes si elles distraient.', 'Cochez une case à la fois.'],
+    tags: ['Séquençage', 'Organisation'],
+    supportNeeds: [SupportNeed.Sequencing, SupportNeed.Organization, SupportNeed.Predictability],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'sensory-menu',
+    title: 'Menu sensoriel personnel',
+    description: 'Identifier des options sensorielles agréables ou neutres pour différents moments de la journée.',
+    situation: [Situation.Stress, Situation.Focus],
+    neurotypes: [NeuroType.ASD, NeuroType.HighSensitivity],
+    duration: '10 minutes',
+    steps: ['Listez les sons, lumières, textures et mouvements confortables.', 'Classez-les en apaisant, stimulant ou neutre.', 'Choisissez une option facile à garder à portée de main.'],
+    tags: ['Sensoriel', 'Préférences'],
+    supportNeeds: [SupportNeed.SensoryRegulation, SupportNeed.Recovery, SupportNeed.Predictability],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'communication-card',
+    title: 'Carte de communication rapide',
+    description: 'Préparer une phrase courte à montrer ou envoyer lorsque parler demande trop d’énergie.',
+    situation: [Situation.Stress, Situation.Freeze],
+    neurotypes: [NeuroType.ASD],
+    duration: '5 minutes',
+    steps: ['Choisissez un besoin fréquent.', 'Écrivez une phrase directe et respectueuse.', 'Ajoutez ce qui peut aider maintenant.', 'Gardez la carte dans votre téléphone ou portefeuille.'],
+    tags: ['Communication', 'Énergie'],
+    supportNeeds: [SupportNeed.Communication, SupportNeed.Recovery, SupportNeed.Predictability],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'reading-window',
+    title: 'Fenêtre de lecture',
+    description: 'Réduire la quantité de texte visible afin de faciliter le suivi d’une ligne.',
+    situation: [Situation.Focus],
+    neurotypes: [],
+    duration: '2 minutes',
+    steps: ['Prenez une feuille opaque.', 'Découpez ou laissez un espace de la hauteur d’une ligne.', 'Déplacez la fenêtre au fil de la lecture.', 'Ajustez la largeur et le contraste selon votre confort.'],
+    tags: ['Lecture', 'Visuel'],
+    supportNeeds: [SupportNeed.ReadingWriting, SupportNeed.Focus, SupportNeed.Sequencing],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'voice-first-draft',
+    title: 'Premier brouillon à la voix',
+    description: 'Commencer un texte en le dictant, puis organiser les idées dans un second temps.',
+    situation: [Situation.Focus, Situation.Freeze],
+    neurotypes: [],
+    duration: '5-15 minutes',
+    steps: ['Ouvrez la dictée vocale locale de votre appareil.', 'Dites les idées sans les corriger.', 'Relisez seulement après avoir terminé.', 'Organisez le texte en petits paragraphes.'],
+    tags: ['Écriture', 'Dictée'],
+    supportNeeds: [SupportNeed.ReadingWriting, SupportNeed.TaskInitiation, SupportNeed.WorkingMemory],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'movement-preview',
+    title: 'Prévisualiser un mouvement',
+    description: 'Décomposer une action physique avant de l’essayer à son propre rythme.',
+    situation: [Situation.Focus],
+    neurotypes: [],
+    duration: '3-5 minutes',
+    steps: ['Observez l’espace et retirez les obstacles.', 'Nommez les trois premières étapes.', 'Mimez lentement sans charge.', 'Réalisez l’action et arrêtez si elle devient inconfortable.'],
+    tags: ['Mouvement', 'Planification'],
+    supportNeeds: [SupportNeed.MotorPlanning, SupportNeed.Sequencing, SupportNeed.TaskSetup],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'launch-pad',
+    title: 'Zone de départ',
+    description: 'Rassembler au même endroit les objets nécessaires à une routine récurrente.',
+    situation: [Situation.Focus],
+    neurotypes: [NeuroType.ADHD],
+    duration: '10 minutes',
+    steps: ['Choisissez une routine fréquente.', 'Rassemblez les objets utiles.', 'Placez-les dans un panier ou une zone visible.', 'Ajoutez une étiquette simple.'],
+    tags: ['Organisation', 'Mémoire'],
+    supportNeeds: [SupportNeed.TaskSetup, SupportNeed.WorkingMemory, SupportNeed.Organization],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'number-anchor',
+    title: 'Ancrage concret des nombres',
+    description: 'Relier un nombre abstrait à un objet, un dessin ou une quantité visible.',
+    situation: [Situation.Focus, Situation.Stress],
+    neurotypes: [],
+    duration: '5 minutes',
+    steps: ['Choisissez le nombre ou calcul à comprendre.', 'Représentez-le avec des objets ou des points.', 'Regroupez les éléments visuellement.', 'Écrivez ensuite l’opération correspondante.'],
+    tags: ['Nombres', 'Visuel'],
+    supportNeeds: [SupportNeed.NumberSupport, SupportNeed.Confidence, SupportNeed.Sequencing],
+    thanksCount: 0,
+    moderationStatus: 'approved'
+  },
+  {
+    id: 'estimate-check',
+    title: 'Estimer puis vérifier',
+    description: 'Donner d’abord une réponse approximative, puis utiliser un outil pour vérifier sans pression.',
+    situation: [Situation.Focus, Situation.Stress],
+    neurotypes: [],
+    duration: '3 minutes',
+    steps: ['Notez une fourchette approximative.', 'Utilisez une calculatrice ou un tableau.', 'Comparez sans qualifier l’estimation de bonne ou mauvaise.', 'Gardez le repère qui vous aidera la prochaine fois.'],
+    tags: ['Nombres', 'Confiance'],
+    supportNeeds: [SupportNeed.NumberSupport, SupportNeed.Confidence, SupportNeed.Predictability],
     thanksCount: 0,
     moderationStatus: 'approved'
   }

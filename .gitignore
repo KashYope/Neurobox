@@ -3,10 +3,23 @@
 .env.local
 .env.production
 .env.*.local
+.env.server
 *.swp
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.pub
+id_rsa*
+id_ed25519*
+neurobox
 
 # Build Output
 dist/
+dist-test/
+dev-dist/
 build/
 *.log
 *.pid

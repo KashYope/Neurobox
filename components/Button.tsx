@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'soft';
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -12,20 +12,21 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  const baseStyles = "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "inline-flex min-h-11 items-center justify-center rounded-2xl font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ndee-focus)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
   
   const variants = {
-    primary: "bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 shadow-sm",
-    secondary: "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 focus:ring-indigo-500",
-    outline: "border-2 border-gray-200 bg-transparent text-gray-700 hover:bg-gray-50 focus:ring-gray-500",
-    danger: "bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+    primary: "bg-[var(--ndee-primary)] text-white shadow-sm hover:bg-[var(--ndee-primary-strong)]",
+    secondary: "bg-[var(--ndee-lilac)] text-[var(--ndee-ink)] hover:bg-[#ddd5ec]",
+    soft: "bg-[var(--ndee-sage)] text-[var(--ndee-ink)] hover:bg-[#d2e2d8]",
+    outline: "border border-[var(--ndee-border)] bg-white/70 text-[var(--ndee-ink)] hover:bg-white",
+    danger: "bg-[var(--ndee-danger)] text-white shadow-sm hover:bg-[#9d4a53]",
+    ghost: "bg-transparent text-[var(--ndee-muted)] hover:bg-white/80 hover:text-[var(--ndee-ink)]"
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-4 py-2 text-base",
-    lg: "px-6 py-3 text-lg",
+    sm: "px-3 py-2 text-sm",
+    md: "px-4 py-2.5 text-base",
+    lg: "px-6 py-3 text-base sm:text-lg",
   };
 
   return (

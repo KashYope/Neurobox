@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "NeuroSooth",
-    "tagline": "Somatic Regulation"
+    "name": "NDee",
+    "tagline": "The toolbox for neurodiversity"
   },
   "buttons": {
     "submit": "Submit",
@@ -23,7 +23,7 @@
     "addStep": "Add Step",
     "sendThanks": "Say Thanks",
     "thanksSent": "Thanks Sent!",
-    "start": "Start the Journey"
+    "start": "Continue"
   },
   "languageSelector": {
     "label": "Langue / Language"
@@ -56,6 +56,7 @@
     "rejected": "Rejected"
   },
   "menu": {
+    "open": "Open options",
     "adminSpace": "Admin Space",
     "quickActions": "Quick Actions",
     "sync": "Synchronization",
@@ -66,7 +67,7 @@
     "moderatorToken": "Moderator Token"
   },
   "badges": {
-    "editorialPick": "NeuroSooth pick",
+    "editorialPick": "NDee pick",
     "teamApproved": "Team approved"
   },
   "messages": {
@@ -121,8 +122,16 @@
     "None": "Neurotypical"
   },
   "dashboard": {
+    "backHome": "Back to the NDee home page",
+    "toolboxEyebrow": "Your toolbox",
+    "filterPrompt": "How are you feeling right now?",
+    "gentleStartingPoint": "A gentle place to begin",
+    "exerciseList": "Suggested practices",
     "recommendedForYou": "Recommended for you",
-    "basedOnProfile": "Based on your profile {{neurotypes}}",
+    "basedOnProfile": "Based on your preferences {{neurotypes}}",
+    "basedOnReflection": "Suggestions from the support profile saved on this device.",
+    "guestCatalog": "Every exercise, with no account or questionnaire required.",
+    "suggestedBecause": "Suggested for: {{reasons}}",
     "specificTechniques": "Specific regulation techniques",
     "noTechniquesFound": "No technique found",
     "tryChangeFilter": "Try changing the filter or add your own technique."
@@ -137,7 +146,7 @@
     "syncing": "Synchronizing…",
     "dataSynced": "Data perfectly synchronized",
     "apiTokens": "API Tokens",
-    "apiTokensDesc": "Paste the signed tokens provided by NeuroSooth to publish and moderate via the secure backend.",
+    "apiTokensDesc": "Paste the signed tokens provided by NDee to publish and moderate via the secure backend.",
     "partnerToken": "Partner Token",
     "moderatorToken": "Moderator Token",
     "partnerAccessDescription": "Access the partner workspace and administration.",
@@ -146,6 +155,9 @@
     "buyCoffee": "Feed a unicorn 🦄",
     "feedback": "Feedback / Contact",
     "openSource": "Open Source"
+  },
+  "supportNeeds": {
+    "Focus": "focus", "TaskInitiation": "getting started", "Organization": "organization", "WorkingMemory": "working memory", "Movement": "movement", "SensoryRegulation": "sensory comfort", "Recovery": "recovery", "Predictability": "predictability", "Communication": "communication", "ReadingWriting": "reading and writing", "Sequencing": "sequencing", "MotorPlanning": "motor planning", "TaskSetup": "task setup", "NumberSupport": "number support", "Confidence": "confidence"
   },
   "situations": {
     "Crisis": "Crisis / Panic",

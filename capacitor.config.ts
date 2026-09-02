@@ -10,7 +10,7 @@ interface CapacitorConfig {
 
 const config: CapacitorConfig = {
   appId: 'com.neurosooth.app',
-  appName: 'NeuroSooth',
+  appName: 'NDee',
   webDir: 'dist',
   bundledWebRuntime: false,
   server: {

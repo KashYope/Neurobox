@@ -1,18 +1,77 @@
 @import "tailwindcss";
 
-/* Custom styles */
+@theme {
+  --font-sans: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
 @layer base {
-  body {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  :root {
+    --ndee-canvas: #f8f5ef;
+    --ndee-surface: #fffdf9;
+    --ndee-ink: #26332f;
+    --ndee-muted: #607069;
+    --ndee-border: #d9dfda;
+    --ndee-primary: #55796e;
+    --ndee-primary-strong: #3f6258;
+    --ndee-focus: #486f65;
+    --ndee-sage: #dfece3;
+    --ndee-lilac: #e9e3f1;
+    --ndee-peach: #f5dfd5;
+    --ndee-sky: #deebf0;
+    --ndee-sun: #f3e8bd;
+    --ndee-danger: #ad5962;
   }
 
-  /* Font face for Inter (fallback if Google Fonts fails) */
-  @font-face {
-    font-family: 'Inter';
-    font-style: normal;
-    font-weight: 300 700;
-    font-display: swap;
-    src: local('Inter');
+  * {
+    border-color: var(--ndee-border);
+  }
+
+  html {
+    background: var(--ndee-canvas);
+    color: var(--ndee-ink);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background:
+      radial-gradient(circle at 8% 4%, rgba(223, 236, 227, 0.72), transparent 24rem),
+      radial-gradient(circle at 92% 18%, rgba(233, 227, 241, 0.64), transparent 22rem),
+      var(--ndee-canvas);
+    color: var(--ndee-ink);
+    font-family: "Avenir Next", Avenir, "Segoe UI", system-ui, -apple-system, sans-serif;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  input,
+  textarea,
+  select {
+    min-height: 44px;
+    border-color: var(--ndee-border);
+    background: rgba(255, 253, 249, 0.9);
+    color: var(--ndee-ink);
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--ndee-focus);
+    outline: 2px solid color-mix(in srgb, var(--ndee-focus) 35%, transparent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--ndee-lilac);
+    color: var(--ndee-ink);
   }
 }
 
@@ -39,8 +98,107 @@
   }
 
   .animate-slide-in {
-    animation: slideInRight 0.3s ease-out forwards;
+    animation: slideInRight 0.22s ease-out forwards;
   }
+
+  .brand-logo {
+    position: relative;
+    display: inline-block;
+    width: 9.5rem;
+    height: 4.75rem;
+    flex: none;
+    overflow: hidden;
+  }
+
+  .brand-logo img {
+    position: absolute;
+    top: -25%;
+    left: 0;
+    width: 100%;
+    height: auto;
+  }
+
+  .brand-logo--compact {
+    width: 7.25rem;
+    height: 3.65rem;
+  }
+
+  .ndee-surface {
+    background: color-mix(in srgb, var(--ndee-surface) 94%, transparent);
+    border: 1px solid var(--ndee-border);
+    box-shadow: 0 16px 45px rgba(66, 77, 71, 0.07);
+  }
+
+  .ndee-eyebrow {
+    color: var(--ndee-primary-strong);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .ndee-focus {
+    outline: none;
+  }
+
+  .ndee-focus:focus-visible {
+    box-shadow: 0 0 0 3px var(--ndee-canvas), 0 0 0 5px var(--ndee-focus);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Harmonise the remaining operational screens with the calm brand palette. */
+  .bg-white { background-color: var(--ndee-surface); }
+  .bg-slate-50 { background-color: var(--ndee-canvas); }
+  .bg-slate-100 { background-color: var(--ndee-sage); }
+  .bg-gray-50,
+  .bg-gray-100 { background-color: var(--ndee-canvas); }
+  .bg-slate-900,
+  .bg-slate-800 { background-color: var(--ndee-primary-strong); }
+  .bg-teal-600,
+  .bg-teal-700,
+  .bg-emerald-600,
+  .bg-indigo-600,
+  .bg-indigo-700 { background-color: var(--ndee-primary); }
+  .bg-teal-50,
+  .bg-teal-100,
+  .bg-emerald-50,
+  .bg-emerald-100 { background-color: var(--ndee-sage); }
+  .bg-indigo-50,
+  .bg-indigo-100 { background-color: var(--ndee-lilac); }
+  .text-teal-500,
+  .text-teal-600,
+  .text-teal-700,
+  .text-emerald-600,
+  .text-emerald-700,
+  .text-indigo-600,
+  .text-indigo-700,
+  .text-indigo-800 { color: var(--ndee-primary-strong); }
+  .text-slate-900,
+  .text-slate-800,
+  .text-gray-900,
+  .text-gray-800,
+  .text-gray-700 { color: var(--ndee-ink); }
+  .text-slate-700,
+  .text-slate-600,
+  .text-slate-500,
+  .text-gray-600 { color: var(--ndee-muted); }
+  .border-slate-100,
+  .border-slate-200,
+  .border-gray-100,
+  .border-gray-200,
+  .border-gray-300 { border-color: var(--ndee-border); }
+  .border-teal-500,
+  .border-teal-600,
+  .focus\:border-teal-500:focus { border-color: var(--ndee-primary); }
 }
 
 @layer components {

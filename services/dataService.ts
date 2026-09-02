@@ -1,4 +1,4 @@
-import { Exercise, UserProfile, NeuroType, Situation, ModerationStatus } from '../types';
+import { Exercise, UserProfile, NeuroType, Situation, ModerationStatus, RecommendationProfile, SupportNeed } from '../types';
 import { INITIAL_EXERCISES, THANKS_VISIBILITY_THRESHOLD } from '../constants';
 import { syncService } from './syncService';
 import {
@@ -19,6 +19,11 @@ export const saveUser = (user: UserProfile): void => {
 };
 
 export const getUser = (): UserProfile | null => userCache;
+
+export const clearUser = (): void => {
+  userCache = null;
+  void storageAdapter.saveUser(null);
+};
 
 const filterDeleted = (list: Exercise[]): Exercise[] => list.filter(ex => !ex.deletedAt);
 
@@ -42,7 +47,8 @@ export const incrementThanks = (exerciseId: string): Promise<boolean> => {
 export const getRecommendedExercises = (
   exercises: Exercise[],
   user: UserProfile | null,
-  situation: Situation | 'All'
+  situation: Situation | 'All',
+  recommendationProfile: RecommendationProfile | null = null
 ): Exercise[] => {
   let list = filterDeleted(exercises);
 
@@ -59,8 +65,13 @@ export const getRecommendedExercises = (
     user ? exercise.neurotypes.filter(type => user.neurotypes.includes(type)).length : 0;
   const visibleThanks = (exercise: Exercise): number =>
     exercise.thanksCount >= THANKS_VISIBILITY_THRESHOLD ? exercise.thanksCount : 0;
+  const needWeight = new Map(recommendationProfile?.needs.map(item => [item.need, item.weight]) ?? []);
+  const supportScore = (exercise: Exercise): number =>
+    (exercise.supportNeeds ?? []).reduce((sum, need) => sum + (needWeight.get(need) ?? 0), 0);
 
   list = [...list].sort((left, right) => {
+    const supportDifference = supportScore(right) - supportScore(left);
+    if (supportDifference !== 0) return supportDifference;
     const matchDifference = profileMatches(right) - profileMatches(left);
     if (matchDifference !== 0) return matchDifference;
     const thanksDifference = visibleThanks(right) - visibleThanks(left);
@@ -69,6 +80,18 @@ export const getRecommendedExercises = (
   });
 
   return list;
+};
+
+export const getRecommendationReasons = (
+  exercise: Exercise,
+  recommendationProfile: RecommendationProfile | null
+): SupportNeed[] => {
+  if (!recommendationProfile) return [];
+  const weights = new Map(recommendationProfile.needs.map(item => [item.need, item.weight]));
+  return (exercise.supportNeeds ?? [])
+    .filter(need => weights.has(need))
+    .sort((left, right) => (weights.get(right) ?? 0) - (weights.get(left) ?? 0))
+    .slice(0, 2);
 };
 
 export const moderateExercise = (

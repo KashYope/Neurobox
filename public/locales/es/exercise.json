@@ -1,7 +1,8 @@
 {
   "detail": {
     "peopleFoundHelpful": "A {{count}} personas les resultó útil",
-    "instructions": "Instrucciones",
+    "instructions": "Pasos a seguir",
+    "takeYourTime": "A tu ritmo",
     "wasItHelpful": "¿Te resultó útil esta técnica?",
     "thanksSent": "¡Gracias enviadas!",
     "sayThanks": "Dar las gracias",
