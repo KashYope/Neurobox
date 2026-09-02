@@ -894,7 +894,12 @@ type NavigationState = { view: AppView; exerciseId?: string };
 const isAppView = (value: unknown): value is AppView =>
   ['onboarding', 'dashboard', 'detail', 'add', 'moderation', 'partner', 'admin'].includes(String(value));
 
-const App: React.FC = () => {
+interface AppProps {
+  embeddedInSiteShell?: boolean;
+  headerActionsContainer?: HTMLElement | null;
+}
+
+const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsContainer = null }) => {
   const { t } = useTranslation(['common']);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [recommendationProfile, setRecommendationProfile] = useState<RecommendationProfile | null>(null);
@@ -1280,6 +1285,8 @@ const App: React.FC = () => {
       isAdminMenuOpen={isAdminMenuOpen}
       onOpenAdminMenu={() => setIsAdminMenuOpen(true)}
       onCloseAdminMenu={() => setIsAdminMenuOpen(false)}
+      embeddedInSiteShell={embeddedInSiteShell}
+      headerActionsContainer={headerActionsContainer}
     />
   );
 

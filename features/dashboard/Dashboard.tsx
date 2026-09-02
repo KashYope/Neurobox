@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '../../src/i18nContext';
 
 import {
@@ -41,6 +42,8 @@ export interface DashboardProps {
   isAdminMenuOpen: boolean;
   onOpenAdminMenu: () => void;
   onCloseAdminMenu: () => void;
+  embeddedInSiteShell?: boolean;
+  headerActionsContainer?: HTMLElement | null;
 }
 
 interface ExerciseCardProps {
@@ -92,20 +95,22 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, reasons, onClick,
   );
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ user, recommendationProfile, exercises, situationFilter, onFilterChange, onExerciseClick, onAddTechnique, onPartnerAccess, syncStatus, showSyncStatus, partnerSession, isAdminMenuOpen, onOpenAdminMenu, onCloseAdminMenu }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, recommendationProfile, exercises, situationFilter, onFilterChange, onExerciseClick, onAddTechnique, onPartnerAccess, syncStatus, showSyncStatus, partnerSession, isAdminMenuOpen, onOpenAdminMenu, onCloseAdminMenu, embeddedInSiteShell = false, headerActionsContainer = null }) => {
   const { t } = useTranslation(['common']);
+  const headerActions = <div className="flex items-center gap-2">
+    {user && <div className="hidden items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-sm text-[var(--ndee-muted)] md:flex"><User className="h-4 w-4" /><span className="font-semibold">{user.name}</span></div>}
+    <button type="button" onClick={onOpenAdminMenu} aria-label={t('menu.open')} aria-expanded={isAdminMenuOpen} className="ndee-focus flex h-11 w-11 items-center justify-center rounded-full border bg-white/75 text-[var(--ndee-muted)] hover:text-[var(--ndee-ink)]"><Menu className="h-5 w-5" /></button>
+  </div>;
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-[var(--ndee-border)] bg-[rgba(248,245,239,0.92)] backdrop-blur-md">
+      {embeddedInSiteShell && headerActionsContainer && createPortal(headerActions, headerActionsContainer)}
+      {!embeddedInSiteShell && <header className="sticky top-0 z-20 border-b border-[var(--ndee-border)] bg-[rgba(248,245,239,0.92)] backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-3 px-4">
           <a href="/" className="ndee-focus rounded-xl" aria-label={t('dashboard.backHome')}><BrandLogo compact /></a>
-          <div className="flex items-center gap-2">
-            {user && <div className="hidden items-center gap-2 rounded-full bg-white/75 px-3 py-2 text-sm text-[var(--ndee-muted)] sm:flex"><User className="h-4 w-4" /><span className="font-semibold">{user.name}</span></div>}
-            <button type="button" onClick={onOpenAdminMenu} aria-label={t('menu.open')} aria-expanded={isAdminMenuOpen} className="ndee-focus flex h-11 w-11 items-center justify-center rounded-full border bg-white/75 text-[var(--ndee-muted)] hover:text-[var(--ndee-ink)]"><Menu className="h-5 w-5" /></button>
-          </div>
+          {headerActions}
         </div>
-      </header>
+      </header>}
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
         <section aria-labelledby="toolbox-title">

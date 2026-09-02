@@ -78,6 +78,7 @@ const NDeeApp: React.FC = () => {
   const [answers, setAnswers] = useState<ReflectionAnswer[]>([]);
   const [assessmentIndex, setAssessmentIndex] = useState(0);
   const [assessmentKey, setAssessmentKey] = useState(0);
+  const [toolboxHeaderActions, setToolboxHeaderActions] = useState<HTMLDivElement | null>(null);
   const language = (i18n.language?.split('-')[0] || 'fr') as keyof typeof shellCopy;
   const resolvedLanguage = language in shellCopy ? language : 'fr';
   const t = shellCopy[resolvedLanguage];
@@ -145,15 +146,16 @@ const NDeeApp: React.FC = () => {
       <button onClick={() => navigate('home')} className="ndee-focus rounded-xl text-left" aria-label={`${t.home} — NDee`}><BrandLogo compact /></button>
       <nav className="flex items-center gap-1" aria-label={`${t.home} / ${t.toolbox}`}>
         <button onClick={() => navigate('home')} className="ndee-focus hidden min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ndee-muted)] hover:bg-white/70 sm:block">{t.home}</button>
-        <button onClick={() => navigate('toolbox')} className="ndee-focus min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ndee-ink)] hover:bg-white/70">{t.toolbox}</button>
+        <button onClick={() => navigate('toolbox')} className={`ndee-focus min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ndee-ink)] hover:bg-white/70 ${route === 'toolbox' ? 'hidden sm:block' : ''}`}>{t.toolbox}</button>
         <button onClick={() => setPrivacyOpen(true)} className="ndee-focus min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ndee-muted)] hover:bg-white/70" aria-label={t.privacy}><LockKeyhole className="inline h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">{t.privacy}</span></button>
         <div className="ml-1 flex min-h-11 items-center rounded-xl border border-[var(--ndee-border)] bg-white/70 px-1"><Languages className="mx-1 h-4 w-4 text-[var(--ndee-muted)]" /><select aria-label={translate('languageSelector.label')} value={resolvedLanguage} onChange={event => void changeLanguage(event.target.value as SupportedLanguage)} className="min-h-9 border-0 bg-transparent py-1 text-xs font-bold outline-none">{Object.entries(getSupportedLanguages()).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></div>
+        {route === 'toolbox' && <div ref={setToolboxHeaderActions} />}
       </nav>
     </div>
   </header>;
 
   let content: React.ReactNode;
-  if (route === 'toolbox') content = <ToolboxApp />;
+  if (route === 'toolbox') content = <ToolboxApp embeddedInSiteShell headerActionsContainer={toolboxHeaderActions} />;
   else if (route === 'assessment' && (resolvedLanguage === 'en' || resolvedLanguage === 'fr')) content = <Suspense fallback={<div className="p-12 text-center font-semibold text-slate-600">NDee…</div>}><Assessment key={assessmentKey} locale={resolvedLanguage} initialAnswers={answers} initialIndex={assessmentIndex} onBack={() => navigate('home')} onOpenToolbox={() => navigate('toolbox')} onPersonalized={() => window.dispatchEvent(new Event('ndee-personalization-change'))} /></Suspense>;
   else if (route === 'assessment') content = <main className="mx-auto max-w-xl px-4 py-20 text-center"><div className="ndee-surface rounded-[2rem] p-8"><Sparkles className="mx-auto h-10 w-10 text-[var(--ndee-primary)]" /><h1 className="mt-5 text-3xl font-bold">{t.profileTitle}</h1><p className="mt-4 text-[var(--ndee-muted)]">{t.unavailable}</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><button onClick={() => void changeLanguage('en')} className="ndee-focus min-h-11 rounded-2xl bg-[var(--ndee-primary)] px-5 py-3 font-bold text-white">{t.switchEnglish}</button><button onClick={() => void changeLanguage('fr')} className="ndee-focus min-h-11 rounded-2xl border bg-white px-5 py-3 font-bold">{t.switchFrench}</button></div></div></main>;
   else content = <main>
