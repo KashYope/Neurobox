@@ -1,10 +1,12 @@
 {
   "detail": {
-    "peopleHelped": "{{count}} personnes aidées",
+    "peopleFoundHelpful": "{{count}} personnes l’ont trouvée utile",
     "instructions": "Instructions",
     "wasItHelpful": "Cette technique vous a-t-elle aidé ?",
     "thanksSent": "Merci envoyé !",
-    "sayThanks": "Dire Merci"
+    "sayThanks": "Dire merci",
+    "thanksError": "Impossible d’enregistrer votre retour pour le moment.",
+    "safetyNote": "Ces exercices sont des outils de bien-être, pas un traitement. En cas de danger immédiat ou de symptômes sévères, contactez les services d’urgence ou un professionnel de santé."
   },
   "creation": {
     "title": "Ajouter une technique",
@@ -12,6 +14,7 @@
     "communityNote": "Les contributions communautaires passent désormais par une revue humaine. Votre proposition apparaîtra dans la grille une fois validée par l'équipe de modération.",
     "feedback": {
       "success": "Votre technique a été envoyée en relecture.",
+      "savedOffline": "Votre technique est enregistrée hors ligne et sera envoyée dès le retour de la connexion.",
       "error": "Impossible d'envoyer votre technique. Merci de réessayer.",
       "missingFields": "Ajoutez un titre et une description avant de publier."
     },
@@ -19,9 +22,7 @@
       "title": "Titre",
       "titlePlaceholder": "Ex: Respiration Carrée",
       "description": "Description Courte",
-      "descriptionPlaceholder": "A quoi ça sert ?",
-      "image": "Image / GIF (URL)",
-      "imageHelper": "Laissez vide pour une image par défaut",
+      "descriptionPlaceholder": "À quoi ça sert ?",
       "situation": "Situation (Choisir au moins 1)",
       "duration": "Durée",
       "durationPlaceholder": "Ex: 2 minutes",

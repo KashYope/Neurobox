@@ -30,7 +30,6 @@ export interface PartnerAccount {
   organization: string;
   contactName: string;
   email: string;
-  password: string;
   status: 'pending' | 'active' | 'rejected';
   role: 'partner' | 'admin';
 }
@@ -57,7 +56,7 @@ export interface Exercise {
   situation: Situation[];
   neurotypes: NeuroType[]; // Who is this best for?
   duration: string;
-  imageUrl: string; // Placeholder for GIF
+  imageUrl?: string; // Optional first-party asset; otherwise artwork is generated locally
   tags: string[];
   thanksCount: number;
   isCommunitySubmitted?: boolean;
@@ -76,6 +75,11 @@ export interface ServerExercise extends Exercise {
   serverId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ThankExerciseResponse {
+  exercise: ServerExercise;
+  accepted: boolean;
 }
 
 export interface AppState {

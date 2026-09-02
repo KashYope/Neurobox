@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { exerciseTranslationService } from '../services/exerciseTranslationService';
+import { useTranslation } from '../src/i18nContext.js';
+import { exerciseTranslationService } from '../services/exerciseTranslationService.js';
 /**
  * Hook to translate exercises based on current language
  * Automatically fetches and applies translations when language changes

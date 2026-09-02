@@ -62,6 +62,10 @@
     "partnerToken": "Partner Token",
     "moderatorToken": "Moderator Token"
   },
+  "badges": {
+    "editorialPick": "NeuroSooth-keuze",
+    "teamApproved": "Door het team goedgekeurd"
+  },
   "messages": {
     "noResults": "Geen techniek gevonden",
     "tryChangeFilter": "Probeer het filter te wijzigen of voeg uw eigen techniek toe.",
@@ -69,8 +73,42 @@
     "error": "Er is een fout opgetreden",
     "success": "Succes",
     "tokenSaved": "Token opgeslagen.",
-    "tokenRemoved": "Token verwijderd.",
-    "helpedPeople": "{{count}} mensen geholpen"
+    "tokenRemoved": "Token verwijderd."
+  },
+  "adminFeedback": {
+    "approved": "Partneraccount goedgekeurd.",
+    "rejected": "Partneraccount afgewezen.",
+    "updateError": "De accountstatus kon niet worden bijgewerkt. Probeer het opnieuw."
+  },
+  "adminDashboard": {
+    "title": "Beheerdashboard",
+    "batchTranslations": "Vertalingen in batches",
+    "moderationContent": "Contentmoderatie",
+    "liveOverview": "Liveoverzicht",
+    "platformMetrics": "Platformstatistieken",
+    "updatedAt": "Bijgewerkt om {{time}}",
+    "awaitingSync": "Wachten op de eerste synchronisatie",
+    "loadingMetrics": "Platformstatistieken laden…",
+    "totalFeedback": "Nuttige feedback",
+    "approvedExercises": "{{count}} goedgekeurde oefeningen",
+    "exercisesInDb": "Oefeningen in de database",
+    "pendingModeration": "{{count}} wachten op moderatie",
+    "users": "Gebruikers",
+    "userSummary": "{{active}} actief / {{pending}} in afwachting",
+    "contentMix": "Contentverdeling",
+    "contentSummary": "{{partner}} partner / {{community}} community",
+    "pendingRegistrations": "Openstaande registraties ({{count}})",
+    "activePartners": "Actieve partners ({{count}})",
+    "loadingAccounts": "Partneraccounts laden…",
+    "noPendingAccounts": "Geen openstaande accountaanvragen.",
+    "noActivePartners": "Nog geen actieve partners.",
+    "contact": "Contact",
+    "actions": "Acties",
+    "processing": "Verwerken…",
+    "saving": "Opslaan…",
+    "loadAccountsError": "Partneraccounts konden niet worden geladen.",
+    "loadMetricsError": "Platformstatistieken konden niet worden geladen.",
+    "updateAccountError": "Het account kon niet worden bijgewerkt."
   },
   "neuroTypes": {
     "ADHD": "ADHD",
@@ -99,7 +137,12 @@
     "apiTokensDesc": "Plak de ondertekende tokens van NeuroSooth om te publiceren en te modereren via de beveiligde backend.",
     "partnerToken": "Partner Token",
     "moderatorToken": "Moderator Token",
-    "buyCoffee": "Feed the Unicorns"
+    "partnerAccessDescription": "Open de partneromgeving en het beheer.",
+    "myWorkspace": "Mijn werkruimte",
+    "partnerLogin": "Partner-/adminlogin",
+    "buyCoffee": "Voer een eenhoorn 🦄",
+    "feedback": "Feedback / Contact",
+    "openSource": "Open source"
   },
   "situations": {
     "Crisis": "Crisis / Paniek",

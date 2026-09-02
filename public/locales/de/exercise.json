@@ -1,30 +1,36 @@
 {
   "detail": {
-    "peopleHelped": "{{count}} people helped",
-    "instructions": "Instructions",
-    "wasItHelpful": "Was this technique helpful?",
-    "thanksSent": "Thanks sent!",
-    "sayThanks": "Say Thanks"
+    "peopleFoundHelpful": "{{count}} Personen fanden dies hilfreich",
+    "instructions": "Anleitung",
+    "wasItHelpful": "War diese Technik hilfreich?",
+    "thanksSent": "Danke gesendet!",
+    "sayThanks": "Danke sagen",
+    "thanksError": "Ihre Rückmeldung konnte gerade nicht gespeichert werden.",
+    "safetyNote": "Diese Übungen sind Hilfen für das Wohlbefinden und keine Behandlung. Wenden Sie sich bei unmittelbarer Gefahr oder schweren Symptomen an den Notdienst oder medizinisches Fachpersonal."
   },
   "creation": {
-    "title": "Add a Technique",
-    "cancel": "Cancel",
-    "communityNote": "Community contributions now go through human review. Your proposal will appear in the grid once validated by the moderation team.",
+    "title": "Eine Technik beitragen",
+    "cancel": "Abbrechen",
+    "communityNote": "Beiträge aus der Community werden von Menschen geprüft. Nach der Freigabe erscheint Ihr Vorschlag im Katalog.",
+    "feedback": {
+      "success": "Ihre Technik wurde zur Prüfung eingereicht.",
+      "savedOffline": "Ihre Technik ist offline gespeichert und wird bei wiederhergestellter Verbindung eingereicht.",
+      "error": "Die Technik konnte nicht eingereicht werden. Bitte versuchen Sie es erneut.",
+      "missingFields": "Bitte geben Sie vor dem Absenden einen Titel und eine Beschreibung ein."
+    },
     "form": {
-      "title": "Title",
-      "titlePlaceholder": "Ex: Box Breathing",
-      "description": "Short Description",
-      "descriptionPlaceholder": "What is it for?",
-      "image": "Image / GIF (URL)",
-      "imageHelper": "Leave empty for default image",
-      "situation": "Situation (Choose at least 1)",
-      "duration": "Duration",
-      "durationPlaceholder": "Ex: 2 minutes",
-      "steps": "Steps",
-      "step": "Step {{number}}",
-      "stepPlaceholder": "Step {{number}}",
-      "addStep": "+ Add a step",
-      "submit": "Publish Technique"
+      "title": "Titel",
+      "titlePlaceholder": "Beispiel: Ruhige Atmung",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Wie kann diese Technik helfen?",
+      "situation": "Geeignete Situationen",
+      "duration": "Dauer",
+      "durationPlaceholder": "Beispiel: 5 Min.",
+      "steps": "Schritte",
+      "step": "Schritt",
+      "stepPlaceholder": "Schritt {{number}} beschreiben",
+      "addStep": "+ Schritt hinzufügen",
+      "submit": "Zur Prüfung einreichen"
     }
   }
 }

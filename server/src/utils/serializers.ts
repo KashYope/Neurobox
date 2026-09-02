@@ -7,6 +7,9 @@ const toEnumArray = <T extends string>(values: string[], allowed: readonly T[]):
 const toIso = (value: Date | null | undefined): string | undefined =>
   value ? value.toISOString() : undefined;
 
+export const sanitizeImagePath = (value: string | null | undefined): string | undefined =>
+  value && /^\/(?!\/)[A-Za-z0-9/_.,()'%-]+$/.test(value) ? value : undefined;
+
 export const mapExerciseRow = (row: ExerciseRow): ServerExercise => {
   return {
     id: row.client_id || row.id,
@@ -19,7 +22,7 @@ export const mapExerciseRow = (row: ExerciseRow): ServerExercise => {
     situation: toEnumArray(row.situation, Object.values(Situation)),
     neurotypes: toEnumArray(row.neurotypes, Object.values(NeuroType)),
     warning: row.warning || undefined,
-    imageUrl: row.image_url,
+    imageUrl: sanitizeImagePath(row.image_url),
     thanksCount: row.thanks_count,
     isPartnerContent: row.is_partner_content,
     isCommunitySubmitted: row.is_community_submitted,

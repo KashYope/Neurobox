@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../../src/i18nContext';
 
 import {
   Activity,
@@ -16,6 +16,8 @@ import {
 import { AdminDrawer } from '../admin/AdminDrawer';
 import { Exercise, PartnerAccount, Situation, UserProfile } from '../../types';
 import { SyncStatus } from '../../services/syncService';
+import { ExerciseIllustration } from '../../components/exercises/ExerciseIllustration';
+import { THANKS_VISIBILITY_THRESHOLD } from '../../constants';
 
 export interface DashboardProps {
   user: UserProfile | null;
@@ -49,19 +51,22 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, onClick }) => {
   };
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full"
+      className="group text-left bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
     >
       <div className="relative h-32 overflow-hidden bg-gray-100">
-        <img
-          src={exercise.imageUrl}
-          alt={exercise.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/e2e8f0/94a3b8?text=NeuroSooth'; }}
+        <ExerciseIllustration
+          exercise={exercise}
+          className="w-full h-full object-cover group-hover:scale-105 motion-safe:transition-transform motion-safe:duration-300"
         />
         <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-semibold text-slate-700 flex items-center gap-1">
-          <Heart className="w-3 h-3 text-rose-500 fill-rose-500" /> {exercise.thanksCount}
+          {exercise.thanksCount >= THANKS_VISIBILITY_THRESHOLD ? (
+            <><Heart className="w-3 h-3 text-rose-500 fill-rose-500" /> {exercise.thanksCount}</>
+          ) : (
+            <span>{t(exercise.isCommunitySubmitted || exercise.isPartnerContent ? 'badges.teamApproved' : 'badges.editorialPick')}</span>
+          )}
         </div>
       </div>
 
@@ -85,7 +90,7 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ exercise, onClick }) => {
           ))}
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -104,7 +109,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenAdminMenu,
   onCloseAdminMenu
 }) => {
-  const { t } = useTranslation(['common', 'dashboard']);
+  const { t } = useTranslation(['common']);
 
   return (
     <div className="min-h-screen bg-slate-50">

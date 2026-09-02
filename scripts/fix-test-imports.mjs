@@ -1,4 +1,5 @@
 import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const ROOT = new URL('..', import.meta.url);
@@ -22,12 +23,16 @@ const collectFiles = async dir => {
   return files.flat();
 };
 
-const appendExtension = specifier => {
+const appendExtension = (specifier, importer) => {
   if (!specifier.startsWith('./') && !specifier.startsWith('../')) {
     return specifier;
   }
   if (EXTENSIONS.has(path.extname(specifier))) {
     return specifier;
+  }
+  const resolved = path.resolve(path.dirname(importer), specifier);
+  if (existsSync(resolved) && statSync(resolved).isDirectory()) {
+    return `${specifier}/index.js`;
   }
   return `${specifier}.js`;
 };
@@ -36,12 +41,12 @@ const patchFile = async file => {
   let content = await readFile(file, 'utf8');
   let updated = content.replace(/(from\s+['"])(\.\.\/|\.\/)([^'"\n]+)(['"])/g, (match, start, prefix, rest, end) => {
     const spec = `${prefix}${rest}`;
-    const next = appendExtension(spec);
+    const next = appendExtension(spec, file);
     return `${start}${next}${end}`;
   });
   updated = updated.replace(/(import\s*\(\s*['"])(\.\.\/|\.\/)([^'"\n]+)(['"]\s*\))/g, (match, start, prefix, rest, end) => {
     const spec = `${prefix}${rest}`;
-    const next = appendExtension(spec);
+    const next = appendExtension(spec, file);
     return `${start}${next}${end}`;
   });
   if (updated !== content) {

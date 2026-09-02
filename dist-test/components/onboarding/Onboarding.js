@@ -1,10 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Brain, Button, Check } from '../ui';
-import { saveUser } from '../../services/dataService';
-import { getSupportedLanguages, loadLanguageTranslations } from '../../services/languageService';
-import { NeuroType } from '../../types';
+import { useTranslation } from '../../src/i18nContext.js';
+import { Brain, Button, Check } from '../ui/index.js';
+import { saveUser } from '../../services/dataService.js';
+import { getSupportedLanguages, loadLanguageTranslations } from '../../services/languageService.js';
+import { NeuroType } from '../../types.js';
 export const Onboarding = ({ onComplete }) => {
     const { t, i18n } = useTranslation(['common', 'onboarding']);
     const [name, setName] = useState('');

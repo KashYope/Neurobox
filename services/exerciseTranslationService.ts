@@ -1,5 +1,6 @@
 import { apiClient, ExerciseStringTranslationRecord } from './apiClient';
 import { Exercise } from '../types';
+import { getStorageAdapter, ExerciseStringTranslationRecord as CachedTranslation } from './storage/offlineDb';
 
 interface TranslationMap {
   [stringId: string]: string;
@@ -26,11 +27,33 @@ class ExerciseTranslationService {
         translationMap[t.string_id] = t.translated_text;
       });
 
+      const adapter = await getStorageAdapter();
+      await adapter.bulkUpsertExerciseStringTranslations(
+        translations.map((translation): CachedTranslation => ({
+          stringId: translation.string_id,
+          lang: translation.lang,
+          translatedText: translation.translated_text,
+          translationMethod: translation.translation_method,
+          translatedAt: translation.translated_at,
+          updatedAt: translation.updated_at
+        }))
+      );
+
       this.translationCache.set(lang, translationMap);
       return translationMap;
     } catch (error) {
-      console.error(`Failed to fetch translations for ${lang}:`, error);
-      return {};
+      console.warn(`Using cached exercise translations for ${lang}:`, error);
+      try {
+        const adapter = await getStorageAdapter();
+        const cached = await adapter.getExerciseStringTranslations(lang);
+        const translationMap = Object.fromEntries(
+          cached.map(translation => [translation.stringId, translation.translatedText])
+        );
+        this.translationCache.set(lang, translationMap);
+        return translationMap;
+      } catch {
+        return {};
+      }
     }
   }
 

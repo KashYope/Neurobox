@@ -19,8 +19,10 @@
       "allFieldsRequired": "Tous les champs sont requis pour créer un compte.",
       "emailTaken": "Cette adresse e-mail est déjà enregistrée.",
       "missingCredentials": "Veuillez renseigner votre e-mail et votre mot de passe.",
-      "invalidCredentials": "Identifiants incorrects."
-    }
+      "invalidCredentials": "Identifiants incorrects.",
+      "generic": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "registrationSuccess": "Compte créé. Vous pouvez maintenant vous connecter."
   },
   "workspace": {
     "verifiedAccount": "Compte vérifié",
@@ -45,8 +47,6 @@
       "durationPlaceholder": "5 minutes",
       "description": "Description",
       "descriptionPlaceholder": "Objectif de l'exercice et contexte thérapeutique",
-      "image": "Image / GIF (URL)",
-      "imagePlaceholder": "https://...",
       "warning": "Avertissement clinique",
       "warningPlaceholder": "Contre-indications...",
       "tags": "Tags (séparés par des virgules)",
@@ -57,7 +57,8 @@
       "stepPlaceholder": "Étape {{number}}",
       "deleteStep": "Supprimer",
       "addStep": "+ Ajouter une étape"
-    }
+    },
+    "defaultStep": "Pratiquez doucement pendant 60 secondes et arrêtez en cas d'inconfort."
   },
   "import": {
     "title": "Importer un fichier CSV ou JSON",
@@ -66,7 +67,7 @@
     "error": "Import impossible. Vérifiez votre fichier.",
     "noValidExercise": "Aucun exercice valide trouvé dans le fichier.",
     "csvFormat": "Format CSV",
-    "csvHeaders": "En-têtes conseillés : title, description, duration, situations, steps, tags, warning, imageUrl.",
+    "csvHeaders": "En-têtes conseillés : title, description, duration, situations, steps, tags, warning.",
     "csvSeparator": "Séparez les situations, étapes et tags avec le symbole |",
     "jsonFormat": "Format JSON",
     "jsonStructure": "Structure attendue : tableau d'objets avec les mêmes champs que ci-dessus.",

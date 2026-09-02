@@ -12,15 +12,10 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock,
-  FileSpreadsheet,
   Heart,
-  Image as ImageIcon,
   Languages,
-  Lock,
   LogOut,
   ShieldCheck,
-  UploadCloud,
-  User,
   Users,
   UserPlus,
   XCircle,
@@ -30,10 +25,9 @@ import { Onboarding } from '../components/onboarding/Onboarding';
 import { Dashboard } from '../features/dashboard/Dashboard';
 import { PartnerPortal } from '../features/partners/PartnerPortal';
 import { BatchTranslationPanel } from '../features/admin/BatchTranslationPanel';
-import { Exercise, NeuroType, Situation, UserProfile, PartnerAccount } from '../types';
+import { Exercise, Situation, UserProfile, PartnerAccount } from '../types';
 import {
   getUser,
-  saveUser,
   getExercises,
   getRecommendedExercises,
   saveExercise,
@@ -43,6 +37,9 @@ import {
 import { syncService, SyncStatus } from '../services/syncService';
 import { apiClient, type AdminMetricsResponse } from '../services/apiClient';
 import { useExerciseTranslation } from '../hooks/useExerciseTranslation';
+import { ExerciseIllustration } from '../components/exercises/ExerciseIllustration';
+import { THANKS_VISIBILITY_THRESHOLD } from '../constants';
+import { hasThankedExercise } from '../services/helpfulVotes';
 
 // --- Components ---
 
@@ -55,22 +52,33 @@ const TagBadge: React.FC<{ text: string }> = ({ text }) => (
 const ExerciseDetail: React.FC<{ 
   exercise: Exercise; 
   onBack: () => void; 
-  onThanks: () => void 
+  onThanks: () => Promise<boolean>
 }> = ({ exercise, onBack, onThanks }) => {
   const { t } = useTranslation(['common', 'exercise']);
-  const [hasThanked, setHasThanked] = useState(false);
+  const [hasThanked, setHasThanked] = useState(() => hasThankedExercise(exercise.id));
+  const [thanksError, setThanksError] = useState<string | null>(null);
 
-  const handleThanks = () => {
+  useEffect(() => {
+    setHasThanked(hasThankedExercise(exercise.id));
+    setThanksError(null);
+  }, [exercise.id]);
+
+  const handleThanks = async () => {
     if (!hasThanked) {
-      onThanks();
-      setHasThanked(true);
+      try {
+        setThanksError(null);
+        const accepted = await onThanks();
+        if (accepted) setHasThanked(true);
+      } catch {
+        setThanksError(t('exercise:detail.thanksError'));
+      }
     }
   };
 
   return (
     <div className="animate-slide-in bg-white min-h-screen md:min-h-0 pb-20">
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100 p-4 flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={onBack} className="!p-2">
+        <Button variant="ghost" size="sm" onClick={onBack} className="!p-2" aria-label={t('buttons.back')}>
           <ArrowLeft className="w-6 h-6" />
         </Button>
         <h2 className="text-lg font-bold truncate">{exercise.title}</h2>
@@ -79,12 +87,7 @@ const ExerciseDetail: React.FC<{
       <div className="max-w-3xl mx-auto p-4 md:p-8">
         {/* Hero Image/GIF */}
         <div className="rounded-2xl overflow-hidden shadow-lg mb-8 aspect-video bg-gray-100 relative">
-          <img 
-            src={exercise.imageUrl} 
-            alt={exercise.title}
-            className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/e2e8f0/94a3b8?text=NeuroSooth' }}
-          />
+          <ExerciseIllustration exercise={exercise} className="w-full h-full object-cover" />
           <div className="absolute bottom-4 left-4 flex gap-2">
             {exercise.situation.map(s => (
               <span key={s} className="bg-black/70 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm">
@@ -101,14 +104,23 @@ const ExerciseDetail: React.FC<{
               <Zap className="w-4 h-4 text-amber-500" />
               <span>{exercise.duration}</span>
             </div>
-            <div className="flex items-center gap-1 text-sm font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
-              <Heart className="w-4 h-4 fill-rose-600" />
-              <span>{t('exercise:detail.peopleHelped', { count: exercise.thanksCount })}</span>
-            </div>
+            {exercise.thanksCount >= THANKS_VISIBILITY_THRESHOLD ? (
+              <div className="flex items-center gap-1 text-sm font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
+                <Heart className="w-4 h-4 fill-rose-600" />
+                <span>{t('exercise:detail.peopleFoundHelpful', { count: exercise.thanksCount })}</span>
+              </div>
+            ) : (
+              <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-3 py-1 rounded-full">
+                {t(exercise.isCommunitySubmitted || exercise.isPartnerContent ? 'badges.teamApproved' : 'badges.editorialPick')}
+              </span>
+            )}
           </div>
           
           <p className="text-lg text-slate-700 leading-relaxed">
             {exercise.description}
+          </p>
+          <p className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3 text-sm text-slate-600" role="note">
+            {t('exercise:detail.safetyNote')}
           </p>
         </div>
 
@@ -146,14 +158,20 @@ const ExerciseDetail: React.FC<{
             <Heart className={`w-5 h-5 mr-2 ${hasThanked ? 'fill-rose-600' : ''}`} />
             {hasThanked ? t('exercise:detail.thanksSent') : t('exercise:detail.sayThanks')}
           </Button>
+          {thanksError && <p className="mt-3 text-sm text-rose-700" role="alert">{thanksError}</p>}
         </div>
       </div>
     </div>
   );
 };
 
-const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise) => void }> = ({ onCancel, onSubmit }) => {
+const AddExerciseForm: React.FC<{
+  onCancel: () => void;
+  onSubmit: (ex: Exercise) => Promise<'submitted' | 'queued'>;
+}> = ({ onCancel, onSubmit }) => {
   const { t } = useTranslation(['common', 'exercise']);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const onCancelRef = useRef(onCancel);
   const createInitialFormState = (): Partial<Exercise> => ({
     title: '',
     description: '',
@@ -162,11 +180,47 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
     situation: [],
     neurotypes: [],
     tags: [],
-    imageUrl: ''
   });
 
   const [formData, setFormData] = useState<Partial<Exercise>>(createInitialFormState());
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  }, [onCancel]);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    const focusableSelector = 'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    (dialog?.querySelector(focusableSelector) as HTMLElement | null)?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancelRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll(focusableSelector)) as HTMLElement[];
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, []);
 
   const handleStepChange = (idx: number, val: string) => {
     const newSteps = [...(formData.steps || [])];
@@ -187,7 +241,7 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
     }
   };
 
-  const doSubmit = (e: React.FormEvent) => {
+  const doSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.description) {
       setFeedback({ type: 'error', message: t('exercise:creation.feedback.missingFields') });
@@ -203,7 +257,6 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
       neurotypes: formData.neurotypes || [],
       duration: formData.duration || '5 min',
       steps: formData.steps?.filter(s => s.trim() !== '') || [],
-      imageUrl: formData.imageUrl || 'https://placehold.co/600x400/94a3b8/ffffff?text=Community+Content',
       tags: ['Community'],
       thanksCount: 0,
       isCommunitySubmitted: true,
@@ -213,8 +266,11 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
     };
 
     try {
-      onSubmit(newEx);
-      setFeedback({ type: 'success', message: t('exercise:creation.feedback.success') });
+      const result = await onSubmit(newEx);
+      setFeedback({
+        type: 'success',
+        message: t(result === 'queued' ? 'exercise:creation.feedback.savedOffline' : 'exercise:creation.feedback.success')
+      });
       setFormData(createInitialFormState());
     } catch (error) {
       console.error('Failed to submit exercise', error);
@@ -223,10 +279,16 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-50 z-50 overflow-y-auto animate-slide-in">
-      <div className="max-w-2xl mx-auto bg-white min-h-screen shadow-xl">
+    <div className="fixed inset-0 bg-slate-50 z-50 overflow-y-auto motion-safe:animate-slide-in">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="contribution-dialog-title"
+        className="max-w-2xl mx-auto bg-white min-h-screen shadow-xl"
+      >
         <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold">{t('exercise:creation.title')}</h2>
+          <h2 id="contribution-dialog-title" className="text-lg font-bold">{t('exercise:creation.title')}</h2>
           <Button variant="ghost" size="sm" onClick={onCancel}>{t('exercise:creation.cancel')}</Button>
         </div>
 
@@ -240,6 +302,8 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
 
           {feedback && (
             <div
+              role={feedback.type === 'error' ? 'alert' : 'status'}
+              aria-live={feedback.type === 'error' ? 'assertive' : 'polite'}
               className={`rounded-xl border px-4 py-3 text-sm ${
                 feedback.type === 'success'
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
@@ -269,22 +333,6 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
               placeholder={t('exercise:creation.form.descriptionPlaceholder')}
               required
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('exercise:creation.form.image')}</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <ImageIcon className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
-                <input 
-                  className="w-full border p-2 pl-10 rounded-lg" 
-                  value={formData.imageUrl} 
-                  onChange={e => setFormData({...formData, imageUrl: e.target.value})} 
-                  placeholder="https://..."
-                />
-              </div>
-            </div>
-            <p className="text-xs text-slate-500 mt-1">{t('exercise:creation.form.imageHelper')}</p>
           </div>
 
           <div>
@@ -344,789 +392,7 @@ const AddExerciseForm: React.FC<{ onCancel: () => void; onSubmit: (ex: Exercise)
   );
 };
 
-// --- Partner Portal Helpers ---
-interface PartnerExerciseDraft {
-  title: string;
-  description: string;
-  duration?: string;
-  steps?: string[];
-  tags?: string[];
-  situation?: Situation[];
-  neurotypes?: NeuroType[];
-  warning?: string;
-  imageUrl?: string;
-}
-
-const splitToList = (value: unknown, pattern: RegExp = /[,;|]/): string[] => {
-  if (Array.isArray(value)) {
-    return value.map(item => `${item}`.trim()).filter(Boolean);
-  }
-  if (typeof value === 'string') {
-    return value
-      .split(pattern)
-      .map(item => item.trim())
-      .filter(Boolean);
-  }
-  if (value === undefined || value === null) return [];
-  const asString = `${value}`.trim();
-  return asString ? [asString] : [];
-};
-
-const splitStepsInput = (value: unknown): string[] => {
-  return splitToList(value, /\r?\n|\|/);
-};
-
-const mapStringsToSituations = (values: string[]): Situation[] => {
-  const lowerValues = values.map(value => value.toLowerCase());
-  const matches = lowerValues
-    .map(value =>
-      Object.values(Situation).find(option =>
-        option.toLowerCase() === value || option.toLowerCase().includes(value)
-      )
-    )
-    .filter((value): value is Situation => Boolean(value));
-  return matches;
-};
-
-const mapStringsToNeurotypes = (values: string[]): NeuroType[] => {
-  const lowerValues = values.map(value => value.toLowerCase());
-  const matches = lowerValues
-    .map(value =>
-      Object.values(NeuroType).find(option =>
-        option.toLowerCase() === value || option.toLowerCase().includes(value)
-      )
-    )
-    .filter((value): value is NeuroType => Boolean(value));
-  return matches;
-};
-
-const createPartnerExercise = (draft: PartnerExerciseDraft, author?: string): Exercise => {
-  const timestamp = new Date().toISOString();
-  const steps = (draft.steps || []).map(step => step.trim()).filter(Boolean);
-  const tags = (draft.tags || []).map(tag => tag.trim()).filter(Boolean);
-  const situation = draft.situation && draft.situation.length > 0 ? draft.situation : [Situation.Stress];
-
-  return {
-    id: `partner-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title: draft.title,
-    description: draft.description,
-    duration: draft.duration && draft.duration.trim() ? draft.duration : '5 min',
-    steps: steps.length ? steps : ['Respiration consciente pendant 60 secondes'],
-    tags: tags.length ? tags : ['Partenaire'],
-    situation,
-    neurotypes: draft.neurotypes || [],
-    warning: draft.warning,
-    imageUrl: draft.imageUrl && draft.imageUrl.trim()
-      ? draft.imageUrl
-      : 'https://placehold.co/600x400/0f172a/ffffff?text=Espace+Partenaire',
-    thanksCount: 0,
-    author,
-    isPartnerContent: true,
-    moderationStatus: 'approved',
-    createdAt: timestamp,
-    updatedAt: timestamp
-  };
-};
-
-const parseCsvLine = (line: string): string[] => {
-  const result: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  result.push(current.trim());
-  return result;
-};
-
-const mapRowToDraft = (row: Record<string, string>): PartnerExerciseDraft => {
-  const title = row['title'] || row['nom'] || '';
-  const description = row['description'] || row['desc'] || row['details'] || '';
-  const duration = row['duration'] || row['duree'];
-  const steps = splitStepsInput(row['steps'] || row['etapes']);
-  const tags = splitToList(row['tags'] || row['motscles']);
-  const situationStrings = splitToList(row['situations'] || row['situation']);
-  const neuroStrings = splitToList(row['neurotypes']);
-
-  return {
-    title: title.trim(),
-    description: description.trim(),
-    duration: duration?.trim(),
-    steps,
-    tags,
-    situation: mapStringsToSituations(situationStrings),
-    neurotypes: mapStringsToNeurotypes(neuroStrings),
-    warning: (row['warning'] || row['alerte'])?.trim(),
-    imageUrl: (row['imageurl'] || row['image'])?.trim()
-  };
-};
-
-const parseCsvDrafts = (content: string): PartnerExerciseDraft[] => {
-  const lines = content
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(line => line.length > 0);
-
-  if (lines.length < 2) {
-    throw new Error('Le fichier CSV doit contenir un en-tête et au moins une ligne.');
-  }
-
-  const headers = parseCsvLine(lines[0]).map(header => header.toLowerCase());
-  const drafts = lines.slice(1).map(line => {
-    const values = parseCsvLine(line);
-    if (values.every(value => value.trim().length === 0)) {
-      return null;
-    }
-
-    const row: Record<string, string> = {};
-    headers.forEach((header, idx) => {
-      row[header] = values[idx] ?? '';
-    });
-
-    return mapRowToDraft(row);
-  })
-  .filter((draft): draft is PartnerExerciseDraft => Boolean(draft && draft.title && draft.description));
-
-  return drafts;
-};
-
-const parseJsonDrafts = (content: string): PartnerExerciseDraft[] => {
-  let data: unknown;
-  try {
-    data = JSON.parse(content);
-  } catch {
-    throw new Error('JSON invalide. Veuillez vérifier la structure du fichier.');
-  }
-
-  const entries = Array.isArray(data) ? data : [data];
-  const drafts = entries.map((entry) => {
-    if (typeof entry !== 'object' || entry === null) {
-      return null;
-    }
-
-    const obj = entry as Record<string, unknown>;
-    const title = typeof obj.title === 'string' ? obj.title : '';
-    const description = typeof obj.description === 'string' ? obj.description : '';
-
-    return {
-      title: title.trim(),
-      description: description.trim(),
-      duration: typeof obj.duration === 'string' ? obj.duration : undefined,
-      steps: splitStepsInput(obj.steps),
-      tags: splitToList(obj.tags),
-      situation: mapStringsToSituations(splitToList(obj.situations ?? obj.situation)),
-      neurotypes: mapStringsToNeurotypes(splitToList(obj.neurotypes ?? obj.neurotype)),
-      warning: typeof obj.warning === 'string' ? obj.warning.trim() : undefined,
-      imageUrl: typeof obj.imageUrl === 'string'
-        ? obj.imageUrl
-        : typeof obj.image === 'string'
-          ? obj.image
-          : undefined,
-    } as PartnerExerciseDraft;
-  }).filter((draft): draft is PartnerExerciseDraft => Boolean(draft && draft.title && draft.description));
-
-  return drafts;
-};
-
-interface PartnerFormState {
-  title: string;
-  description: string;
-  duration: string;
-  warning: string;
-  imageUrl: string;
-  situation: Situation[];
-  steps: string[];
-  tagsText: string;
-  neurotypes: NeuroType[];
-}
-
-const createEmptyPartnerForm = (): PartnerFormState => ({
-  title: '',
-  description: '',
-  duration: '5 min',
-  warning: '',
-  imageUrl: '',
-  situation: [Situation.Stress],
-  steps: [''],
-  tagsText: 'Partenaire',
-  neurotypes: []
-});
-
-const LegacyPartnerPortal: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { t } = useTranslation(['common', 'partner']);
-  const [activeAccount, setActiveAccount] = useState<PartnerAccount | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [authForm, setAuthForm] = useState({
-    organization: '',
-    contactName: '',
-    email: '',
-    password: ''
-  });
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [manualForm, setManualForm] = useState<PartnerFormState>(createEmptyPartnerForm());
-  const [manualFeedback, setManualFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [fileInputKey, setFileInputKey] = useState<number>(Date.now());
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { user } = await apiClient.getMe();
-        setActiveAccount({
-            id: user.id,
-            organization: user.organization,
-            contactName: user.contactName,
-            email: user.email,
-            role: user.role,
-            status: 'active',
-            password: '' // Not needed/secure
-        });
-      } catch (e) {
-        setActiveAccount(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkSession();
-  }, []);
-
-  const emitSessionChange = (session: PartnerAccount | null) => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('partner-session-change', { detail: session }));
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await apiClient.logout();
-      setActiveAccount(null);
-      emitSessionChange(null);
-    } catch (e) {
-      console.error('Logout failed', e);
-    }
-  };
-
-  const handleRegister = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setAuthError(null);
-
-    if (!authForm.organization || !authForm.contactName || !authForm.email || !authForm.password) {
-      setAuthError(t('partner:auth.errors.allFieldsRequired'));
-      return;
-    }
-
-    try {
-      await apiClient.register({
-        organization: authForm.organization.trim(),
-        contactName: authForm.contactName.trim(),
-        email: authForm.email.trim(),
-        password: authForm.password
-      });
-
-      alert(t('partner:auth.registrationSuccess'));
-      setAuthMode('login');
-      setAuthForm({ organization: '', contactName: '', email: '', password: '' });
-    } catch (error: any) {
-      setAuthError(error.message || t('partner:auth.errors.generic'));
-    }
-  };
-
-  const handleLogin = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setAuthError(null);
-
-    if (!authForm.email || !authForm.password) {
-      setAuthError(t('partner:auth.errors.missingCredentials'));
-      return;
-    }
-
-    try {
-      const { user } = await apiClient.login({
-        email: authForm.email,
-        password: authForm.password
-      });
-
-      const account = {
-        id: user.id,
-        organization: user.organization,
-        contactName: user.contactName,
-        email: user.email,
-        role: user.role,
-        status: 'active' as const,
-        password: ''
-      };
-
-      setActiveAccount(account);
-      emitSessionChange(account);
-      setAuthForm({ organization: '', contactName: '', email: '', password: '' });
-    } catch (error: any) {
-      setAuthError(error.message || t('partner:auth.errors.invalidCredentials'));
-    }
-  };
-
-  const handleManualSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    setManualFeedback(null);
-
-    if (!activeAccount) {
-      setManualFeedback({ type: 'error', text: t('partner:manual.loginRequired') });
-      return;
-    }
-
-    if (!manualForm.title.trim() || !manualForm.description.trim()) {
-      setManualFeedback({ type: 'error', text: t('partner:manual.validationError') });
-      return;
-    }
-
-    const tagsList = splitToList(manualForm.tagsText, /[,;|]/);
-
-    const draft: PartnerExerciseDraft = {
-      title: manualForm.title.trim(),
-      description: manualForm.description.trim(),
-      duration: manualForm.duration.trim(),
-      warning: manualForm.warning.trim() || undefined,
-      imageUrl: manualForm.imageUrl.trim() || undefined,
-      steps: manualForm.steps.map(step => step.trim()).filter(Boolean),
-      tags: tagsList,
-      situation: manualForm.situation.length ? manualForm.situation : [Situation.Stress],
-      neurotypes: manualForm.neurotypes,
-    };
-
-    const exercise = createPartnerExercise(draft, `${activeAccount.organization} • ${activeAccount.contactName}`);
-    saveExercise(exercise);
-    setManualFeedback({ type: 'success', text: t('partner:manual.success') });
-    setManualForm(createEmptyPartnerForm());
-  };
-
-  const toggleSituation = (value: Situation) => {
-    setManualForm(prev => {
-      const exists = prev.situation.includes(value);
-      const situation = exists ? prev.situation.filter(item => item !== value) : [...prev.situation, value];
-      return { ...prev, situation };
-    });
-  };
-
-  const toggleNeurotype = (value: NeuroType) => {
-    setManualForm(prev => {
-      const exists = prev.neurotypes.includes(value);
-      const neurotypes = exists ? prev.neurotypes.filter(item => item !== value) : [...prev.neurotypes, value];
-      return { ...prev, neurotypes };
-    });
-  };
-
-  const handleStepChange = (index: number, value: string) => {
-    setManualForm(prev => {
-      const steps = [...prev.steps];
-      steps[index] = value;
-      return { ...prev, steps };
-    });
-  };
-
-  const addStepField = () => {
-    setManualForm(prev => ({ ...prev, steps: [...prev.steps, ''] }));
-  };
-
-  const removeStepField = (index: number) => {
-    setManualForm(prev => ({ ...prev, steps: prev.steps.filter((_, idx) => idx !== index) }));
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!activeAccount) return;
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const content = reader.result ? String(reader.result) : '';
-        const drafts = file.name.toLowerCase().endsWith('.json')
-          ? parseJsonDrafts(content)
-          : parseCsvDrafts(content);
-
-        if (drafts.length === 0) {
-          setImportFeedback({ type: 'error', text: t('partner:import.noValidExercise') });
-          setFileInputKey(Date.now());
-          return;
-        }
-
-        drafts.forEach(draft => {
-          const exercise = createPartnerExercise(draft, activeAccount.organization);
-          saveExercise(exercise);
-        });
-
-        setImportFeedback({
-          type: 'success',
-          text: t('partner:import.success', { count: drafts.length, fileName: file.name })
-        });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : t('partner:import.error');
-        setImportFeedback({ type: 'error', text: message });
-      } finally {
-        setFileInputKey(Date.now());
-      }
-    };
-
-    reader.readAsText(file);
-  };
-
-  const renderAuthForm = () => (
-    <div className="max-w-xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <Lock className="w-8 h-8 text-slate-600" />
-          <div>
-            <h2 className="text-xl font-semibold text-slate-900">
-              {authMode === 'login' ? t('partner:auth.loginTitle') : t('partner:auth.registerTitle')}
-            </h2>
-            <p className="text-sm text-slate-500">{t('partner:auth.accessRestricted')}</p>
-          </div>
-        </div>
-
-        <form onSubmit={authMode === 'login' ? handleLogin : handleRegister} className="space-y-4">
-          {authMode === 'register' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('partner:auth.organization')}</label>
-                <input
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  value={authForm.organization}
-                  onChange={e => setAuthForm(prev => ({ ...prev, organization: e.target.value }))}
-                  placeholder={t('partner:auth.organizationPlaceholder')}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t('partner:auth.contactName')}</label>
-                <input
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                  value={authForm.contactName}
-                  onChange={e => setAuthForm(prev => ({ ...prev, contactName: e.target.value }))}
-                  placeholder={t('partner:auth.contactNamePlaceholder')}
-                  required
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('partner:auth.email')}</label>
-            <input
-              type="email"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2"
-              value={authForm.email}
-              onChange={e => setAuthForm(prev => ({ ...prev, email: e.target.value }))}
-              placeholder={t('partner:auth.emailPlaceholder')}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('partner:auth.password')}</label>
-            <input
-              type="password"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2"
-              value={authForm.password}
-              onChange={e => setAuthForm(prev => ({ ...prev, password: e.target.value }))}
-              placeholder={t('partner:auth.passwordPlaceholder')}
-              required
-            />
-          </div>
-
-          {authError && (
-            <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3">
-              {authError}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" size="lg">
-            {authMode === 'login' ? t('partner:auth.loginAction') : t('partner:auth.createAccess')}
-          </Button>
-        </form>
-
-        <div className="text-center text-sm text-slate-500">
-          {authMode === 'login' ? (
-            <button
-              type="button"
-              className="text-teal-600 font-medium"
-              onClick={() => { setAuthMode('register'); setAuthError(null); }}
-            >
-              <UserPlus className="inline w-4 h-4 mr-1" /> {t('partner:auth.createAccountLink')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="text-teal-600 font-medium"
-              onClick={() => { setAuthMode('login'); setAuthError(null); }}
-            >
-              <User className="inline w-4 h-4 mr-1" /> {t('partner:auth.hasAccountLink')}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderWorkspace = () => (
-    <div className="space-y-8">
-      {activeAccount && (
-        <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-wide text-slate-400">{t('partner:workspace.verifiedAccount')}</p>
-            <h2 className="text-2xl font-semibold text-slate-900">{activeAccount.organization}</h2>
-            <p className="text-sm text-slate-500">{t('partner:workspace.referent', { name: activeAccount.contactName })}</p>
-            <p className="text-sm text-slate-500">{t('partner:workspace.email', { email: activeAccount.email })}</p>
-          </div>
-          <Button variant="ghost" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" /> {t('partner:workspace.logout')}
-          </Button>
-        </div>
-      )}
-
-      <section className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <ClipboardList className="w-6 h-6 text-teal-600" />
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">{t('partner:manual.title')}</h3>
-            <p className="text-sm text-slate-500">{t('partner:manual.subtitle')}</p>
-          </div>
-        </div>
-
-        {manualFeedback && (
-          <div className={`text-sm rounded-xl border px-4 py-3 ${
-            manualFeedback.type === 'success'
-              ? 'bg-teal-50 border-teal-200 text-teal-700'
-              : 'bg-rose-50 border-rose-200 text-rose-700'
-          }`}>
-            {manualFeedback.text}
-          </div>
-        )}
-
-        <form onSubmit={handleManualSubmit} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.title')}</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                value={manualForm.title}
-                onChange={e => setManualForm(prev => ({ ...prev, title: e.target.value }))}
-                placeholder={t('partner:manual.form.titlePlaceholder')}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.duration')}</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                value={manualForm.duration}
-                onChange={e => setManualForm(prev => ({ ...prev, duration: e.target.value }))}
-                placeholder={t('partner:manual.form.durationPlaceholder')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('partner:manual.form.description')}</label>
-            <textarea
-              className="w-full border border-slate-200 rounded-lg px-3 py-2"
-              value={manualForm.description}
-              onChange={e => setManualForm(prev => ({ ...prev, description: e.target.value }))}
-              rows={4}
-              placeholder={t('partner:manual.form.descriptionPlaceholder')}
-              required
-            />
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.image')}</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                value={manualForm.imageUrl}
-                onChange={e => setManualForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                placeholder={t('partner:manual.form.imagePlaceholder')}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.warning')}</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                value={manualForm.warning}
-                onChange={e => setManualForm(prev => ({ ...prev, warning: e.target.value }))}
-                placeholder={t('partner:manual.form.warningPlaceholder')}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">{t('partner:manual.form.tags')}</label>
-            <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2"
-              value={manualForm.tagsText}
-              onChange={e => setManualForm(prev => ({ ...prev, tagsText: e.target.value }))}
-              placeholder={t('partner:manual.form.tagsPlaceholder')}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">{t('partner:manual.form.situations')}</label>
-            <div className="flex flex-wrap gap-2">
-              {Object.values(Situation).map(item => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => toggleSituation(item)}
-                  className={`px-3 py-1 rounded-full text-xs border ${manualForm.situation.includes(item)
-                    ? 'bg-teal-600 text-white border-teal-600'
-                    : 'bg-slate-50 border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {t(`situations.${item}`)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">{t('partner:manual.form.neurotypes')}</label>
-            <div className="flex flex-wrap gap-2">
-              {Object.values(NeuroType).filter(type => type !== NeuroType.None).map(type => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => toggleNeurotype(type)}
-                  className={`px-3 py-1 rounded-full text-xs border ${manualForm.neurotypes.includes(type)
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-white border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {t(`neuroTypes.${type}`)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">{t('partner:manual.form.detailedSteps')}</label>
-            <div className="space-y-2">
-              {manualForm.steps.map((step, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2"
-                    value={step}
-                    onChange={e => handleStepChange(index, e.target.value)}
-                    placeholder={t('partner:manual.form.stepPlaceholder', { number: index + 1 })}
-                  />
-                  {manualForm.steps.length > 1 && (
-                    <Button type="button" variant="ghost" onClick={() => removeStepField(index)}>
-                      {t('partner:manual.form.deleteStep')}
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={addStepField}>
-              {t('partner:manual.form.addStep')}
-            </Button>
-          </div>
-
-          <div className="pt-4">
-            <Button type="submit" size="lg" className="w-full">{t('partner:manual.publish')}</Button>
-          </div>
-        </form>
-      </section>
-
-      <section className="bg-white rounded-2xl shadow-sm p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <UploadCloud className="w-6 h-6 text-teal-600" />
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">{t('partner:import.title')}</h3>
-            <p className="text-sm text-slate-500">{t('partner:import.subtitle')}</p>
-          </div>
-        </div>
-
-        {importFeedback && (
-          <div className={`text-sm rounded-xl border px-4 py-3 ${
-            importFeedback.type === 'success'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-              : 'bg-rose-50 border-rose-200 text-rose-700'
-          }`}>
-            {importFeedback.text}
-          </div>
-        )}
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="border border-dashed border-slate-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
-              <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.csvFormat')}
-            </div>
-            <p className="text-sm text-slate-500 mb-2">{t('partner:import.csvHeaders')}</p>
-            <p className="text-xs text-slate-400">{t('partner:import.csvSeparator')}</p>
-          </div>
-          <div className="border border-dashed border-slate-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 text-slate-700 font-medium mb-2">
-              <FileSpreadsheet className="w-4 h-4" /> {t('partner:import.jsonFormat')}
-            </div>
-            <p className="text-sm text-slate-500 mb-2">{t('partner:import.jsonStructure')}</p>
-            <p className="text-xs text-slate-400">{t('partner:import.jsonExample')}</p>
-          </div>
-        </div>
-
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
-          <p className="text-sm text-slate-600">{t('partner:import.fileInput')}</p>
-          <input
-            key={fileInputKey}
-            type="file"
-            accept=".csv,.json,application/json,text/csv"
-            onChange={handleFileUpload}
-            className="w-full text-sm"
-          />
-        </div>
-      </section>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-100">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-teal-600 text-white rounded-xl p-2">
-              <Building2 className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-slate-400">{t('partner:workspace.backoffice')}</p>
-              <h1 className="text-2xl font-semibold text-slate-900">{t('partner:workspace.partnerSpace')}</h1>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="w-4 h-4 mr-2" /> {t('partner:workspace.backToCatalog')}
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {isLoading ? <div className="text-center py-8">Loading...</div> : (activeAccount ? renderWorkspace() : renderAuthForm())}
-      </main>
-    </div>
-  );
-};
-
+// Partner contribution workflows live in features/partners/PartnerPortal.tsx.
 const ModerationPanel: React.FC<{
   pendingExercises: Exercise[];
   reviewedExercises: Exercise[];
@@ -1307,17 +573,14 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setAccountsError(null);
     try {
       const response = await apiClient.fetchPartners();
-      const mapped = response.partners.map(acc => ({
-        ...acc,
-        password: ''
-      }));
+      const mapped = response.partners;
       setAccounts(mapped);
     } catch (error: any) {
-      setAccountsError(error.message || 'Unable to load partner accounts');
+      setAccountsError(error.message || t('adminDashboard.loadAccountsError'));
     } finally {
       setIsLoadingAccounts(false);
     }
-  }, []);
+  }, [t]);
 
   const loadMetrics = useCallback(
     async (force = false) => {
@@ -1332,12 +595,12 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setMetrics(response);
         setMetricsUpdatedAt(Date.now());
       } catch (error: any) {
-        setMetricsError(error.message || 'Unable to load platform metrics');
+        setMetricsError(error.message || t('adminDashboard.loadMetricsError'));
       } finally {
         setIsLoadingMetrics(false);
       }
     },
-    [metricsUpdatedAt]
+    [metricsUpdatedAt, t]
   );
 
   useEffect(() => {
@@ -1378,33 +641,39 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const metricCards = metrics
     ? [
         {
-          label: 'Total Thanks',
+          label: t('adminDashboard.totalFeedback'),
           value: metrics.totalThanks,
-          subLabel: `${formatNumber(metrics.approvedExercises)} approved exercises`,
+          subLabel: t('adminDashboard.approvedExercises', { count: formatNumber(metrics.approvedExercises) }),
           icon: Heart,
           iconColor: 'text-rose-500',
           iconBg: 'bg-rose-50'
         },
         {
-          label: 'Exercises in DB',
+          label: t('adminDashboard.exercisesInDb'),
           value: metrics.totalExercises,
-          subLabel: `${formatNumber(metrics.pendingModeration)} pending moderation`,
+          subLabel: t('adminDashboard.pendingModeration', { count: formatNumber(metrics.pendingModeration) }),
           icon: ClipboardList,
           iconColor: 'text-indigo-600',
           iconBg: 'bg-indigo-50'
         },
         {
-          label: 'Users',
+          label: t('adminDashboard.users'),
           value: metrics.totalUsers,
-          subLabel: `${formatNumber(metrics.activeUsers)} active / ${formatNumber(metrics.pendingUsers)} pending`,
+          subLabel: t('adminDashboard.userSummary', {
+            active: formatNumber(metrics.activeUsers),
+            pending: formatNumber(metrics.pendingUsers)
+          }),
           icon: Users,
           iconColor: 'text-slate-700',
           iconBg: 'bg-slate-50'
         },
         {
-          label: 'Content Mix',
+          label: t('adminDashboard.contentMix'),
           value: metrics.partnerExercises + metrics.communityExercises,
-          subLabel: `${formatNumber(metrics.partnerExercises)} partner / ${formatNumber(metrics.communityExercises)} community`,
+          subLabel: t('adminDashboard.contentSummary', {
+            partner: formatNumber(metrics.partnerExercises),
+            community: formatNumber(metrics.communityExercises)
+          }),
           icon: BarChart3,
           iconColor: 'text-emerald-600',
           iconBg: 'bg-emerald-50'
@@ -1430,7 +699,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
            : t('common:adminFeedback.rejected')
        });
      } catch (error: any) {
-       setAccountsError(error.message || 'Unable to update account status');
+       setAccountsError(error.message || t('adminDashboard.updateAccountError'));
        setAdminFeedback({
          type: 'error',
          message: error.message || t('common:adminFeedback.updateError')
@@ -1505,21 +774,21 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <ShieldCheck className="w-8 h-8 text-teal-400" />
             <div>
               <p className="text-xs uppercase tracking-widest text-slate-400">NeuroSooth</p>
-              <h1 className="text-xl font-bold">Admin Dashboard</h1>
+              <h1 className="text-xl font-bold">{t('adminDashboard.title')}</h1>
             </div>
           </div>
           <div className="flex gap-3">
             <Button variant="secondary" size="sm" onClick={() => setViewMode('batchTranslation')}>
               <Languages className="w-4 h-4 mr-2" />
-              Batch Traductions
+              {t('adminDashboard.batchTranslations')}
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setViewMode('moderation')}>
               <ClipboardList className="w-4 h-4 mr-2" />
-              Moderation Content
+              {t('adminDashboard.moderationContent')}
             </Button>
             <Button variant="outline" size="sm" onClick={handleLogout} className="border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800">
                <LogOut className="w-4 h-4 mr-2" />
-               Logout
+               {t('buttons.logout')}
             </Button>
           </div>
         </div>
@@ -1543,14 +812,14 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="flex items-center gap-3">
               <Activity className="w-6 h-6 text-emerald-600" />
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">Live overview</p>
-                <h2 className="text-lg font-bold text-slate-900">Platform metrics</h2>
+                <p className="text-xs uppercase tracking-wide text-slate-400">{t('adminDashboard.liveOverview')}</p>
+                <h2 className="text-lg font-bold text-slate-900">{t('adminDashboard.platformMetrics')}</h2>
               </div>
             </div>
             <div className="text-xs text-slate-500">
               {metricsUpdatedAt
-                ? `Updated ${new Date(metricsUpdatedAt).toLocaleTimeString()}`
-                : 'Awaiting first sync'}
+                ? t('adminDashboard.updatedAt', { time: new Date(metricsUpdatedAt).toLocaleTimeString() })
+                : t('adminDashboard.awaitingSync')}
             </div>
           </div>
 
@@ -1561,7 +830,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           )}
 
           {isLoadingMetrics && !metrics ? (
-            <p className="text-slate-500 italic">Loading platform metrics...</p>
+            <p className="text-slate-500 italic">{t('adminDashboard.loadingMetrics')}</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {metricCards.map(card => (
@@ -1585,7 +854,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <UserPlus className="w-6 h-6 text-amber-500" />
-                    <h2 className="text-lg font-bold text-slate-900">Pending Registrations ({pendingAccounts.length})</h2>
+                    <h2 className="text-lg font-bold text-slate-900">{t('adminDashboard.pendingRegistrations', { count: pendingAccounts.length })}</h2>
                 </div>
             </div>
 
@@ -1596,18 +865,18 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             )}
 
             {isLoadingAccounts ? (
-                <p className="text-slate-500 italic">Loading partner accounts...</p>
+                <p className="text-slate-500 italic">{t('adminDashboard.loadingAccounts')}</p>
             ) : pendingAccounts.length === 0 ? (
-                <p className="text-slate-500 italic">No pending account requests.</p>
+                <p className="text-slate-500 italic">{t('adminDashboard.noPendingAccounts')}</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-slate-600">
                         <thead className="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
                             <tr>
-                                <th className="px-4 py-3 rounded-l-lg">Organization</th>
-                                <th className="px-4 py-3">Contact</th>
-                                <th className="px-4 py-3">Email</th>
-                                <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
+                                <th className="px-4 py-3 rounded-l-lg">{t('labels.organization')}</th>
+                                <th className="px-4 py-3">{t('adminDashboard.contact')}</th>
+                                <th className="px-4 py-3">{t('labels.email')}</th>
+                                <th className="px-4 py-3 rounded-r-lg text-right">{t('adminDashboard.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -1618,10 +887,10 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     <td className="px-4 py-3">{acc.email}</td>
                                     <td className="px-4 py-3 text-right flex justify-end gap-2">
                                         <Button size="sm" variant="ghost" className="text-rose-600 hover:bg-rose-50" onClick={() => handleUpdateStatus(acc.id, 'rejected')} disabled={actionInProgress === acc.id}>
-                                            {actionInProgress === acc.id ? 'Processing...' : 'Reject'}
+                                            {actionInProgress === acc.id ? t('adminDashboard.processing') : t('buttons.reject')}
                                         </Button>
                                         <Button size="sm" onClick={() => handleUpdateStatus(acc.id, 'active')} disabled={actionInProgress === acc.id}>
-                                            {actionInProgress === acc.id ? 'Saving...' : 'Approve'}
+                                            {actionInProgress === acc.id ? t('adminDashboard.saving') : t('buttons.approve')}
                                         </Button>
                                     </td>
                                 </tr>
@@ -1636,13 +905,13 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <section className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
              <div className="flex items-center gap-3 mb-6">
                 <Building2 className="w-6 h-6 text-teal-600" />
-                <h2 className="text-lg font-bold text-slate-900">Active Partners ({activeAccounts.length})</h2>
+                <h2 className="text-lg font-bold text-slate-900">{t('adminDashboard.activePartners', { count: activeAccounts.length })}</h2>
             </div>
 
              {isLoadingAccounts ? (
-                <p className="text-slate-500 italic">Loading partner accounts...</p>
+                <p className="text-slate-500 italic">{t('adminDashboard.loadingAccounts')}</p>
              ) : activeAccounts.length === 0 ? (
-                <p className="text-slate-500 italic">No active partners yet.</p>
+                <p className="text-slate-500 italic">{t('adminDashboard.noActivePartners')}</p>
              ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {activeAccounts.map(acc => (
@@ -1663,6 +932,12 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 // --- Main App ---
 
+type AppView = 'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation' | 'partner' | 'admin';
+type NavigationState = { view: AppView; exerciseId?: string };
+
+const isAppView = (value: unknown): value is AppView =>
+  ['onboarding', 'dashboard', 'detail', 'add', 'moderation', 'partner', 'admin'].includes(String(value));
+
 const App: React.FC = () => {
   const { t } = useTranslation(['common']);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -1674,7 +949,7 @@ const App: React.FC = () => {
   const [exercises, setExercises] = useState<Exercise[]>(() =>
     getRecommendedExercises(getExercises(), null, 'All')
   );
-  const [view, setView] = useState<'onboarding' | 'dashboard' | 'detail' | 'add' | 'moderation' | 'partner' | 'admin'>('dashboard');
+  const [view, setView] = useState<AppView>('dashboard');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>('All');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
@@ -1686,39 +961,32 @@ const App: React.FC = () => {
     reviewed: Exercise[];
   } | null>(null);
   const [moderationStatusMessage, setModerationStatusMessage] = useState<string | null>(null);
-  const isNavigatingRef = useRef(false);
-
-  // Navigation handler to update view based on history state
-  const navigateTo = useCallback((newView: typeof view, exerciseId?: string) => {
-    if (isNavigatingRef.current) return;
-    
-    isNavigatingRef.current = true;
-    const state = { view: newView, exerciseId };
-    window.history.pushState(state, '', window.location.pathname);
-    setView(newView);
-    
-    if (newView === 'detail' && exerciseId) {
-      const exercise = translatedExercises.find(ex => ex.id === exerciseId);
-      if (exercise) setSelectedExercise(exercise);
+  const applyNavigationState = useCallback((state: NavigationState) => {
+    if (state.view === 'detail') {
+      const exercise = translatedExercises.find(item => item.id === state.exerciseId);
+      if (!exercise) {
+        setSelectedExercise(null);
+        setView('dashboard');
+        return;
+      }
+      setSelectedExercise(exercise);
+    } else {
+      setSelectedExercise(null);
     }
-    
-    setTimeout(() => {
-      isNavigatingRef.current = false;
-    }, 100);
+    setView(state.view);
   }, [translatedExercises]);
 
-  const navigateBack = useCallback(() => {
-    if (isNavigatingRef.current) return;
-    
-    // Determine where to go back to
-    if (view === 'detail' || view === 'add' || view === 'moderation' || view === 'partner' || view === 'admin') {
-      setView('dashboard');
-      setSelectedExercise(null);
-    } else if (view === 'onboarding') {
-      // Can't go back from onboarding
-      return;
-    }
-  }, [view]);
+  const navigateTo = useCallback((newView: AppView, exerciseId?: string) => {
+    const state: NavigationState = { view: newView, ...(exerciseId ? { exerciseId } : {}) };
+    window.history.pushState(state, '', window.location.pathname);
+    applyNavigationState(state);
+  }, [applyNavigationState]);
+
+  const replaceView = useCallback((newView: AppView, exerciseId?: string) => {
+    const state: NavigationState = { view: newView, ...(exerciseId ? { exerciseId } : {}) };
+    window.history.replaceState(state, '', window.location.pathname);
+    applyNavigationState(state);
+  }, [applyNavigationState]);
 
   useEffect(() => {
     syncService.init();
@@ -1734,14 +1002,18 @@ const App: React.FC = () => {
   // Handle browser back button and native back gesture
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault();
-      navigateBack();
+      const state = event.state as Partial<NavigationState> | null;
+      applyNavigationState({
+        view: isAppView(state?.view) ? state.view : 'dashboard',
+        exerciseId: typeof state?.exerciseId === 'string' ? state.exerciseId : undefined
+      });
     };
 
     window.addEventListener('popstate', handlePopState);
 
     // Handle native back button for Capacitor (Android/iOS)
-    const backButtonListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+    let removeBackButtonListener: (() => Promise<void>) | undefined;
+    void CapacitorApp.addListener('backButton', ({ canGoBack }) => {
       if (view === 'dashboard' || view === 'onboarding') {
         // Allow app to exit on dashboard or onboarding
         if (canGoBack) {
@@ -1750,22 +1022,22 @@ const App: React.FC = () => {
           CapacitorApp.exitApp();
         }
       } else {
-        // Navigate back within the app
-        navigateBack();
+        window.history.back();
       }
+    }).then(listener => {
+      removeBackButtonListener = () => listener.remove();
     });
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      backButtonListener.remove();
+      void removeBackButtonListener?.();
     };
-  }, [navigateBack, view]);
+  }, [applyNavigationState, view]);
 
   // Push initial history state
   useEffect(() => {
-    if (window.history.state === null) {
-      window.history.replaceState({ view: 'dashboard' }, '', window.location.pathname);
-    }
+    const state = window.history.state as Partial<NavigationState> | null;
+    if (!isAppView(state?.view)) window.history.replaceState({ view: 'dashboard' }, '', window.location.pathname);
   }, []);
 
   useEffect(() => {
@@ -1779,8 +1051,7 @@ const App: React.FC = () => {
             contactName: user.contactName,
             email: user.email,
             role: user.role,
-            status: 'active',
-            password: ''
+            status: 'active'
          });
       } catch {
          setPartnerSession(null);
@@ -1805,22 +1076,22 @@ const App: React.FC = () => {
     if (loadedUser) {
       setUser(loadedUser);
     } else {
-      setView('onboarding');
+      replaceView('onboarding');
     }
-  }, []);
+  }, [replaceView]);
 
   useEffect(() => {
     if (pendingAdminAction === 'moderation' && partnerSession) {
-      setView('moderation');
+      replaceView('moderation');
       setPendingAdminAction(null);
     }
-  }, [pendingAdminAction, partnerSession]);
+  }, [pendingAdminAction, partnerSession, replaceView]);
 
   useEffect(() => {
     if (view === 'partner' && partnerSession?.role === 'admin') {
-      setView('admin');
+      replaceView('admin');
     }
-  }, [view, partnerSession]);
+  }, [view, partnerSession, replaceView]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1891,7 +1162,7 @@ const App: React.FC = () => {
 
   const handleOnboardingComplete = (newUser: UserProfile) => {
     setUser(newUser);
-    setView('dashboard');
+    replaceView('dashboard');
   };
 
   const handleExerciseClick = (ex: Exercise) => {
@@ -1899,14 +1170,12 @@ const App: React.FC = () => {
     navigateTo('detail', ex.id);
   };
 
-  const handleAddExercise = (newEx: Exercise) => {
-    saveExercise(newEx);
-    setView('dashboard');
+  const handleAddExercise = async (newEx: Exercise): Promise<'submitted' | 'queued'> => {
+    await saveExercise(newEx);
+    return syncService.getStatus().pendingMutations === 0 ? 'submitted' : 'queued';
   };
 
-  const handleThanks = (exId: string) => {
-    incrementThanks(exId);
-  };
+  const handleThanks = (exId: string) => incrementThanks(exId);
 
   const handlePartnerAccess = () => {
     // If already logged in as admin, go to admin dashboard
@@ -1934,7 +1203,7 @@ const App: React.FC = () => {
   };
 
   const showSyncStatus =
-    !syncStatus.isOnline || syncStatus.pendingMutations > 0 || syncStatus.isSyncing;
+    !syncStatus.isOnline || syncStatus.pendingMutations > 0 || syncStatus.isSyncing || Boolean(syncStatus.lastError);
 
   const communityExercises = translatedExercises.filter(ex => ex.isCommunitySubmitted);
   const parseTimestamp = (value?: string) => (value ? Date.parse(value) : 0);

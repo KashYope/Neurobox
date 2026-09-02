@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useMemo } from 'react';
 import i18n from './i18n';
 
 interface I18nContextType {
@@ -23,12 +23,14 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const t = (key: string, options?: any) => {
+  const t = useCallback((key: string, options?: any) => {
     return i18n.t(key, options);
-  };
+  }, []);
+
+  const value = useMemo(() => ({ t, i18n }), [t]);
 
   return (
-    <I18nContext.Provider value={{ t, i18n }}>
+    <I18nContext.Provider value={value}>
       {children}
     </I18nContext.Provider>
   );
@@ -43,10 +45,11 @@ export const useTranslation = (namespaces?: string | string[]) => {
 
   // Create a wrapper function that handles namespaces without calling getFixedT
   // This avoids the React 19 event system bug in initReactI18next
-  const t = (key: string, options?: any) => {
-    const ns = namespaces ? (Array.isArray(namespaces) ? namespaces : [namespaces]) : undefined;
+  const namespaceKey = Array.isArray(namespaces) ? namespaces.join('|') : namespaces || '';
+  const t = useCallback((key: string, options?: any) => {
+    const ns = namespaceKey ? namespaceKey.split('|') : undefined;
     return context.i18n.t(key, { ...options, ns });
-  };
+  }, [context.i18n, namespaceKey]);
 
   return { t, i18n: context.i18n };
 };

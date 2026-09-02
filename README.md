@@ -143,11 +143,12 @@ Les exercices (titres, descriptions, étapes) sont maintenant entièrement tradu
 
 #### Configuration
 1. Obtenir une clé API Google Cloud Translation
-2. L'ajouter dans `.env` :
+2. L'ajouter uniquement à l'environnement du serveur :
    ```bash
-   VITE_GOOGLE_TRANSLATE_API_KEY=votre_cle_ici
-   GOOGLE_TRANSLATE_API_KEY=votre_cle_ici  # Pour le backend
+   GOOGLE_TRANSLATE_API_KEY=votre_cle_ici
    ```
+
+La clé n'est jamais exposée au bundle Vite ni stockée dans le navigateur.
 
 #### Architecture de traduction
 
@@ -162,7 +163,7 @@ Les exercices (titres, descriptions, étapes) sont maintenant entièrement tradu
 **Frontend** :
 - `services/exerciseTranslationService.ts` - Récupère et applique les traductions
 - `hooks/useExerciseTranslation.ts` - Hook React qui traduit automatiquement les exercices selon la langue active
-- Cache en mémoire des traductions pour performance optimale
+- Cache IndexedDB par langue, avec repli hors-ligne vers la traduction en cache puis le texte source français
 
 #### Utilisation
 
@@ -241,22 +242,15 @@ La politique de sécurité du contenu (Content Security Policy) est gérée côt
 
 La configuration se trouve dans la fonction `buildContentSecurityPolicy`. Pour autoriser une nouvelle source pour un type de contenu (par exemple, une image), ajoutez le domaine à la directive correspondante.
 
-**Exemple : Autoriser une nouvelle source d'images**
-
-Pour autoriser les images provenant de `https://example.com`, modifiez la directive `imgSrc` comme suit :
-
-```typescript
-// in server/src/index.ts
-const directives = {
-  // ... autres directives
-  imgSrc: ["'self'", "data:", "blob:", "https://placehold.co", "https://example.com"],
-  // ... autres directives
-};
-```
-
-Après avoir modifié la politique, vous devrez redéployer l'application pour que les changements prennent effet.
+Les illustrations publiques sont limitées aux ressources de même origine et aux SVG procéduraux générés localement. Les URL d'images externes ne sont pas acceptées dans les contributions.
 
 ## Déploiement VPS (Docker + nginx)
+
+### Déploiement Coolify
+
+Créez une ressource **Docker Compose** depuis ce dépôt et sélectionnez `docker-compose.yaml`. Le fichier utilise les variables magiques de Coolify pour générer le mot de passe PostgreSQL, le secret JWT et le domaine routé vers le port interne `4000`. PostgreSQL reste privé et ses données sont conservées dans le volume `postgres-data`.
+
+Dans Coolify, affectez le domaine au service `app` sur le port `4000`. `SERVICE_URL_APP_4000`, `SERVICE_PASSWORD_POSTGRES` et `SERVICE_PASSWORD_64_JWT` sont générées par Coolify; `GOOGLE_TRANSLATE_API_KEY` reste facultative. Les migrations sont exécutées automatiquement au démarrage du conteneur applicatif.
 
 Un guide détaillé est disponible dans `deploy/README.md`. Il couvre :
 
@@ -290,7 +284,7 @@ npm run server:token partner mon-equipe
 
 ## Système de traduction (base de données)
 
-Le contenu des exercices repose sur un système de traduction persistant qui stocke les chaînes dans PostgreSQL et les met en cache dans IndexedDB. Objectifs : réduire drastiquement les coûts (traduire une fois, servir à tous), garder la compatibilité ascendante et résoudre automatiquement les IDs de chaînes côté frontend via `contentResolver`.
+Le contenu des exercices repose sur un système de traduction persistant qui stocke les chaînes dans PostgreSQL et les met en cache dans IndexedDB. `exerciseTranslationService` est l'unique résolveur frontend et retombe sur le texte source français lorsque le réseau et le cache ne fournissent pas de traduction.
 
 ### Structure
 - **String IDs** : `exercise.resp_478.title`, `exercise.resp_478.description`, `exercise.resp_478.step_1`, etc.
@@ -346,12 +340,12 @@ Collez ensuite ces jetons dans la section « Jetons API » du tiroir administr
 ## Ajouter un exercice manuellement
 1. Depuis le tableau de bord principal, cliquez sur **Ajouter une technique** pour ouvrir `AddExerciseForm`.
 2. Renseignez au minimum le titre, la description et une situation cible.
-3. Indiquez chaque étape dans l’ordre; des URL d’images/GIF optionnelles peuvent améliorer la carte.
-4. Validez : la contribution est stockée localement, passe en statut « pending » et attend la validation du panel de modération.
+3. Indiquez chaque étape dans l’ordre. Une illustration locale stable sera générée à partir de la situation choisie.
+4. Validez : l'interface indique si la contribution a été envoyée ou sauvegardée hors-ligne. Elle reste en attente de modération jusqu'à validation.
 
 ## Dire merci et suivi d’impact
-- Le bouton « Dire Merci » (vue détail) appelle `incrementThanks`, incrémente le compteur et déclenche un rerender des cartes afin que les techniques les plus utiles montent naturellement dans les recommandations.
-- Ces remerciements sont mis en file dans `syncService` afin d’être persistés côté serveur dès que possible.
+- Le bouton « Dire Merci » crée un événement idempotent lié à l'installation. Une installation ne peut voter qu'une fois par exercice et une répétition hors-ligne ne double pas le compteur.
+- Le serveur calcule le total à partir des événements vérifiés. Le nombre n'est affiché qu'à partir de 10 votes; avant ce seuil, une mention éditoriale factuelle est utilisée.
 
 ## Espaces d’administration
 
@@ -360,7 +354,7 @@ Collez ensuite ces jetons dans la section « Jetons API » du tiroir administr
 - Les organisations créent un compte local (stocké dans `localStorage`) ou se connectent à un compte existant.
 - Deux workflows sont proposés :
   - **Création manuelle** : formulaire complet (tags, étapes dynamiques, profils ciblés) publié instantanément et marqué « Partenaire ».
-  - **Import CSV/JSON** : parsing tolérant (`mapRowToDraft`) avec auto-détection des colonnes (`title`, `description`, `situations`, `steps`, `tags`, `warning`, `imageUrl`). Les listes acceptent `|`, `;` ou `,`.
+  - **Import CSV/JSON** : parsing tolérant avec auto-détection des colonnes (`title`, `description`, `situations`, `steps`, `tags`, `warning`). Les listes acceptent `|`, `;` ou `,`; aucune URL d'image arbitraire n'est importée.
 
 ### Panel de modération
 - Accessible via le tiroir administrateur (**Modération**). Sans session partenaire, l’utilisateur est redirigé vers l’espace partenaires pour s’authentifier.

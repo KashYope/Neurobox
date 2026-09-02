@@ -65,6 +65,10 @@
     "partnerToken": "Partner Token",
     "moderatorToken": "Moderator Token"
   },
+  "badges": {
+    "editorialPick": "NeuroSooth pick",
+    "teamApproved": "Team approved"
+  },
   "messages": {
     "noResults": "No technique found",
     "tryChangeFilter": "Try changing the filter or add your own technique.",
@@ -72,13 +76,42 @@
     "error": "An error occurred",
     "success": "Success",
     "tokenSaved": "Token saved.",
-    "tokenRemoved": "Token removed.",
-    "helpedPeople": "{{count}} people helped"
+    "tokenRemoved": "Token removed."
   },
   "adminFeedback": {
     "approved": "Partner account approved.",
     "rejected": "Partner account rejected.",
     "updateError": "Unable to update account status. Please try again."
+  },
+  "adminDashboard": {
+    "title": "Admin dashboard",
+    "batchTranslations": "Batch translations",
+    "moderationContent": "Content moderation",
+    "liveOverview": "Live overview",
+    "platformMetrics": "Platform metrics",
+    "updatedAt": "Updated at {{time}}",
+    "awaitingSync": "Awaiting first sync",
+    "loadingMetrics": "Loading platform metrics…",
+    "totalFeedback": "Helpful feedback",
+    "approvedExercises": "{{count}} approved exercises",
+    "exercisesInDb": "Exercises in database",
+    "pendingModeration": "{{count}} pending moderation",
+    "users": "Users",
+    "userSummary": "{{active}} active / {{pending}} pending",
+    "contentMix": "Content mix",
+    "contentSummary": "{{partner}} partner / {{community}} community",
+    "pendingRegistrations": "Pending registrations ({{count}})",
+    "activePartners": "Active partners ({{count}})",
+    "loadingAccounts": "Loading partner accounts…",
+    "noPendingAccounts": "No pending account requests.",
+    "noActivePartners": "No active partners yet.",
+    "contact": "Contact",
+    "actions": "Actions",
+    "processing": "Processing…",
+    "saving": "Saving…",
+    "loadAccountsError": "Unable to load partner accounts.",
+    "loadMetricsError": "Unable to load platform metrics.",
+    "updateAccountError": "Unable to update the account."
   },
   "neuroTypes": {
     "ADHD": "ADHD",
@@ -107,6 +140,9 @@
     "apiTokensDesc": "Paste the signed tokens provided by NeuroSooth to publish and moderate via the secure backend.",
     "partnerToken": "Partner Token",
     "moderatorToken": "Moderator Token",
+    "partnerAccessDescription": "Access the partner workspace and administration.",
+    "myWorkspace": "My workspace",
+    "partnerLogin": "Partner / admin login",
     "buyCoffee": "Feed a unicorn 🦄",
     "feedback": "Feedback / Contact",
     "openSource": "Open Source"

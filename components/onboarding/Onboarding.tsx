@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../../src/i18nContext';
 
 import { Brain, Button, Check } from '../ui';
 import { saveUser } from '../../services/dataService';

@@ -1,6 +1,6 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import i18n from './i18n';
+import React, { createContext, useCallback, useContext, useState, useEffect, useMemo } from 'react';
+import i18n from './i18n.js';
 const I18nContext = createContext(null);
 export const I18nProvider = ({ children }) => {
     const [, forceUpdate] = useState(0);
@@ -13,10 +13,11 @@ export const I18nProvider = ({ children }) => {
             i18n.off('languageChanged', handleLanguageChange);
         };
     }, []);
-    const t = (key, options) => {
+    const t = useCallback((key, options) => {
         return i18n.t(key, options);
-    };
-    return (_jsx(I18nContext.Provider, { value: { t, i18n }, children: children }));
+    }, []);
+    const value = useMemo(() => ({ t, i18n }), [t]);
+    return (_jsx(I18nContext.Provider, { value: value, children: children }));
 };
 export const useTranslation = (namespaces) => {
     const context = useContext(I18nContext);
@@ -25,9 +26,10 @@ export const useTranslation = (namespaces) => {
     }
     // Create a wrapper function that handles namespaces without calling getFixedT
     // This avoids the React 19 event system bug in initReactI18next
-    const t = (key, options) => {
-        const ns = namespaces ? (Array.isArray(namespaces) ? namespaces : [namespaces]) : undefined;
+    const namespaceKey = Array.isArray(namespaces) ? namespaces.join('|') : namespaces || '';
+    const t = useCallback((key, options) => {
+        const ns = namespaceKey ? namespaceKey.split('|') : undefined;
         return context.i18n.t(key, { ...options, ns });
-    };
+    }, [context.i18n, namespaceKey]);
     return { t, i18n: context.i18n };
 };

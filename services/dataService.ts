@@ -1,7 +1,6 @@
 import { Exercise, UserProfile, NeuroType, Situation, ModerationStatus } from '../types';
-import { INITIAL_EXERCISES } from '../constants';
+import { INITIAL_EXERCISES, THANKS_VISIBILITY_THRESHOLD } from '../constants';
 import { syncService } from './syncService';
-import { contentResolver } from './contentResolver';
 import {
   AttachmentData,
   attachmentKeyForExerciseImage,
@@ -31,12 +30,12 @@ export const getExercises = (): Exercise[] => {
   return filterDeleted(cache);
 };
 
-export const saveExercise = (exercise: Exercise): void => {
-  syncService.createExercise(exercise);
+export const saveExercise = (exercise: Exercise): Promise<void> => {
+  return syncService.createExercise(exercise);
 };
 
-export const incrementThanks = (exerciseId: string): void => {
-  syncService.incrementThanks(exerciseId);
+export const incrementThanks = (exerciseId: string): Promise<boolean> => {
+  return syncService.incrementThanks(exerciseId);
 };
 
 // The Recommendation Algorithm
@@ -55,35 +54,19 @@ export const getRecommendedExercises = (
     list = list.filter(ex => ex.situation.includes(situation));
   }
 
-  // 2. Score based on User Profile (Neurotype match) and Community Thanks
-  if (user) {
-    interface ScoredExercise extends Exercise {
-      _tempScore: number;
-    }
+  // 2. Use transparent buckets: profile relevance, then established verified feedback.
+  const profileMatches = (exercise: Exercise): number =>
+    user ? exercise.neurotypes.filter(type => user.neurotypes.includes(type)).length : 0;
+  const visibleThanks = (exercise: Exercise): number =>
+    exercise.thanksCount >= THANKS_VISIBILITY_THRESHOLD ? exercise.thanksCount : 0;
 
-    list = list.map(ex => {
-      let score = ex.thanksCount; // Base score is popularity
-
-      // Boost if neurotype matches
-      const hasMatchingNeurotype = ex.neurotypes.some(nt => user.neurotypes.includes(nt));
-      if (hasMatchingNeurotype) {
-        score += 50; // Significant boost for profile match
-      }
-
-      // Boost specifically for Trauma/ASD if somatic (simplified logic)
-      if ((user.neurotypes.includes(NeuroType.Trauma) || user.neurotypes.includes(NeuroType.ASD)) && 
-          (ex.tags.includes('Proprioception') || ex.tags.includes('Vagal'))) {
-        score += 20;
-      }
-
-      return { ...ex, _tempScore: score };
-    })
-    .sort((a: ScoredExercise, b: ScoredExercise) => b._tempScore - a._tempScore)
-    .map(({ _tempScore, ...ex }: ScoredExercise) => ex);
-  } else {
-    // Just sort by popularity if no user
-    list.sort((a, b) => b.thanksCount - a.thanksCount);
-  }
+  list = [...list].sort((left, right) => {
+    const matchDifference = profileMatches(right) - profileMatches(left);
+    if (matchDifference !== 0) return matchDifference;
+    const thanksDifference = visibleThanks(right) - visibleThanks(left);
+    if (thanksDifference !== 0) return thanksDifference;
+    return left.id.localeCompare(right.id);
+  });
 
   return list;
 };
@@ -113,26 +96,4 @@ export const getCachedExerciseImage = async (
 
 export const clearCachedExerciseImage = async (exerciseId: string): Promise<void> => {
   await removeAttachment(attachmentKeyForExerciseImage(exerciseId));
-};
-
-/**
- * Get exercises with content resolved to the current user's language
- * This applies translation if string IDs are present
- */
-export const getResolvedExercises = async (lang?: string): Promise<Exercise[]> => {
-  const exercises = getExercises();
-  return contentResolver.resolveExercises(exercises, lang);
-};
-
-/**
- * Get recommended exercises with content resolved to the current user's language
- */
-export const getResolvedRecommendedExercises = async (
-  exercises: Exercise[],
-  user: UserProfile | null,
-  situation: Situation | 'All',
-  lang?: string
-): Promise<Exercise[]> => {
-  const recommended = getRecommendedExercises(exercises, user, situation);
-  return contentResolver.resolveExercises(recommended, lang);
 };

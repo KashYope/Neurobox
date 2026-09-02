@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, BadgeCheck, Button, Languages, Loader2, Radio } from '../../components/ui';
-import { apiClient } from '../../services/apiClient';
+import { AlertTriangle, ArrowLeft, BadgeCheck, Button, Languages, Loader2, Radio } from '../../components/ui/index.js';
+import { apiClient } from '../../services/apiClient.js';
 const LANGUAGE_OPTIONS = [
     { code: 'fr', label: 'Français' },
     { code: 'en', label: 'English' },

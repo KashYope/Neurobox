@@ -62,6 +62,10 @@
     "partnerToken": "Token de socio",
     "moderatorToken": "Token de moderador"
   },
+  "badges": {
+    "editorialPick": "Selección NeuroSooth",
+    "teamApproved": "Validado por el equipo"
+  },
   "messages": {
     "noResults": "No se encontró ninguna técnica",
     "tryChangeFilter": "Intente cambiar el filtro o añada su propia técnica.",
@@ -69,8 +73,42 @@
     "error": "Se produjo un error",
     "success": "Éxito",
     "tokenSaved": "Token guardado.",
-    "tokenRemoved": "Token eliminado.",
-    "helpedPeople": "{{count}} personas ayudadas"
+    "tokenRemoved": "Token eliminado."
+  },
+  "adminFeedback": {
+    "approved": "Cuenta de socio aprobada.",
+    "rejected": "Cuenta de socio rechazada.",
+    "updateError": "No se pudo actualizar el estado de la cuenta. Inténtalo de nuevo."
+  },
+  "adminDashboard": {
+    "title": "Panel de administración",
+    "batchTranslations": "Traducciones por lotes",
+    "moderationContent": "Moderación de contenido",
+    "liveOverview": "Vista en directo",
+    "platformMetrics": "Métricas de la plataforma",
+    "updatedAt": "Actualizado a las {{time}}",
+    "awaitingSync": "Esperando la primera sincronización",
+    "loadingMetrics": "Cargando métricas…",
+    "totalFeedback": "Valoraciones útiles",
+    "approvedExercises": "{{count}} ejercicios aprobados",
+    "exercisesInDb": "Ejercicios en la base de datos",
+    "pendingModeration": "{{count}} pendientes de moderación",
+    "users": "Usuarios",
+    "userSummary": "{{active}} activos / {{pending}} pendientes",
+    "contentMix": "Distribución del contenido",
+    "contentSummary": "{{partner}} socios / {{community}} comunidad",
+    "pendingRegistrations": "Registros pendientes ({{count}})",
+    "activePartners": "Socios activos ({{count}})",
+    "loadingAccounts": "Cargando cuentas de socios…",
+    "noPendingAccounts": "No hay solicitudes de cuenta pendientes.",
+    "noActivePartners": "Todavía no hay socios activos.",
+    "contact": "Contacto",
+    "actions": "Acciones",
+    "processing": "Procesando…",
+    "saving": "Guardando…",
+    "loadAccountsError": "No se pudieron cargar las cuentas de socios.",
+    "loadMetricsError": "No se pudieron cargar las métricas.",
+    "updateAccountError": "No se pudo actualizar la cuenta."
   },
   "neuroTypes": {
     "ADHD": "TDAH",
@@ -99,7 +137,12 @@
     "apiTokensDesc": "Pegue los tokens firmados proporcionados por NeuroSooth para publicar y moderar a través del backend seguro.",
     "partnerToken": "Token de socio",
     "moderatorToken": "Token de moderador",
-    "buyCoffee": "Feed the Unicorns"
+    "partnerAccessDescription": "Accede al espacio de socios y a la administración.",
+    "myWorkspace": "Mi espacio",
+    "partnerLogin": "Acceso de socio / administrador",
+    "buyCoffee": "Alimentar a un unicornio 🦄",
+    "feedback": "Comentarios / Contacto",
+    "openSource": "Código abierto"
   },
   "situations": {
     "Crisis": "Crisis / Pánico",

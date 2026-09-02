@@ -1,4 +1,4 @@
-import { setApiAuthTokens } from './apiClient';
+import { setApiAuthTokens } from './apiClient.js';
 const STORAGE_KEYS = {
     partner: 'neurobox_partner_token',
     moderator: 'neurobox_moderator_token'

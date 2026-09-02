@@ -1,4 +1,4 @@
-import { Exercise, ModerationStatus, PartnerAccount, ServerExercise } from '../types';
+import { Exercise, ModerationStatus, PartnerAccount, ServerExercise, ThankExerciseResponse } from '../types';
 
 type ImportMetaWithEnv = ImportMeta & { env?: Record<string, string | undefined> };
 
@@ -28,11 +28,14 @@ interface ApiConfig {
   fetchImpl?: typeof fetch;
 }
 
-export interface CreateExercisePayload extends Exercise {}
+export type CreateExercisePayload = Pick<
+  Exercise,
+  'id' | 'title' | 'description' | 'situation' | 'neurotypes' | 'duration' | 'steps' | 'tags'
+> & Pick<Exercise, 'warning' | 'imageUrl' | 'author'>;
 
 export type MutationPayload =
   | { type: 'createExercise'; exercise: Exercise }
-  | { type: 'thankExercise'; exerciseId: string }
+  | { type: 'thankExercise'; exerciseId: string; eventId: string; installationId: string }
   | { type: 'moderateExercise'; exerciseId: string; status: ModerationStatus; notes?: string };
 
 export interface ModerateExercisePayload {
@@ -172,21 +175,38 @@ class ApiClient {
     return this.request<ServerExercise[]>('/exercises');
   }
 
-  async createExercise(exercise: CreateExercisePayload): Promise<ServerExercise> {
+  async createExercise(exercise: Exercise): Promise<ServerExercise> {
     const role: AuthRole | undefined = this.authTokens.partnerToken ? 'partner' : undefined;
+    const payload: CreateExercisePayload = {
+      id: exercise.id,
+      title: exercise.title,
+      description: exercise.description,
+      situation: exercise.situation,
+      neurotypes: exercise.neurotypes,
+      duration: exercise.duration,
+      steps: exercise.steps,
+      tags: exercise.tags,
+      ...(exercise.warning ? { warning: exercise.warning } : {}),
+      ...(exercise.imageUrl?.startsWith('/') ? { imageUrl: exercise.imageUrl } : {}),
+      ...(exercise.author ? { author: exercise.author } : {})
+    };
     return this.request<ServerExercise>(
       '/exercises',
       {
         method: 'POST',
-        body: JSON.stringify(exercise)
+        body: JSON.stringify(payload)
       },
       role
     );
   }
 
-  async thankExercise(exerciseId: string): Promise<ServerExercise> {
-    return this.request<ServerExercise>(`/exercises/${exerciseId}/thanks`, {
-      method: 'POST'
+  async thankExercise(
+    exerciseId: string,
+    payload: { eventId: string; installationId: string }
+  ): Promise<ThankExerciseResponse> {
+    return this.request<ThankExerciseResponse>(`/exercises/${exerciseId}/thanks`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     });
   }
 

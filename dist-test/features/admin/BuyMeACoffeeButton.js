@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Copyright, Mail } from '../../components/ui';
+import { useTranslation } from '../../src/i18nContext.js';
+import { Copyright, Mail } from '../../components/ui/index.js';
 export const BuyMeACoffeeButton = ({ onSupport }) => {
     const { t } = useTranslation(['common']);
     // Simple obfuscation to prevent simple scraping

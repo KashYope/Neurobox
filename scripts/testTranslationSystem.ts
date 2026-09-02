@@ -99,7 +99,7 @@ async function testTranslationSystem() {
       console.log('\nNext steps:');
       console.log('1. Add translations for other languages using the API or bulk script');
       console.log('2. Update constants.ts with string IDs (see seedExerciseStrings output)');
-      console.log('3. Integrate contentResolver in UI components');
+      console.log('3. Verify exerciseTranslationService is integrated in the UI');
     } else {
       console.log('⚠️  Translation system is partially set up');
       console.log('\nRun the seed script to populate strings:');

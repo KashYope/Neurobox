@@ -16,7 +16,7 @@ export type ExerciseRow = {
   duration: string;
   steps: string[];
   warning: string | null;
-  image_url: string;
+  image_url: string | null;
   tags: string[];
   thanks_count: number;
   is_partner_content: boolean;

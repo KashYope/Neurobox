@@ -65,6 +65,10 @@
     "partnerToken": "Jeton partenaire",
     "moderatorToken": "Jeton modérateur"
   },
+  "badges": {
+    "editorialPick": "Sélection NeuroSooth",
+    "teamApproved": "Validé par l’équipe"
+  },
   "messages": {
     "noResults": "Aucune technique trouvée",
     "tryChangeFilter": "Essayez de changer de filtre ou ajoutez votre propre technique.",
@@ -72,13 +76,42 @@
     "error": "Une erreur s'est produite",
     "success": "Succès",
     "tokenSaved": "Jeton enregistré.",
-    "tokenRemoved": "Jeton supprimé.",
-    "helpedPeople": "{{count}} personnes aidées"
+    "tokenRemoved": "Jeton supprimé."
   },
   "adminFeedback": {
     "approved": "Compte partenaire approuvé.",
     "rejected": "Compte partenaire rejeté.",
     "updateError": "Impossible de mettre à jour le statut du compte. Merci de réessayer."
+  },
+  "adminDashboard": {
+    "title": "Tableau de bord admin",
+    "batchTranslations": "Traductions groupées",
+    "moderationContent": "Modération du contenu",
+    "liveOverview": "Vue en direct",
+    "platformMetrics": "Indicateurs de la plateforme",
+    "updatedAt": "Mis à jour à {{time}}",
+    "awaitingSync": "En attente de la première synchronisation",
+    "loadingMetrics": "Chargement des indicateurs…",
+    "totalFeedback": "Retours utiles",
+    "approvedExercises": "{{count}} exercices approuvés",
+    "exercisesInDb": "Exercices en base",
+    "pendingModeration": "{{count}} en attente de modération",
+    "users": "Utilisateurs",
+    "userSummary": "{{active}} actifs / {{pending}} en attente",
+    "contentMix": "Répartition du contenu",
+    "contentSummary": "{{partner}} partenaires / {{community}} communauté",
+    "pendingRegistrations": "Inscriptions en attente ({{count}})",
+    "activePartners": "Partenaires actifs ({{count}})",
+    "loadingAccounts": "Chargement des comptes partenaires…",
+    "noPendingAccounts": "Aucune demande de compte en attente.",
+    "noActivePartners": "Aucun partenaire actif pour le moment.",
+    "contact": "Contact",
+    "actions": "Actions",
+    "processing": "Traitement…",
+    "saving": "Enregistrement…",
+    "loadAccountsError": "Impossible de charger les comptes partenaires.",
+    "loadMetricsError": "Impossible de charger les indicateurs.",
+    "updateAccountError": "Impossible de mettre à jour le compte."
   },
   "neuroTypes": {
     "ADHD": "TDAH",
@@ -107,6 +140,9 @@
     "apiTokensDesc": "Collez les tokens signés fournis par NeuroSooth pour publier et modérer via le backend sécurisé.",
     "partnerToken": "Jeton partenaire",
     "moderatorToken": "Jeton modérateur",
+    "partnerAccessDescription": "Accédez à l’espace partenaire et à l’administration.",
+    "myWorkspace": "Mon espace",
+    "partnerLogin": "Connexion partenaire / admin",
     "buyCoffee": "Nourrir une licorne 🦄",
     "feedback": "Feedback / Contact",
     "openSource": "Open Source"

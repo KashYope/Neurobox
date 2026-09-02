@@ -1,8 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { Globe } from '../ui';
-import { getSupportedLanguages, loadLanguageTranslations } from '../../services/languageService';
+import { useTranslation } from '../../src/i18nContext.js';
+import { Globe } from '../ui/index.js';
+import { getSupportedLanguages, loadLanguageTranslations } from '../../services/languageService.js';
 export const LanguageSelector = () => {
     const { t, i18n } = useTranslation(['common']);
     const currentLang = i18n.language;

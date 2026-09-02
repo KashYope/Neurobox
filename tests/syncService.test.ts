@@ -1,13 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SyncService } from '../services/syncService';
-import { Exercise, ServerExercise, UserProfile } from '../types';
-import { AttachmentRecord, StorageAdapter, PendingMutationRecord } from '../services/storage/offlineDb';
+import { ApiError } from '../services/apiClient';
+import { Exercise, ModerationStatus, ServerExercise, UserProfile } from '../types';
+import {
+  AttachmentRecord,
+  ExerciseStringRecord,
+  ExerciseStringTranslationRecord,
+  StorageAdapter,
+  PendingMutationRecord,
+  TranslationRecord
+} from '../services/storage/offlineDb';
 
 type MockApi = {
   fetchExercises: () => Promise<ServerExercise[]>;
   createExercise: (exercise: Exercise) => Promise<ServerExercise>;
-  thankExercise: (exerciseId: string) => Promise<ServerExercise>;
+  thankExercise: (exerciseId: string, payload: { eventId: string; installationId: string }) => Promise<{ exercise: ServerExercise; accepted: boolean }>;
+  moderateExercise: (exerciseId: string, payload: { status: ModerationStatus }) => Promise<ServerExercise>;
 };
 
 class MemoryStorage implements StorageAdapter {
@@ -15,6 +24,9 @@ class MemoryStorage implements StorageAdapter {
   private mutations: PendingMutationRecord[];
   private user: UserProfile | null;
   private attachments = new Map<string, AttachmentRecord>();
+  private translations = new Map<string, TranslationRecord>();
+  private exerciseStrings: ExerciseStringRecord[] = [];
+  private exerciseTranslations: ExerciseStringTranslationRecord[] = [];
 
   constructor({ exercises = [], mutations = [], user = null }: Partial<{ exercises: Exercise[]; mutations: PendingMutationRecord[]; user: UserProfile | null }> = {}) {
     this.exercises = exercises.map(ex => structuredClone(ex));
@@ -77,6 +89,34 @@ class MemoryStorage implements StorageAdapter {
     this.attachments.delete(key);
   }
 
+  async saveTranslation(record: TranslationRecord): Promise<void> {
+    this.translations.set(record.key, structuredClone(record));
+  }
+
+  async getTranslation(key: string): Promise<TranslationRecord | undefined> {
+    return this.translations.get(key);
+  }
+
+  async getExerciseStrings(): Promise<ExerciseStringRecord[]> {
+    return structuredClone(this.exerciseStrings);
+  }
+
+  async bulkUpsertExerciseStrings(strings: ExerciseStringRecord[]): Promise<void> {
+    this.exerciseStrings = structuredClone(strings);
+  }
+
+  async getExerciseStringTranslations(lang: string): Promise<ExerciseStringTranslationRecord[]> {
+    return structuredClone(this.exerciseTranslations.filter(item => item.lang === lang));
+  }
+
+  async bulkUpsertExerciseStringTranslations(translations: ExerciseStringTranslationRecord[]): Promise<void> {
+    this.exerciseTranslations = structuredClone(translations);
+  }
+
+  async getTranslationForString(stringId: string, lang: string): Promise<ExerciseStringTranslationRecord | undefined> {
+    return this.exerciseTranslations.find(item => item.stringId === stringId && item.lang === lang);
+  }
+
   private getKey(exercise: Exercise): string {
     return exercise.serverId || exercise.id;
   }
@@ -104,15 +144,28 @@ const baseExercise: Exercise = {
 const createMockApi = (overrides: Partial<MockApi> = {}): MockApi => ({
   fetchExercises: async () => [],
   createExercise: async exercise => ({ ...exercise, serverId: exercise.id, createdAt: exercise.createdAt!, updatedAt: exercise.updatedAt! }),
-  thankExercise: async exerciseId => ({ ...baseExercise, id: exerciseId, serverId: exerciseId, createdAt: now(), updatedAt: now() }),
+  thankExercise: async exerciseId => ({
+    exercise: { ...baseExercise, id: exerciseId, serverId: exerciseId, createdAt: now(), updatedAt: now() },
+    accepted: true
+  }),
+  moderateExercise: async (exerciseId, payload) => ({
+    ...baseExercise,
+    id: exerciseId,
+    serverId: exerciseId,
+    moderationStatus: payload.status,
+    createdAt: now(),
+    updatedAt: now()
+  }),
   ...overrides
 });
 
 const now = () => new Date().toISOString();
 
 const setNavigatorOnline = (value: boolean) => {
-  // @ts-expect-error navigator shim for tests
-  globalThis.navigator = { onLine: value };
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { onLine: value },
+    configurable: true
+  });
 };
 
 const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -186,4 +239,44 @@ test('resolves conflicts using latest server data', async () => {
   assert.ok(merged);
   assert.equal(merged!.thanksCount, 10);
   assert.equal(merged!.updatedAt, serverExercise.updatedAt);
+});
+
+test('treats a successful empty server catalog as authoritative', async () => {
+  setNavigatorOnline(true);
+  const fakeCached = { ...baseExercise, id: 'obsolete-seed', thanksCount: 240 };
+  const storage = new MemoryStorage({ exercises: [fakeCached] });
+  const service = new SyncService({
+    storage,
+    apiClient: createMockApi({ fetchExercises: async () => [] }),
+    initialExercises: [fakeCached],
+    initialMutations: []
+  });
+
+  await service.init();
+  assert.deepEqual(service.getCachedExercises(), []);
+});
+
+test('surfaces permanent mutation failures and reverts optimistic creates', async () => {
+  setNavigatorOnline(true);
+  const storage = new MemoryStorage();
+  const service = new SyncService({
+    storage,
+    apiClient: createMockApi({
+      createExercise: async () => {
+        throw new ApiError('Contribution refusée', 400);
+      }
+    }),
+    initialExercises: [],
+    initialMutations: []
+  });
+
+  await service.init();
+  await assert.rejects(
+    service.createExercise({ ...baseExercise, id: 'rejected-local' }),
+    /Contribution refusée/
+  );
+
+  assert.equal(storage.dumpMutations().length, 0);
+  assert.equal(service.getCachedExercises().some(exercise => exercise.id === 'rejected-local'), false);
+  assert.equal(service.getStatus().lastError, 'Contribution refusée');
 });

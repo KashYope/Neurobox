@@ -1,6 +1,7 @@
-import { INITIAL_EXERCISES } from '../constants';
-import { apiClient, ApiError } from './apiClient';
-import { getInitialSnapshot } from './storage/offlineDb';
+import { INITIAL_EXERCISES } from '../constants.js';
+import { apiClient, ApiError } from './apiClient.js';
+import { createHelpfulVoteEventId, getInstallationId, hasThankedExercise, markExerciseThanked, unmarkExerciseThanked } from './helpfulVotes.js';
+import { getInitialSnapshot } from './storage/offlineDb.js';
 const snapshot = await getInitialSnapshot();
 const defaultStorageAdapter = snapshot.adapter;
 const defaultExercises = snapshot.exercises.length ? snapshot.exercises : [...INITIAL_EXERCISES];
@@ -15,11 +16,11 @@ export class SyncService {
         this.listeners = new Set();
         this.statusListeners = new Set();
         this.isFlushing = false;
+        this.retryTimer = null;
         this.activeSyncs = 0;
         this.handleOnline = () => {
             this.updateStatus({ isOnline: true });
-            this.hydrateFromServer();
-            this.flushQueue();
+            void this.hydrateFromServer().then(() => this.flushQueue());
         };
         this.handleOffline = () => {
             this.updateStatus({ isOnline: false });
@@ -61,16 +62,11 @@ export class SyncService {
                 window.addEventListener('online', this.handleOnline);
                 window.addEventListener('offline', this.handleOffline);
             }
-            this.hydrateFromServer()
-                .catch(error => {
-                console.warn('Failed to hydrate exercises', error);
-            })
-                .finally(() => {
-                this.readyResolver?.();
-            });
             if (this.status.isOnline) {
-                this.flushQueue();
+                await this.hydrateFromServer();
+                await this.flushQueue();
             }
+            this.readyResolver?.();
         }
         catch (error) {
             console.warn('Failed to load offline cache', error);
@@ -102,12 +98,19 @@ export class SyncService {
         };
         this.upsertExercise(exerciseWithMeta);
         await this.storage.bulkUpsertExercises([exerciseWithMeta]);
-        this.enqueueMutation({
+        await this.enqueueMutation({
             type: 'createExercise',
             payload: { exercise: exerciseWithMeta }
         });
+        if (this.status.isOnline) {
+            await this.flushQueue();
+            if (this.status.lastError)
+                throw new Error(this.status.lastError);
+        }
     }
     async incrementThanks(exerciseId) {
+        if (hasThankedExercise(exerciseId))
+            return false;
         const timestamp = nowIso();
         let resolvedId = exerciseId;
         let updatedExercise = null;
@@ -131,10 +134,21 @@ export class SyncService {
             await this.storage.bulkUpsertExercises([updatedExercise]);
             this.notifyCache();
         }
-        this.enqueueMutation({
+        await this.enqueueMutation({
             type: 'thankExercise',
-            payload: { exerciseId: resolvedId }
+            payload: {
+                exerciseId: resolvedId,
+                eventId: createHelpfulVoteEventId(),
+                installationId: getInstallationId()
+            }
         });
+        if (this.status.isOnline) {
+            await this.flushQueue();
+            if (this.status.lastError)
+                throw new Error(this.status.lastError);
+        }
+        markExerciseThanked(exerciseId);
+        return true;
     }
     async moderateExercise(exerciseId, status, options) {
         const timestamp = nowIso();
@@ -148,7 +162,7 @@ export class SyncService {
             patch.deletedAt = timestamp;
         }
         this.updateExercise(exerciseId, patch);
-        this.enqueueMutation({
+        await this.enqueueMutation({
             type: 'moderateExercise',
             payload: {
                 exerciseId,
@@ -158,6 +172,11 @@ export class SyncService {
                 shouldDelete: options?.shouldDelete
             }
         });
+        if (this.status.isOnline) {
+            await this.flushQueue();
+            if (this.status.lastError)
+                throw new Error(this.status.lastError);
+        }
     }
     updateExercise(exerciseId, patch) {
         const timestamp = patch.updatedAt || nowIso();
@@ -176,15 +195,12 @@ export class SyncService {
             this.notifyCache();
         }
     }
-    enqueueMutation(input) {
+    async enqueueMutation(input) {
         const mutation = this.buildPendingMutation(input);
         this.pendingMutations.push(mutation);
-        void this.storage.setPendingMutations(this.pendingMutations);
-        this.updateStatus({ pendingMutations: this.pendingMutations.length });
-        this.requestBackgroundSync();
-        if (this.status.isOnline) {
-            this.flushQueue();
-        }
+        await this.storage.setPendingMutations(this.pendingMutations);
+        this.updateStatus({ pendingMutations: this.pendingMutations.length, lastError: undefined });
+        void this.requestBackgroundSync();
     }
     async requestBackgroundSync() {
         if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
@@ -192,8 +208,9 @@ export class SyncService {
         }
         try {
             const registration = await navigator.serviceWorker.ready;
-            if ('sync' in registration) {
-                await registration.sync.register('syncService');
+            const registrationWithSync = registration;
+            if (registrationWithSync.sync) {
+                await registrationWithSync.sync.register('syncService');
             }
             else {
                 registration.active?.postMessage('syncService');
@@ -213,7 +230,15 @@ export class SyncService {
             return { ...base, type: 'createExercise', payload: { exercise: input.payload.exercise } };
         }
         if (input.type === 'thankExercise') {
-            return { ...base, type: 'thankExercise', payload: { exerciseId: input.payload.exerciseId } };
+            return {
+                ...base,
+                type: 'thankExercise',
+                payload: {
+                    exerciseId: input.payload.exerciseId,
+                    eventId: input.payload.eventId,
+                    installationId: input.payload.installationId
+                }
+            };
         }
         return {
             ...base,
@@ -250,12 +275,18 @@ export class SyncService {
                     mutation.attempts += 1;
                     mutation.lastAttemptAt = Date.now();
                     await this.storage.setPendingMutations(this.pendingMutations);
-                    const delay = Math.min(2 ** mutation.attempts * 1000, 30000);
-                    await this.delay(delay);
-                    if (this.markOfflineIfNeeded(error) || !this.status.isOnline) {
+                    const retryable = this.isRetryable(error);
+                    if (this.markOfflineIfNeeded(error) || retryable || !this.status.isOnline) {
+                        this.scheduleRetry(Math.min(2 ** mutation.attempts * 1000, 30000));
                         break;
                     }
-                    index += 1;
+                    this.pendingMutations.splice(index, 1);
+                    await this.revertRejectedMutation(mutation);
+                    await this.storage.setPendingMutations(this.pendingMutations);
+                    this.updateStatus({
+                        pendingMutations: this.pendingMutations.length,
+                        lastError: error instanceof Error ? error.message : 'A synchronization change was rejected'
+                    });
                 }
             }
         }
@@ -271,8 +302,11 @@ export class SyncService {
             return;
         }
         if (mutation.type === 'thankExercise') {
-            const serverExercise = await this.api.thankExercise(mutation.payload.exerciseId);
-            await this.applyServerExercise(serverExercise);
+            const response = await this.api.thankExercise(mutation.payload.exerciseId, {
+                eventId: mutation.payload.eventId,
+                installationId: mutation.payload.installationId
+            });
+            await this.applyServerExercise(response.exercise);
             return;
         }
         if (mutation.type === 'moderateExercise') {
@@ -290,11 +324,10 @@ export class SyncService {
         try {
             const serverExercises = await this.api.fetchExercises();
             this.markOnline();
-            if (serverExercises && serverExercises.length > 0) {
-                this.cache = this.mergeServerAndLocal(serverExercises);
-                await this.storage.replaceExercises(this.cache);
-                this.notifyCache();
-            }
+            this.cache = this.mergeServerAndLocal(serverExercises ?? []);
+            this.cache = this.applyPendingThanksOverlay(this.cache);
+            await this.storage.replaceExercises(this.cache);
+            this.notifyCache();
             didSync = true;
         }
         catch (error) {
@@ -310,8 +343,10 @@ export class SyncService {
         const addOrUpdate = (exercise) => {
             mergedMap.set(this.getExerciseKey(exercise), structuredClone(exercise));
         };
-        const seed = this.cache.length > 0 ? this.cache : INITIAL_EXERCISES;
-        seed.forEach(ex => addOrUpdate(ex));
+        const pendingCreateIds = new Set(this.pendingMutations
+            .filter(mutation => mutation.type === 'createExercise')
+            .map(mutation => mutation.payload.exercise.id));
+        this.cache.filter(exercise => pendingCreateIds.has(exercise.id)).forEach(ex => addOrUpdate(ex));
         serverExercises.forEach(serverEx => {
             const key = this.getExerciseKey(serverEx);
             if (serverEx.deletedAt) {
@@ -339,7 +374,7 @@ export class SyncService {
         return {
             ...secondary,
             ...preferred,
-            thanksCount: Math.max(localExercise.thanksCount, serverExercise.thanksCount ?? 0),
+            thanksCount: serverExercise.thanksCount ?? 0,
             serverId: serverExercise.serverId || localExercise.serverId,
             updatedAt: preferred.updatedAt || secondary.updatedAt,
             createdAt: preferred.createdAt || secondary.createdAt
@@ -416,6 +451,7 @@ export class SyncService {
         const patch = {};
         if (didSync) {
             patch.lastSyncedAt = Date.now();
+            patch.lastError = undefined;
         }
         if (this.activeSyncs === 0) {
             patch.isSyncing = false;
@@ -424,8 +460,55 @@ export class SyncService {
             this.updateStatus(patch);
         }
     }
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    applyPendingThanksOverlay(exercises) {
+        const pendingById = new Map();
+        this.pendingMutations.forEach(mutation => {
+            if (mutation.type !== 'thankExercise')
+                return;
+            pendingById.set(mutation.payload.exerciseId, (pendingById.get(mutation.payload.exerciseId) ?? 0) + 1);
+        });
+        return exercises.map(exercise => {
+            const pending = pendingById.get(exercise.serverId || exercise.id) ?? pendingById.get(exercise.id) ?? 0;
+            return pending ? { ...exercise, thanksCount: exercise.thanksCount + pending } : exercise;
+        });
+    }
+    async revertRejectedMutation(mutation) {
+        if (mutation.type === 'createExercise') {
+            this.cache = this.cache.filter(exercise => exercise.id !== mutation.payload.exercise.id);
+            await this.storage.replaceExercises(this.cache);
+            this.notifyCache();
+            return;
+        }
+        if (mutation.type !== 'thankExercise')
+            return;
+        let reverted;
+        this.cache = this.cache.map(exercise => {
+            if (exercise.id !== mutation.payload.exerciseId && exercise.serverId !== mutation.payload.exerciseId) {
+                return exercise;
+            }
+            reverted = { ...exercise, thanksCount: Math.max(0, exercise.thanksCount - 1) };
+            return reverted;
+        });
+        if (reverted) {
+            unmarkExerciseThanked(reverted.id);
+            await this.storage.bulkUpsertExercises([reverted]);
+            this.notifyCache();
+        }
+    }
+    isRetryable(error) {
+        if (error instanceof ApiError) {
+            return error.status === 408 || error.status === 429 || error.status === undefined || error.status >= 500;
+        }
+        return error instanceof TypeError;
+    }
+    scheduleRetry(ms) {
+        if (this.retryTimer || typeof setTimeout !== 'function')
+            return;
+        this.retryTimer = setTimeout(() => {
+            this.retryTimer = null;
+            if (this.status.isOnline)
+                void this.flushQueue();
+        }, ms);
     }
     markOnline() {
         if (!this.status.isOnline) {
@@ -434,7 +517,7 @@ export class SyncService {
     }
     markOfflineIfNeeded(error) {
         if (error instanceof ApiError) {
-            if (typeof error.status === 'number' && (error.status === 0 || error.status >= 500)) {
+            if (error.status === 0) {
                 this.updateStatus({ isOnline: false });
                 return true;
             }

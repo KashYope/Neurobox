@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../src/i18nContext';
 import { Exercise } from '../types';
 import { exerciseTranslationService } from '../services/exerciseTranslationService';
 

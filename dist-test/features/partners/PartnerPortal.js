@@ -1,10 +1,10 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Building2, Button, ClipboardList, FileSpreadsheet, Lock, LogOut, Download, UploadCloud, User, UserPlus } from '../../components/ui';
-import { saveExercise } from '../../services/dataService';
-import { apiClient } from '../../services/apiClient';
-import { NeuroType, Situation } from '../../types';
+import { useTranslation } from '../../src/i18nContext.js';
+import { ArrowLeft, Building2, Button, ClipboardList, FileSpreadsheet, Lock, LogOut, Download, UploadCloud, User, UserPlus } from '../../components/ui/index.js';
+import { saveExercise } from '../../services/dataService.js';
+import { apiClient } from '../../services/apiClient.js';
+import { NeuroType, Situation } from '../../types.js';
 const splitToList = (value, pattern = /[,;|]/) => {
     if (Array.isArray(value)) {
         return value.map(item => `${item}`.trim()).filter(Boolean);
@@ -37,7 +37,7 @@ const mapStringsToNeurotypes = (values) => {
         .filter((value) => Boolean(value));
     return matches;
 };
-const createPartnerExercise = (draft, author) => {
+const createPartnerExercise = (draft, defaultStep, author) => {
     const timestamp = new Date().toISOString();
     const steps = (draft.steps || []).map(step => step.trim()).filter(Boolean);
     const tags = (draft.tags || []).map(tag => tag.trim()).filter(Boolean);
@@ -47,14 +47,11 @@ const createPartnerExercise = (draft, author) => {
         title: draft.title,
         description: draft.description,
         duration: draft.duration && draft.duration.trim() ? draft.duration : '5 min',
-        steps: steps.length ? steps : ['Respiration consciente pendant 60 secondes'],
+        steps: steps.length ? steps : [defaultStep],
         tags: tags.length ? tags : ['Partenaire'],
         situation,
         neurotypes: draft.neurotypes || [],
         warning: draft.warning,
-        imageUrl: draft.imageUrl && draft.imageUrl.trim()
-            ? draft.imageUrl
-            : 'https://placehold.co/600x400/0f172a/ffffff?text=Espace+Partenaire',
         thanksCount: 0,
         author,
         isPartnerContent: true,
@@ -105,8 +102,7 @@ const mapRowToDraft = (row) => {
         tags,
         situation: mapStringsToSituations(situationStrings),
         neurotypes: mapStringsToNeurotypes(neuroStrings),
-        warning: (row['warning'] || row['alerte'])?.trim(),
-        imageUrl: (row['imageurl'] || row['image'])?.trim()
+        warning: (row['warning'] || row['alerte'])?.trim()
     };
 };
 const parseCsvDrafts = (content) => {
@@ -157,18 +153,13 @@ const parseJsonDrafts = (content) => {
             situation: mapStringsToSituations(splitToList(obj.situations ?? obj.situation)),
             neurotypes: mapStringsToNeurotypes(splitToList(obj.neurotypes ?? obj.neurotype)),
             warning: typeof obj.warning === 'string' ? obj.warning.trim() : undefined,
-            imageUrl: typeof obj.imageUrl === 'string'
-                ? obj.imageUrl
-                : typeof obj.image === 'string'
-                    ? obj.image
-                    : undefined,
         };
     }).filter((draft) => Boolean(draft && draft.title && draft.description));
     return drafts;
 };
 const csvTemplateContent = [
-    'title,description,duration,situations,steps,tags,neurotypes,warning,imageUrl',
-    '"Respiration 5-5-5","Breathing exercise to calm the nervous system","5 min","Stress|Anxiety","Inhale for 5|Hold for 5|Exhale for 5","Breathing|Relaxation","ADHD|ASD","Avoid if dizziness","https://placehold.co/600x400/0f172a/ffffff?text=Respiration"'
+    'title,description,duration,situations,steps,tags,neurotypes,warning',
+    '"Respiration 5-5-5","Breathing exercise to calm the nervous system","5 min","Stress|Anxiety","Inhale for 5|Hold for 5|Exhale for 5","Breathing|Relaxation","ADHD|ASD","Avoid if dizziness"'
 ].join('\n');
 const jsonTemplateContent = JSON.stringify([
     {
@@ -179,8 +170,7 @@ const jsonTemplateContent = JSON.stringify([
         steps: ['Inhale for 5', 'Hold for 5', 'Exhale for 5'],
         tags: ['Breathing', 'Relaxation'],
         neurotypes: ['ADHD', 'ASD'],
-        warning: 'Avoid if dizziness',
-        imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Respiration'
+        warning: 'Avoid if dizziness'
     }
 ], null, 2);
 const createEmptyPartnerForm = () => ({
@@ -188,7 +178,6 @@ const createEmptyPartnerForm = () => ({
     description: '',
     duration: '5 min',
     warning: '',
-    imageUrl: '',
     situation: [Situation.Stress],
     steps: [''],
     tagsText: 'Partenaire',
@@ -220,8 +209,7 @@ export const PartnerPortal = ({ onBack }) => {
                     contactName: user.contactName,
                     email: user.email,
                     role: user.role,
-                    status: 'active',
-                    password: '' // Not needed/secure
+                    status: 'active'
                 });
             }
             catch (e) {
@@ -302,8 +290,7 @@ export const PartnerPortal = ({ onBack }) => {
                 contactName: user.contactName,
                 email: user.email,
                 role: user.role,
-                status: 'active',
-                password: ''
+                status: 'active'
             };
             setActiveAccount(account);
             emitSessionChange(account);
@@ -313,7 +300,7 @@ export const PartnerPortal = ({ onBack }) => {
             setAuthError(error.message || t('partner:auth.errors.invalidCredentials'));
         }
     };
-    const handleManualSubmit = (event) => {
+    const handleManualSubmit = async (event) => {
         event.preventDefault();
         setManualFeedback(null);
         if (!activeAccount) {
@@ -330,14 +317,13 @@ export const PartnerPortal = ({ onBack }) => {
             description: manualForm.description.trim(),
             duration: manualForm.duration.trim(),
             warning: manualForm.warning.trim() || undefined,
-            imageUrl: manualForm.imageUrl.trim() || undefined,
             steps: manualForm.steps.map(step => step.trim()).filter(Boolean),
             tags: tagsList,
             situation: manualForm.situation.length ? manualForm.situation : [Situation.Stress],
             neurotypes: manualForm.neurotypes,
         };
-        const exercise = createPartnerExercise(draft, `${activeAccount.organization} • ${activeAccount.contactName}`);
-        saveExercise(exercise);
+        const exercise = createPartnerExercise(draft, t('partner:manual.defaultStep'), `${activeAccount.organization} • ${activeAccount.contactName}`);
+        await saveExercise(exercise);
         setManualFeedback({ type: 'success', text: t('partner:manual.success') });
         setManualForm(createEmptyPartnerForm());
     };
@@ -375,7 +361,7 @@ export const PartnerPortal = ({ onBack }) => {
         if (!file)
             return;
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
             try {
                 const content = reader.result ? String(reader.result) : '';
                 const drafts = file.name.toLowerCase().endsWith('.json')
@@ -386,18 +372,18 @@ export const PartnerPortal = ({ onBack }) => {
                     setFileInputKey(Date.now());
                     return;
                 }
-                drafts.forEach(draft => {
-                    const exercise = createPartnerExercise(draft, activeAccount.organization);
-                    saveExercise(exercise);
-                });
+                await Promise.all(drafts.map(draft => {
+                    const exercise = createPartnerExercise(draft, t('partner:manual.defaultStep'), activeAccount.organization);
+                    return saveExercise(exercise);
+                }));
                 setImportFeedback({
                     type: 'success',
                     text: t('partner:import.success', { count: drafts.length, fileName: file.name })
                 });
             }
             catch (error) {
-                const message = error instanceof Error ? error.message : t('partner:import.error');
-                setImportFeedback({ type: 'error', text: message });
+                console.warn('Partner import failed', error);
+                setImportFeedback({ type: 'error', text: t('partner:import.error') });
             }
             finally {
                 setFileInputKey(Date.now());
@@ -405,14 +391,14 @@ export const PartnerPortal = ({ onBack }) => {
         };
         reader.readAsText(file);
     };
-    const renderAuthForm = () => (_jsx("div", { className: "max-w-xl mx-auto", children: _jsxs("div", { className: "bg-white rounded-2xl shadow-sm p-6 space-y-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(Lock, { className: "w-8 h-8 text-slate-600" }), _jsxs("div", { children: [_jsx("h2", { className: "text-xl font-semibold text-slate-900", children: authMode === 'login' ? t('partner:auth.loginTitle') : t('partner:auth.registerTitle') }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:auth.accessRestricted') })] })] }), _jsxs("form", { onSubmit: authMode === 'login' ? handleLogin : handleRegister, className: "space-y-4", children: [authMode === 'register' && (_jsxs(_Fragment, { children: [_jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.organization') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.organization, onChange: e => setAuthForm(prev => ({ ...prev, organization: e.target.value })), placeholder: t('partner:auth.organizationPlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.contactName') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.contactName, onChange: e => setAuthForm(prev => ({ ...prev, contactName: e.target.value })), placeholder: t('partner:auth.contactNamePlaceholder'), required: true })] })] })), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.email') }), _jsx("input", { type: "email", className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.email, onChange: e => setAuthForm(prev => ({ ...prev, email: e.target.value })), placeholder: t('partner:auth.emailPlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.password') }), _jsx("input", { type: "password", className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.password, onChange: e => setAuthForm(prev => ({ ...prev, password: e.target.value })), placeholder: t('partner:auth.passwordPlaceholder'), required: true })] }), authError && (_jsx("div", { className: "text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3", children: authError })), _jsx(Button, { type: "submit", className: "w-full", size: "lg", children: authMode === 'login' ? t('partner:auth.loginAction') : t('partner:auth.createAccess') })] }), _jsx("div", { className: "text-center text-sm text-slate-500", children: authMode === 'login' ? (_jsxs("button", { type: "button", className: "text-teal-600 font-medium", onClick: () => { setAuthMode('register'); setAuthError(null); }, children: [_jsx(UserPlus, { className: "inline w-4 h-4 mr-1" }), " ", t('partner:auth.createAccountLink')] })) : (_jsxs("button", { type: "button", className: "text-teal-600 font-medium", onClick: () => { setAuthMode('login'); setAuthError(null); }, children: [_jsx(User, { className: "inline w-4 h-4 mr-1" }), " ", t('partner:auth.hasAccountLink')] })) })] }) }));
-    const renderWorkspace = () => (_jsxs("div", { className: "space-y-8", children: [activeAccount && (_jsxs("div", { className: "bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm uppercase tracking-wide text-slate-400", children: t('partner:workspace.verifiedAccount') }), _jsx("h2", { className: "text-2xl font-semibold text-slate-900", children: activeAccount.organization }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:workspace.referent', { name: activeAccount.contactName }) }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:workspace.email', { email: activeAccount.email }) })] }), _jsxs(Button, { variant: "ghost", onClick: handleLogout, children: [_jsx(LogOut, { className: "w-4 h-4 mr-2" }), " ", t('partner:workspace.logout')] })] })), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 space-y-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(ClipboardList, { className: "w-6 h-6 text-teal-600" }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-900", children: t('partner:manual.title') }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:manual.subtitle') })] })] }), manualFeedback && (_jsx("div", { className: `text-sm rounded-xl border px-4 py-3 ${manualFeedback.type === 'success'
+    const renderAuthForm = () => (_jsx("div", { className: "max-w-xl mx-auto", children: _jsxs("div", { className: "bg-white rounded-2xl shadow-sm p-6 space-y-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(Lock, { className: "w-8 h-8 text-slate-600" }), _jsxs("div", { children: [_jsx("h2", { className: "text-xl font-semibold text-slate-900", children: authMode === 'login' ? t('partner:auth.loginTitle') : t('partner:auth.registerTitle') }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:auth.accessRestricted') })] })] }), _jsxs("form", { onSubmit: authMode === 'login' ? handleLogin : handleRegister, className: "space-y-4", children: [authMode === 'register' && (_jsxs(_Fragment, { children: [_jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.organization') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.organization, onChange: e => setAuthForm(prev => ({ ...prev, organization: e.target.value })), placeholder: t('partner:auth.organizationPlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.contactName') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.contactName, onChange: e => setAuthForm(prev => ({ ...prev, contactName: e.target.value })), placeholder: t('partner:auth.contactNamePlaceholder'), required: true })] })] })), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.email') }), _jsx("input", { type: "email", className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.email, onChange: e => setAuthForm(prev => ({ ...prev, email: e.target.value })), placeholder: t('partner:auth.emailPlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:auth.password') }), _jsx("input", { type: "password", className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: authForm.password, onChange: e => setAuthForm(prev => ({ ...prev, password: e.target.value })), placeholder: t('partner:auth.passwordPlaceholder'), required: true })] }), authError && (_jsx("div", { role: "alert", className: "text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3", children: authError })), _jsx(Button, { type: "submit", className: "w-full", size: "lg", children: authMode === 'login' ? t('partner:auth.loginAction') : t('partner:auth.createAccess') })] }), _jsx("div", { className: "text-center text-sm text-slate-500", children: authMode === 'login' ? (_jsxs("button", { type: "button", className: "text-teal-600 font-medium", onClick: () => { setAuthMode('register'); setAuthError(null); }, children: [_jsx(UserPlus, { className: "inline w-4 h-4 mr-1" }), " ", t('partner:auth.createAccountLink')] })) : (_jsxs("button", { type: "button", className: "text-teal-600 font-medium", onClick: () => { setAuthMode('login'); setAuthError(null); }, children: [_jsx(User, { className: "inline w-4 h-4 mr-1" }), " ", t('partner:auth.hasAccountLink')] })) })] }) }));
+    const renderWorkspace = () => (_jsxs("div", { className: "space-y-8", children: [activeAccount && (_jsxs("div", { className: "bg-white rounded-2xl shadow-sm p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between", children: [_jsxs("div", { children: [_jsx("p", { className: "text-sm uppercase tracking-wide text-slate-400", children: t('partner:workspace.verifiedAccount') }), _jsx("h2", { className: "text-2xl font-semibold text-slate-900", children: activeAccount.organization }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:workspace.referent', { name: activeAccount.contactName }) }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:workspace.email', { email: activeAccount.email }) })] }), _jsxs(Button, { variant: "ghost", onClick: handleLogout, children: [_jsx(LogOut, { className: "w-4 h-4 mr-2" }), " ", t('partner:workspace.logout')] })] })), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 space-y-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(ClipboardList, { className: "w-6 h-6 text-teal-600" }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-900", children: t('partner:manual.title') }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:manual.subtitle') })] })] }), manualFeedback && (_jsx("div", { role: manualFeedback.type === 'error' ? 'alert' : 'status', "aria-live": manualFeedback.type === 'error' ? 'assertive' : 'polite', className: `text-sm rounded-xl border px-4 py-3 ${manualFeedback.type === 'success'
                             ? 'bg-teal-50 border-teal-200 text-teal-700'
-                            : 'bg-rose-50 border-rose-200 text-rose-700'}`, children: manualFeedback.text })), _jsxs("form", { onSubmit: handleManualSubmit, className: "space-y-4", children: [_jsxs("div", { className: "grid md:grid-cols-2 gap-4", children: [_jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.title') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.title, onChange: e => setManualForm(prev => ({ ...prev, title: e.target.value })), placeholder: t('partner:manual.form.titlePlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.duration') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.duration, onChange: e => setManualForm(prev => ({ ...prev, duration: e.target.value })), placeholder: t('partner:manual.form.durationPlaceholder') })] })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.description') }), _jsx("textarea", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.description, onChange: e => setManualForm(prev => ({ ...prev, description: e.target.value })), rows: 4, placeholder: t('partner:manual.form.descriptionPlaceholder'), required: true })] }), _jsxs("div", { className: "grid md:grid-cols-2 gap-4", children: [_jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.image') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.imageUrl, onChange: e => setManualForm(prev => ({ ...prev, imageUrl: e.target.value })), placeholder: t('partner:manual.form.imagePlaceholder') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.warning') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.warning, onChange: e => setManualForm(prev => ({ ...prev, warning: e.target.value })), placeholder: t('partner:manual.form.warningPlaceholder') })] })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.tags') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.tagsText, onChange: e => setManualForm(prev => ({ ...prev, tagsText: e.target.value })), placeholder: t('partner:manual.form.tagsPlaceholder') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('partner:manual.form.situations') }), _jsx("div", { className: "flex flex-wrap gap-2", children: Object.values(Situation).map(item => (_jsx("button", { type: "button", onClick: () => toggleSituation(item), className: `px-3 py-1 rounded-full text-xs border ${manualForm.situation.includes(item)
+                            : 'bg-rose-50 border-rose-200 text-rose-700'}`, children: manualFeedback.text })), _jsxs("form", { onSubmit: handleManualSubmit, className: "space-y-4", children: [_jsxs("div", { className: "grid md:grid-cols-2 gap-4", children: [_jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.title') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.title, onChange: e => setManualForm(prev => ({ ...prev, title: e.target.value })), placeholder: t('partner:manual.form.titlePlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.duration') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.duration, onChange: e => setManualForm(prev => ({ ...prev, duration: e.target.value })), placeholder: t('partner:manual.form.durationPlaceholder') })] })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.description') }), _jsx("textarea", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.description, onChange: e => setManualForm(prev => ({ ...prev, description: e.target.value })), rows: 4, placeholder: t('partner:manual.form.descriptionPlaceholder'), required: true })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.warning') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.warning, onChange: e => setManualForm(prev => ({ ...prev, warning: e.target.value })), placeholder: t('partner:manual.form.warningPlaceholder') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-1", children: t('partner:manual.form.tags') }), _jsx("input", { className: "w-full border border-slate-200 rounded-lg px-3 py-2", value: manualForm.tagsText, onChange: e => setManualForm(prev => ({ ...prev, tagsText: e.target.value })), placeholder: t('partner:manual.form.tagsPlaceholder') })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('partner:manual.form.situations') }), _jsx("div", { className: "flex flex-wrap gap-2", children: Object.values(Situation).map(item => (_jsx("button", { type: "button", onClick: () => toggleSituation(item), className: `px-3 py-1 rounded-full text-xs border ${manualForm.situation.includes(item)
                                                 ? 'bg-teal-600 text-white border-teal-600'
                                                 : 'bg-slate-50 border-slate-200 text-slate-600'}`, children: t(`situations.${item}`) }, item))) })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('partner:manual.form.neurotypes') }), _jsx("div", { className: "flex flex-wrap gap-2", children: Object.values(NeuroType).filter(type => type !== NeuroType.None).map(type => (_jsx("button", { type: "button", onClick: () => toggleNeurotype(type), className: `px-3 py-1 rounded-full text-xs border ${manualForm.neurotypes.includes(type)
                                                 ? 'bg-indigo-600 text-white border-indigo-600'
-                                                : 'bg-white border-slate-200 text-slate-600'}`, children: t(`neuroTypes.${type}`) }, type))) })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('partner:manual.form.detailedSteps') }), _jsx("div", { className: "space-y-2", children: manualForm.steps.map((step, index) => (_jsxs("div", { className: "flex gap-2", children: [_jsx("input", { className: "flex-1 border border-slate-200 rounded-lg px-3 py-2", value: step, onChange: e => handleStepChange(index, e.target.value), placeholder: t('partner:manual.form.stepPlaceholder', { number: index + 1 }) }), manualForm.steps.length > 1 && (_jsx(Button, { type: "button", variant: "ghost", onClick: () => removeStepField(index), children: t('partner:manual.form.deleteStep') }))] }, index))) }), _jsx(Button, { type: "button", variant: "secondary", size: "sm", className: "mt-3", onClick: addStepField, children: t('partner:manual.form.addStep') })] }), _jsx("div", { className: "pt-4", children: _jsx(Button, { type: "submit", size: "lg", className: "w-full", children: t('partner:manual.publish') }) })] })] }), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 space-y-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(UploadCloud, { className: "w-6 h-6 text-teal-600" }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-900", children: t('partner:import.title') }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:import.subtitle') })] })] }), importFeedback && (_jsx("div", { className: `text-sm rounded-xl border px-4 py-3 ${importFeedback.type === 'success'
+                                                : 'bg-white border-slate-200 text-slate-600'}`, children: t(`neuroTypes.${type}`) }, type))) })] }), _jsxs("div", { children: [_jsx("label", { className: "block text-sm font-medium mb-2", children: t('partner:manual.form.detailedSteps') }), _jsx("div", { className: "space-y-2", children: manualForm.steps.map((step, index) => (_jsxs("div", { className: "flex gap-2", children: [_jsx("input", { className: "flex-1 border border-slate-200 rounded-lg px-3 py-2", value: step, onChange: e => handleStepChange(index, e.target.value), placeholder: t('partner:manual.form.stepPlaceholder', { number: index + 1 }) }), manualForm.steps.length > 1 && (_jsx(Button, { type: "button", variant: "ghost", onClick: () => removeStepField(index), children: t('partner:manual.form.deleteStep') }))] }, index))) }), _jsx(Button, { type: "button", variant: "secondary", size: "sm", className: "mt-3", onClick: addStepField, children: t('partner:manual.form.addStep') })] }), _jsx("div", { className: "pt-4", children: _jsx(Button, { type: "submit", size: "lg", className: "w-full", children: t('partner:manual.publish') }) })] })] }), _jsxs("section", { className: "bg-white rounded-2xl shadow-sm p-6 space-y-6", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx(UploadCloud, { className: "w-6 h-6 text-teal-600" }), _jsxs("div", { children: [_jsx("h3", { className: "text-lg font-semibold text-slate-900", children: t('partner:import.title') }), _jsx("p", { className: "text-sm text-slate-500", children: t('partner:import.subtitle') })] })] }), importFeedback && (_jsx("div", { role: importFeedback.type === 'error' ? 'alert' : 'status', "aria-live": importFeedback.type === 'error' ? 'assertive' : 'polite', className: `text-sm rounded-xl border px-4 py-3 ${importFeedback.type === 'success'
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                             : 'bg-rose-50 border-rose-200 text-rose-700'}`, children: importFeedback.text })), _jsxs("div", { className: "grid gap-4 md:grid-cols-2", children: [_jsxs("div", { className: "border border-dashed border-slate-200 rounded-xl p-4", children: [_jsxs("div", { className: "flex items-center justify-between gap-2 mb-2", children: [_jsxs("div", { className: "flex items-center gap-2 text-slate-700 font-medium", children: [_jsx(FileSpreadsheet, { className: "w-4 h-4" }), " ", t('partner:import.csvFormat')] }), _jsxs(Button, { variant: "outline", size: "sm", onClick: () => handleDownloadTemplate('csv'), children: [_jsx(Download, { className: "w-4 h-4 mr-1" }), " ", t('partner:import.downloadCsvTemplate')] })] }), _jsx("p", { className: "text-sm text-slate-500 mb-2", children: t('partner:import.csvHeaders') }), _jsx("p", { className: "text-xs text-slate-400", children: t('partner:import.csvSeparator') })] }), _jsxs("div", { className: "border border-dashed border-slate-200 rounded-xl p-4", children: [_jsxs("div", { className: "flex items-center justify-between gap-2 mb-2", children: [_jsxs("div", { className: "flex items-center gap-2 text-slate-700 font-medium", children: [_jsx(FileSpreadsheet, { className: "w-4 h-4" }), " ", t('partner:import.jsonFormat')] }), _jsxs(Button, { variant: "outline", size: "sm", onClick: () => handleDownloadTemplate('json'), children: [_jsx(Download, { className: "w-4 h-4 mr-1" }), " ", t('partner:import.downloadJsonTemplate')] })] }), _jsx("p", { className: "text-sm text-slate-500 mb-2", children: t('partner:import.jsonStructure') }), _jsx("p", { className: "text-xs text-slate-400", children: t('partner:import.jsonExample') })] })] }), _jsx("p", { className: "text-xs text-slate-500", children: t('partner:import.templateHelper') }), _jsxs("div", { className: "bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3", children: [_jsx("p", { className: "text-sm text-slate-600", children: t('partner:import.fileInput') }), _jsx("input", { type: "file", accept: ".csv,.json,application/json,text/csv", onChange: handleFileUpload, className: "w-full text-sm" }, fileInputKey)] })] })] }));
     return (_jsxs("div", { className: "min-h-screen bg-slate-50", children: [_jsx("header", { className: "bg-white border-b border-slate-100", children: _jsxs("div", { className: "max-w-5xl mx-auto px-4 py-4 flex items-center justify-between", children: [_jsxs("div", { className: "flex items-center gap-3", children: [_jsx("div", { className: "bg-teal-600 text-white rounded-xl p-2", children: _jsx(Building2, { className: "w-6 h-6" }) }), _jsxs("div", { children: [_jsx("p", { className: "text-xs uppercase tracking-wide text-slate-400", children: t('partner:workspace.backoffice') }), _jsx("h1", { className: "text-2xl font-semibold text-slate-900", children: t('partner:workspace.partnerSpace') })] })] }), _jsx("div", { className: "flex gap-2", children: _jsxs(Button, { variant: "outline", onClick: onBack, children: [_jsx(ArrowLeft, { className: "w-4 h-4 mr-2" }), " ", t('partner:workspace.backToCatalog')] }) })] }) }), _jsx("main", { className: "max-w-5xl mx-auto px-4 py-8", children: isLoading ? _jsx("div", { className: "text-center py-8", children: "Loading..." }) : (activeAccount ? renderWorkspace() : renderAuthForm()) })] }));

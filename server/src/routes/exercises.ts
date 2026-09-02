@@ -1,25 +1,55 @@
-import { Router } from 'express';
-import { randomUUID } from 'node:crypto';
+import { Router, type Request, type Response } from 'express';
+import { createHash, randomUUID } from 'node:crypto';
 import { pool, type ExerciseRow } from '../db.js';
 import { mapExerciseRow } from '../utils/serializers.js';
-import { exercisePayloadSchema, moderationSchema } from '../utils/validation.js';
+import { exercisePayloadSchema, moderationSchema, thankExerciseSchema } from '../utils/validation.js';
 import { requireRole } from '../auth.js';
 
 const router = Router();
 
+const WITH_VERIFIED_THANKS = `
+  SELECT e.*,
+         (SELECT COUNT(*)::int FROM exercise_thanks et WHERE et.exercise_id = e.id) AS thanks_count
+  FROM exercises e
+`;
+
 const findExercise = async (identifier: string): Promise<ExerciseRow | null> => {
-  // Try to match against client_id (text) first, then cast identifier to UUID if it's a valid UUID
   const result = await pool.query<ExerciseRow>(
-    `SELECT * FROM exercises WHERE client_id = $1 OR (id::text = $1) LIMIT 1`,
+    `${WITH_VERIFIED_THANKS}
+     WHERE e.client_id = $1 OR e.id::text = $1
+     LIMIT 1`,
     [identifier]
   );
   return result.rows[0] ?? null;
 };
 
+const THANK_WINDOW_MS = 60 * 60 * 1000;
+const THANK_MAX_REQUESTS = 30;
+const thankWindows = new Map<string, { count: number; resetAt: number }>();
+
+const enforceThankRateLimit = (req: Request, res: Response): boolean => {
+  const now = Date.now();
+  const key = req.ip || 'unknown';
+  const current = thankWindows.get(key);
+  if (!current || current.resetAt <= now) {
+    thankWindows.set(key, { count: 1, resetAt: now + THANK_WINDOW_MS });
+    return true;
+  }
+  if (current.count >= THANK_MAX_REQUESTS) {
+    res.set('Retry-After', Math.ceil((current.resetAt - now) / 1000).toString());
+    res.status(429).json({ message: 'Too many helpful-vote attempts' });
+    return false;
+  }
+  current.count += 1;
+  return true;
+};
+
 router.get('/', async (_req, res, next) => {
   try {
     const result = await pool.query<ExerciseRow>(
-      `SELECT * FROM exercises ORDER BY created_at DESC`
+      `${WITH_VERIFIED_THANKS}
+       WHERE e.deleted_at IS NULL
+       ORDER BY e.created_at DESC`
     );
     res.json(result.rows.map(mapExerciseRow));
   } catch (error) {
@@ -30,7 +60,7 @@ router.get('/', async (_req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const payload = exercisePayloadSchema.parse(req.body);
-    const isPartner = req.user?.role === 'partner';
+    const isPartner = req.user?.role === 'partner' || req.user?.role === 'admin';
     const id = randomUUID();
     const now = new Date();
 
@@ -52,11 +82,11 @@ router.post('/', async (req, res, next) => {
         payload.duration,
         payload.steps,
         payload.warning ?? null,
-        payload.imageUrl,
+        payload.imageUrl ?? null,
         payload.tags,
-        payload.thanksCount ?? 0,
-        payload.isPartnerContent ?? isPartner,
-        payload.isCommunitySubmitted ?? !isPartner,
+        0,
+        isPartner,
+        !isPartner,
         payload.author ?? null,
         isPartner ? 'approved' : 'pending',
         now,
@@ -72,19 +102,24 @@ router.post('/', async (req, res, next) => {
 
 router.post('/:id/thanks', async (req, res, next) => {
   try {
+    if (!enforceThankRateLimit(req, res)) return;
+    const payload = thankExerciseSchema.parse(req.body);
     const identifier = req.params.id;
     const record = await findExercise(identifier);
     if (!record || record.deleted_at) {
       return res.status(404).json({ message: 'Exercise not found' });
     }
 
-    const updated = await pool.query<ExerciseRow>(
-      `UPDATE exercises SET thanks_count = thanks_count + 1, updated_at = NOW()
-       WHERE id = $1 RETURNING *`,
-      [record.id]
+    const voterHash = createHash('sha256').update(payload.installationId).digest('hex');
+    const inserted = await pool.query(
+      `INSERT INTO exercise_thanks (id, client_event_id, exercise_id, voter_hash)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT DO NOTHING
+       RETURNING id`,
+      [randomUUID(), payload.eventId, record.id, voterHash]
     );
-
-    res.json(mapExerciseRow(updated.rows[0]));
+    const updated = await findExercise(record.id);
+    res.json({ exercise: mapExerciseRow(updated!), accepted: inserted.rowCount === 1 });
   } catch (error) {
     next(error);
   }
@@ -118,7 +153,7 @@ router.patch('/:id/moderation', requireRole('moderator'), async (req, res, next)
       [randomUUID(), record.id, payload.status, payload.notes ?? null, req.user?.sub ?? null]
     );
 
-    res.json(mapExerciseRow(updated.rows[0]));
+    res.json(mapExerciseRow({ ...updated.rows[0], thanks_count: record.thanks_count }));
   } catch (error) {
     next(error);
   }

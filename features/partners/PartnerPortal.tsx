@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '../../src/i18nContext';
 
 import {
   ArrowLeft,
@@ -27,7 +27,6 @@ interface PartnerExerciseDraft {
   situation?: Situation[];
   neurotypes?: NeuroType[];
   warning?: string;
-  imageUrl?: string;
 }
 
 const splitToList = (value: unknown, pattern: RegExp = /[,;|]/): string[] => {
@@ -73,7 +72,7 @@ const mapStringsToNeurotypes = (values: string[]): NeuroType[] => {
   return matches;
 };
 
-const createPartnerExercise = (draft: PartnerExerciseDraft, author?: string): Exercise => {
+const createPartnerExercise = (draft: PartnerExerciseDraft, defaultStep: string, author?: string): Exercise => {
   const timestamp = new Date().toISOString();
   const steps = (draft.steps || []).map(step => step.trim()).filter(Boolean);
   const tags = (draft.tags || []).map(tag => tag.trim()).filter(Boolean);
@@ -84,14 +83,11 @@ const createPartnerExercise = (draft: PartnerExerciseDraft, author?: string): Ex
     title: draft.title,
     description: draft.description,
     duration: draft.duration && draft.duration.trim() ? draft.duration : '5 min',
-    steps: steps.length ? steps : ['Respiration consciente pendant 60 secondes'],
+    steps: steps.length ? steps : [defaultStep],
     tags: tags.length ? tags : ['Partenaire'],
     situation,
     neurotypes: draft.neurotypes || [],
     warning: draft.warning,
-    imageUrl: draft.imageUrl && draft.imageUrl.trim()
-      ? draft.imageUrl
-      : 'https://placehold.co/600x400/0f172a/ffffff?text=Espace+Partenaire',
     thanksCount: 0,
     author,
     isPartnerContent: true,
@@ -143,8 +139,7 @@ const mapRowToDraft = (row: Record<string, string>): PartnerExerciseDraft => {
     tags,
     situation: mapStringsToSituations(situationStrings),
     neurotypes: mapStringsToNeurotypes(neuroStrings),
-    warning: (row['warning'] || row['alerte'])?.trim(),
-    imageUrl: (row['imageurl'] || row['image'])?.trim()
+    warning: (row['warning'] || row['alerte'])?.trim()
   };
 };
 
@@ -204,11 +199,6 @@ const parseJsonDrafts = (content: string): PartnerExerciseDraft[] => {
       situation: mapStringsToSituations(splitToList(obj.situations ?? obj.situation)),
       neurotypes: mapStringsToNeurotypes(splitToList(obj.neurotypes ?? obj.neurotype)),
       warning: typeof obj.warning === 'string' ? obj.warning.trim() : undefined,
-      imageUrl: typeof obj.imageUrl === 'string'
-        ? obj.imageUrl
-        : typeof obj.image === 'string'
-          ? obj.image
-          : undefined,
     } as PartnerExerciseDraft;
   }).filter((draft): draft is PartnerExerciseDraft => Boolean(draft && draft.title && draft.description));
 
@@ -216,8 +206,8 @@ const parseJsonDrafts = (content: string): PartnerExerciseDraft[] => {
 };
 
 const csvTemplateContent = [
-  'title,description,duration,situations,steps,tags,neurotypes,warning,imageUrl',
-  '"Respiration 5-5-5","Breathing exercise to calm the nervous system","5 min","Stress|Anxiety","Inhale for 5|Hold for 5|Exhale for 5","Breathing|Relaxation","ADHD|ASD","Avoid if dizziness","https://placehold.co/600x400/0f172a/ffffff?text=Respiration"'
+  'title,description,duration,situations,steps,tags,neurotypes,warning',
+  '"Respiration 5-5-5","Breathing exercise to calm the nervous system","5 min","Stress|Anxiety","Inhale for 5|Hold for 5|Exhale for 5","Breathing|Relaxation","ADHD|ASD","Avoid if dizziness"'
 ].join('\n');
 
 const jsonTemplateContent = JSON.stringify(
@@ -230,8 +220,7 @@ const jsonTemplateContent = JSON.stringify(
       steps: ['Inhale for 5', 'Hold for 5', 'Exhale for 5'],
       tags: ['Breathing', 'Relaxation'],
       neurotypes: ['ADHD', 'ASD'],
-      warning: 'Avoid if dizziness',
-      imageUrl: 'https://placehold.co/600x400/0f172a/ffffff?text=Respiration'
+      warning: 'Avoid if dizziness'
     }
   ],
   null,
@@ -243,7 +232,6 @@ interface PartnerFormState {
   description: string;
   duration: string;
   warning: string;
-  imageUrl: string;
   situation: Situation[];
   steps: string[];
   tagsText: string;
@@ -255,7 +243,6 @@ const createEmptyPartnerForm = (): PartnerFormState => ({
   description: '',
   duration: '5 min',
   warning: '',
-  imageUrl: '',
   situation: [Situation.Stress],
   steps: [''],
   tagsText: 'Partenaire',
@@ -293,8 +280,7 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
             contactName: user.contactName,
             email: user.email,
             role: user.role,
-            status: 'active',
-            password: '' // Not needed/secure
+            status: 'active'
         });
       } catch (e) {
         setActiveAccount(null);
@@ -384,8 +370,7 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
         contactName: user.contactName,
         email: user.email,
         role: user.role,
-        status: 'active' as const,
-        password: ''
+        status: 'active' as const
       };
 
       setActiveAccount(account);
@@ -396,7 +381,7 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
     }
   };
 
-  const handleManualSubmit = (event: React.FormEvent) => {
+  const handleManualSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setManualFeedback(null);
 
@@ -417,15 +402,18 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
       description: manualForm.description.trim(),
       duration: manualForm.duration.trim(),
       warning: manualForm.warning.trim() || undefined,
-      imageUrl: manualForm.imageUrl.trim() || undefined,
       steps: manualForm.steps.map(step => step.trim()).filter(Boolean),
       tags: tagsList,
       situation: manualForm.situation.length ? manualForm.situation : [Situation.Stress],
       neurotypes: manualForm.neurotypes,
     };
 
-    const exercise = createPartnerExercise(draft, `${activeAccount.organization} • ${activeAccount.contactName}`);
-    saveExercise(exercise);
+    const exercise = createPartnerExercise(
+      draft,
+      t('partner:manual.defaultStep'),
+      `${activeAccount.organization} • ${activeAccount.contactName}`
+    );
+    await saveExercise(exercise);
     setManualFeedback({ type: 'success', text: t('partner:manual.success') });
     setManualForm(createEmptyPartnerForm());
   };
@@ -468,7 +456,7 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const content = reader.result ? String(reader.result) : '';
         const drafts = file.name.toLowerCase().endsWith('.json')
@@ -481,18 +469,18 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
           return;
         }
 
-        drafts.forEach(draft => {
-          const exercise = createPartnerExercise(draft, activeAccount.organization);
-          saveExercise(exercise);
-        });
+        await Promise.all(drafts.map(draft => {
+          const exercise = createPartnerExercise(draft, t('partner:manual.defaultStep'), activeAccount.organization);
+          return saveExercise(exercise);
+        }));
 
         setImportFeedback({
           type: 'success',
           text: t('partner:import.success', { count: drafts.length, fileName: file.name })
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : t('partner:import.error');
-        setImportFeedback({ type: 'error', text: message });
+        console.warn('Partner import failed', error);
+        setImportFeedback({ type: 'error', text: t('partner:import.error') });
       } finally {
         setFileInputKey(Date.now());
       }
@@ -564,7 +552,7 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
           </div>
 
           {authError && (
-            <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3">
+            <div role="alert" className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3">
               {authError}
             </div>
           )}
@@ -623,11 +611,15 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
         </div>
 
         {manualFeedback && (
-          <div className={`text-sm rounded-xl border px-4 py-3 ${
+          <div
+            role={manualFeedback.type === 'error' ? 'alert' : 'status'}
+            aria-live={manualFeedback.type === 'error' ? 'assertive' : 'polite'}
+            className={`text-sm rounded-xl border px-4 py-3 ${
             manualFeedback.type === 'success'
               ? 'bg-teal-50 border-teal-200 text-teal-700'
               : 'bg-rose-50 border-rose-200 text-rose-700'
-          }`}>
+          }`}
+          >
             {manualFeedback.text}
           </div>
         )}
@@ -667,25 +659,14 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.image')}</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                value={manualForm.imageUrl}
-                onChange={e => setManualForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                placeholder={t('partner:manual.form.imagePlaceholder')}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">{t('partner:manual.form.warning')}</label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2"
-                value={manualForm.warning}
-                onChange={e => setManualForm(prev => ({ ...prev, warning: e.target.value }))}
-                placeholder={t('partner:manual.form.warningPlaceholder')}
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">{t('partner:manual.form.warning')}</label>
+            <input
+              className="w-full border border-slate-200 rounded-lg px-3 py-2"
+              value={manualForm.warning}
+              onChange={e => setManualForm(prev => ({ ...prev, warning: e.target.value }))}
+              placeholder={t('partner:manual.form.warningPlaceholder')}
+            />
           </div>
 
           <div>
@@ -776,11 +757,15 @@ export const PartnerPortal: React.FC<PartnerPortalProps> = ({ onBack }) => {
         </div>
 
         {importFeedback && (
-          <div className={`text-sm rounded-xl border px-4 py-3 ${
+          <div
+            role={importFeedback.type === 'error' ? 'alert' : 'status'}
+            aria-live={importFeedback.type === 'error' ? 'assertive' : 'polite'}
+            className={`text-sm rounded-xl border px-4 py-3 ${
             importFeedback.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
               : 'bg-rose-50 border-rose-200 text-rose-700'
-          }`}>
+          }`}
+          >
             {importFeedback.text}
           </div>
         )}

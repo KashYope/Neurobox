@@ -36,7 +36,10 @@ router.get('/metrics', requireRole('moderator'), async (_req, res, next) => {
       pool.query(
         `SELECT
            COUNT(*) FILTER (WHERE deleted_at IS NULL)::int AS total_exercises,
-           COALESCE(SUM(thanks_count) FILTER (WHERE deleted_at IS NULL), 0)::int AS total_thanks,
+           (SELECT COUNT(*)::int
+              FROM exercise_thanks et
+              JOIN exercises thanked ON thanked.id = et.exercise_id
+             WHERE thanked.deleted_at IS NULL) AS total_thanks,
            COUNT(*) FILTER (WHERE is_community_submitted AND deleted_at IS NULL)::int AS community_exercises,
            COUNT(*) FILTER (WHERE is_partner_content AND deleted_at IS NULL)::int AS partner_exercises,
            COUNT(*) FILTER (WHERE moderation_status = 'pending' AND deleted_at IS NULL)::int AS pending_moderation,

@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "npm run test:build && node --test dist-test",
-    "test:build": "tsc -p tsconfig.test.json && node scripts/fix-test-imports.mjs",
+    "test": "npm run test:build && node --test dist-test/tests/*.test.js",
+    "test:build": "node scripts/clean-test-dist.mjs && tsc -p tsconfig.test.json && node scripts/fix-test-imports.mjs",
     "server:dev": "tsx watch server/src/index.ts",
     "server:build": "tsc -p server/tsconfig.json",
     "server:start": "node server/dist/index.js",
@@ -32,7 +32,6 @@
     "pg": "^8.13.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-i18next": "^16.3.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {

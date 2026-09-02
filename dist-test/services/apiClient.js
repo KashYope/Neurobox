@@ -66,14 +66,28 @@ class ApiClient {
     }
     async createExercise(exercise) {
         const role = this.authTokens.partnerToken ? 'partner' : undefined;
+        const payload = {
+            id: exercise.id,
+            title: exercise.title,
+            description: exercise.description,
+            situation: exercise.situation,
+            neurotypes: exercise.neurotypes,
+            duration: exercise.duration,
+            steps: exercise.steps,
+            tags: exercise.tags,
+            ...(exercise.warning ? { warning: exercise.warning } : {}),
+            ...(exercise.imageUrl?.startsWith('/') ? { imageUrl: exercise.imageUrl } : {}),
+            ...(exercise.author ? { author: exercise.author } : {})
+        };
         return this.request('/exercises', {
             method: 'POST',
-            body: JSON.stringify(exercise)
+            body: JSON.stringify(payload)
         }, role);
     }
-    async thankExercise(exerciseId) {
+    async thankExercise(exerciseId, payload) {
         return this.request(`/exercises/${exerciseId}/thanks`, {
-            method: 'POST'
+            method: 'POST',
+            body: JSON.stringify(payload)
         });
     }
     async moderateExercise(exerciseId, payload) {

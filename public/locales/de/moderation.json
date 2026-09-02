@@ -1,33 +1,33 @@
 {
   "header": {
-    "space": "Moderation Space",
-    "review": "Proposal Review",
-    "backToApp": "Back to App"
+    "space": "Moderationsbereich",
+    "review": "Beiträge prüfen",
+    "backToApp": "Zurück zur App"
   },
   "status": {
-    "approved": "Approved",
-    "rejected": "Rejected",
-    "pending": "Pending",
-    "tokenRequired": "Moderator token required to load server queue.",
-    "serverUnavailable": "Server unavailable. Showing local data.",
-    "synced": "Queue synchronized with secure server."
+    "approved": "Freigegeben",
+    "rejected": "Abgelehnt",
+    "pending": "Ausstehend",
+    "tokenRequired": "Für die Servermoderation ist ein Moderationstoken erforderlich.",
+    "serverUnavailable": "Der Server ist nicht erreichbar; lokale Daten werden angezeigt.",
+    "synced": "Die Moderationsliste ist synchronisiert."
   },
   "queue": {
-    "title": "{{count}} proposal(s) to review",
-    "empty": "All contributions have been moderated. Come back later!",
-    "proposedOn": "Proposed on {{date}}",
-    "internalNote": "Internal Note (Optional)",
-    "internalNotePlaceholder": "Feedback to share with the author...",
-    "reject": "Reject",
-    "approve": "Validate and Publish",
-    "duration": "Duration",
+    "title": "Zu prüfende Beiträge",
+    "empty": "Derzeit sind keine Beiträge zu prüfen.",
+    "proposedOn": "Eingereicht am {{date}}",
+    "internalNote": "Interne Notiz",
+    "internalNotePlaceholder": "Begründung oder notwendige Änderungen …",
+    "reject": "Ablehnen",
+    "approve": "Freigeben",
+    "duration": "Dauer",
     "tags": "Tags"
   },
   "history": {
-    "title": "Recent History",
-    "empty": "No moderation history yet.",
-    "note": "Note: {{note}}",
-    "moderatedBy": "{{author}} • {{date}}",
-    "unknownDate": "Unknown date"
+    "title": "Letzte Entscheidungen",
+    "empty": "Es wurden noch keine Entscheidungen erfasst.",
+    "note": "Notiz: {{note}}",
+    "moderatedBy": "Bearbeitet von {{name}}",
+    "unknownDate": "Datum unbekannt"
   }
 }

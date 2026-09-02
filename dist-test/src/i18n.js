@@ -1,5 +1,4 @@
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
 export const SUPPORTED_LANGUAGES = {
     fr: 'Français',
@@ -8,12 +7,25 @@ export const SUPPORTED_LANGUAGES = {
     es: 'Español',
     nl: 'Nederlands'
 };
-// Initialize i18next with React support and HTTP backend
+const getInitialLanguage = () => {
+    if (typeof localStorage === 'undefined')
+        return 'fr';
+    try {
+        const stored = localStorage.getItem('neurobox_user_language');
+        if (stored && stored in SUPPORTED_LANGUAGES)
+            return stored;
+    }
+    catch {
+        // Storage can be unavailable in private browsing; browser language remains a safe fallback.
+    }
+    const browserLanguage = typeof navigator === 'undefined' ? '' : navigator.language.split('-')[0];
+    return browserLanguage in SUPPORTED_LANGUAGES ? browserLanguage : 'fr';
+};
+// React subscribes through the custom context in i18nContext.tsx.
 i18n
     .use(HttpBackend)
-    .use(initReactI18next)
     .init({
-    lng: 'fr', // Force French as default, ignore browser language
+    lng: getInitialLanguage(),
     fallbackLng: 'fr',
     supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
     interpolation: {
@@ -31,16 +43,5 @@ i18n
     },
     // Load all namespaces eagerly to ensure offline availability
     preload: Object.keys(SUPPORTED_LANGUAGES),
-    // Disable language detection to prevent browser language override
-    detection: {
-        order: ['localStorage'],
-        caches: ['localStorage'],
-        lookupLocalStorage: 'neurobox_user_language'
-    },
-    react: {
-        useSuspense: false,
-        bindI18n: false, // Disable to prevent React 19 event system bug
-        bindI18nStore: false // Disable to prevent event system bug
-    }
 });
 export default i18n;

@@ -1,6 +1,6 @@
 import Dexie from './dexieShim';
 import { INITIAL_EXERCISES } from '../../constants';
-import { Exercise, UserProfile } from '../../types';
+import { Exercise, ModerationStatus, UserProfile } from '../../types';
 
 const LEGACY_KEYS = {
   EXERCISES: 'neurosooth_exercises_cache_v2',
@@ -22,7 +22,7 @@ export type PendingMutationRecord =
   | {
       id: string;
       type: 'thankExercise';
-      payload: { exerciseId: string };
+      payload: { exerciseId: string; eventId: string; installationId: string };
       attempts: number;
       createdAt: number;
       lastAttemptAt?: number;
@@ -32,7 +32,7 @@ export type PendingMutationRecord =
       type: 'moderateExercise';
       payload: {
         exerciseId: string;
-        status: string;
+        status: ModerationStatus;
         notes?: string;
         moderator?: string;
         shouldDelete?: boolean;

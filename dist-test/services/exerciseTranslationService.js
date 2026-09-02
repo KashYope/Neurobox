@@ -1,4 +1,5 @@
-import { apiClient } from './apiClient';
+import { apiClient } from './apiClient.js';
+import { getStorageAdapter } from './storage/offlineDb.js';
 class ExerciseTranslationService {
     constructor() {
         this.translationCache = new Map();
@@ -18,12 +19,30 @@ class ExerciseTranslationService {
             translations.forEach((t) => {
                 translationMap[t.string_id] = t.translated_text;
             });
+            const adapter = await getStorageAdapter();
+            await adapter.bulkUpsertExerciseStringTranslations(translations.map((translation) => ({
+                stringId: translation.string_id,
+                lang: translation.lang,
+                translatedText: translation.translated_text,
+                translationMethod: translation.translation_method,
+                translatedAt: translation.translated_at,
+                updatedAt: translation.updated_at
+            })));
             this.translationCache.set(lang, translationMap);
             return translationMap;
         }
         catch (error) {
-            console.error(`Failed to fetch translations for ${lang}:`, error);
-            return {};
+            console.warn(`Using cached exercise translations for ${lang}:`, error);
+            try {
+                const adapter = await getStorageAdapter();
+                const cached = await adapter.getExerciseStringTranslations(lang);
+                const translationMap = Object.fromEntries(cached.map(translation => [translation.stringId, translation.translatedText]));
+                this.translationCache.set(lang, translationMap);
+                return translationMap;
+            }
+            catch {
+                return {};
+            }
         }
     }
     /**

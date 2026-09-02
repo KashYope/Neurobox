@@ -62,6 +62,10 @@
     "partnerToken": "Partner-Token",
     "moderatorToken": "Moderator-Token"
   },
+  "badges": {
+    "editorialPick": "NeuroSooth-Auswahl",
+    "teamApproved": "Vom Team geprüft"
+  },
   "messages": {
     "noResults": "Keine Technik gefunden",
     "tryChangeFilter": "Versuchen Sie, den Filter zu ändern oder fügen Sie Ihre eigene Technik hinzu.",
@@ -69,8 +73,42 @@
     "error": "Ein Fehler ist aufgetreten",
     "success": "Erfolg",
     "tokenSaved": "Token gespeichert.",
-    "tokenRemoved": "Token entfernt.",
-    "helpedPeople": "{{count}} Menschen geholfen"
+    "tokenRemoved": "Token entfernt."
+  },
+  "adminFeedback": {
+    "approved": "Partnerkonto freigegeben.",
+    "rejected": "Partnerkonto abgelehnt.",
+    "updateError": "Der Kontostatus konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut."
+  },
+  "adminDashboard": {
+    "title": "Admin-Dashboard",
+    "batchTranslations": "Stapelübersetzungen",
+    "moderationContent": "Inhaltsmoderation",
+    "liveOverview": "Live-Übersicht",
+    "platformMetrics": "Plattformkennzahlen",
+    "updatedAt": "Aktualisiert um {{time}}",
+    "awaitingSync": "Warten auf die erste Synchronisierung",
+    "loadingMetrics": "Plattformkennzahlen werden geladen…",
+    "totalFeedback": "Hilfreiche Rückmeldungen",
+    "approvedExercises": "{{count}} freigegebene Übungen",
+    "exercisesInDb": "Übungen in der Datenbank",
+    "pendingModeration": "{{count}} warten auf Moderation",
+    "users": "Nutzer",
+    "userSummary": "{{active}} aktiv / {{pending}} ausstehend",
+    "contentMix": "Inhaltsverteilung",
+    "contentSummary": "{{partner}} Partner / {{community}} Community",
+    "pendingRegistrations": "Ausstehende Registrierungen ({{count}})",
+    "activePartners": "Aktive Partner ({{count}})",
+    "loadingAccounts": "Partnerkonten werden geladen…",
+    "noPendingAccounts": "Keine ausstehenden Kontoanfragen.",
+    "noActivePartners": "Noch keine aktiven Partner.",
+    "contact": "Kontakt",
+    "actions": "Aktionen",
+    "processing": "Wird verarbeitet…",
+    "saving": "Wird gespeichert…",
+    "loadAccountsError": "Partnerkonten konnten nicht geladen werden.",
+    "loadMetricsError": "Plattformkennzahlen konnten nicht geladen werden.",
+    "updateAccountError": "Das Konto konnte nicht aktualisiert werden."
   },
   "neuroTypes": {
     "ADHD": "ADHS",
@@ -99,7 +137,12 @@
     "apiTokensDesc": "Fügen Sie die von NeuroSooth bereitgestellten signierten Token ein, um über das sichere Backend zu veröffentlichen und zu moderieren.",
     "partnerToken": "Partner-Token",
     "moderatorToken": "Moderator-Token",
-    "buyCoffee": "Feed the Unicorns"
+    "partnerAccessDescription": "Zum Partnerbereich und zur Verwaltung.",
+    "myWorkspace": "Mein Arbeitsbereich",
+    "partnerLogin": "Partner-/Admin-Anmeldung",
+    "buyCoffee": "Ein Einhorn füttern 🦄",
+    "feedback": "Feedback / Kontakt",
+    "openSource": "Open Source"
   },
   "situations": {
     "Crisis": "Krise / Panik",

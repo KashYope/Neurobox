@@ -1,5 +1,5 @@
-import Dexie from './dexieShim';
-import { INITIAL_EXERCISES } from '../../constants';
+import Dexie from './dexieShim.js';
+import { INITIAL_EXERCISES } from '../../constants.js';
 const LEGACY_KEYS = {
     EXERCISES: 'neurosooth_exercises_cache_v2',
     MUTATIONS: 'neurosooth_pending_mutations_v1',

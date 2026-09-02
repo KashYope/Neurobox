@@ -1,30 +1,36 @@
 {
   "detail": {
-    "peopleHelped": "{{count}} people helped",
-    "instructions": "Instructions",
-    "wasItHelpful": "Was this technique helpful?",
-    "thanksSent": "Thanks sent!",
-    "sayThanks": "Say Thanks"
+    "peopleFoundHelpful": "{{count}} mensen vonden dit nuttig",
+    "instructions": "Instructies",
+    "wasItHelpful": "Was deze techniek nuttig?",
+    "thanksSent": "Bedankt verstuurd!",
+    "sayThanks": "Bedanken",
+    "thanksError": "Je feedback kon nu niet worden opgeslagen.",
+    "safetyNote": "Deze oefeningen zijn hulpmiddelen voor welzijn, geen behandeling. Neem bij direct gevaar of ernstige klachten contact op met de hulpdiensten of een zorgverlener."
   },
   "creation": {
-    "title": "Add a Technique",
-    "cancel": "Cancel",
-    "communityNote": "Community contributions now go through human review. Your proposal will appear in the grid once validated by the moderation team.",
+    "title": "Een techniek bijdragen",
+    "cancel": "Annuleren",
+    "communityNote": "Bijdragen uit de community worden door mensen beoordeeld. Na goedkeuring verschijnt je voorstel in de catalogus.",
+    "feedback": {
+      "success": "Je techniek is ter beoordeling ingediend.",
+      "savedOffline": "Je techniek is offline opgeslagen en wordt ingediend zodra de verbinding terug is.",
+      "error": "De techniek kon niet worden ingediend. Probeer het opnieuw.",
+      "missingFields": "Voeg vóór het indienen een titel en beschrijving toe."
+    },
     "form": {
-      "title": "Title",
-      "titlePlaceholder": "Ex: Box Breathing",
-      "description": "Short Description",
-      "descriptionPlaceholder": "What is it for?",
-      "image": "Image / GIF (URL)",
-      "imageHelper": "Leave empty for default image",
-      "situation": "Situation (Choose at least 1)",
-      "duration": "Duration",
-      "durationPlaceholder": "Ex: 2 minutes",
-      "steps": "Steps",
-      "step": "Step {{number}}",
-      "stepPlaceholder": "Step {{number}}",
-      "addStep": "+ Add a step",
-      "submit": "Publish Technique"
+      "title": "Titel",
+      "titlePlaceholder": "Voorbeeld: Rustige ademhaling",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Hoe kan deze techniek helpen?",
+      "situation": "Geschikte situaties",
+      "duration": "Duur",
+      "durationPlaceholder": "Voorbeeld: 5 min.",
+      "steps": "Stappen",
+      "step": "Stap",
+      "stepPlaceholder": "Beschrijf stap {{number}}",
+      "addStep": "+ Stap toevoegen",
+      "submit": "Ter beoordeling indienen"
     }
   }
 }

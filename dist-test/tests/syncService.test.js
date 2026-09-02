@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SyncService } from '../services/syncService';
+import { SyncService } from '../services/syncService.js';
+import { ApiError } from '../services/apiClient.js';
 class MemoryStorage {
     constructor({ exercises = [], mutations = [], user = null } = {}) {
         this.attachments = new Map();
+        this.translations = new Map();
+        this.exerciseStrings = [];
+        this.exerciseTranslations = [];
         this.exercises = exercises.map(ex => structuredClone(ex));
         this.mutations = mutations.map(m => structuredClone(m));
         this.user = user ? structuredClone(user) : null;
@@ -52,6 +56,27 @@ class MemoryStorage {
     async deleteAttachment(key) {
         this.attachments.delete(key);
     }
+    async saveTranslation(record) {
+        this.translations.set(record.key, structuredClone(record));
+    }
+    async getTranslation(key) {
+        return this.translations.get(key);
+    }
+    async getExerciseStrings() {
+        return structuredClone(this.exerciseStrings);
+    }
+    async bulkUpsertExerciseStrings(strings) {
+        this.exerciseStrings = structuredClone(strings);
+    }
+    async getExerciseStringTranslations(lang) {
+        return structuredClone(this.exerciseTranslations.filter(item => item.lang === lang));
+    }
+    async bulkUpsertExerciseStringTranslations(translations) {
+        this.exerciseTranslations = structuredClone(translations);
+    }
+    async getTranslationForString(stringId, lang) {
+        return this.exerciseTranslations.find(item => item.stringId === stringId && item.lang === lang);
+    }
     getKey(exercise) {
         return exercise.serverId || exercise.id;
     }
@@ -76,13 +101,26 @@ const baseExercise = {
 const createMockApi = (overrides = {}) => ({
     fetchExercises: async () => [],
     createExercise: async (exercise) => ({ ...exercise, serverId: exercise.id, createdAt: exercise.createdAt, updatedAt: exercise.updatedAt }),
-    thankExercise: async (exerciseId) => ({ ...baseExercise, id: exerciseId, serverId: exerciseId, createdAt: now(), updatedAt: now() }),
+    thankExercise: async (exerciseId) => ({
+        exercise: { ...baseExercise, id: exerciseId, serverId: exerciseId, createdAt: now(), updatedAt: now() },
+        accepted: true
+    }),
+    moderateExercise: async (exerciseId, payload) => ({
+        ...baseExercise,
+        id: exerciseId,
+        serverId: exerciseId,
+        moderationStatus: payload.status,
+        createdAt: now(),
+        updatedAt: now()
+    }),
     ...overrides
 });
 const now = () => new Date().toISOString();
 const setNavigatorOnline = (value) => {
-    // @ts-expect-error navigator shim for tests
-    globalThis.navigator = { onLine: value };
+    Object.defineProperty(globalThis, 'navigator', {
+        value: { onLine: value },
+        configurable: true
+    });
 };
 const waitFor = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 test('hydrates from offline cache when offline', async () => {
@@ -145,4 +183,36 @@ test('resolves conflicts using latest server data', async () => {
     assert.ok(merged);
     assert.equal(merged.thanksCount, 10);
     assert.equal(merged.updatedAt, serverExercise.updatedAt);
+});
+test('treats a successful empty server catalog as authoritative', async () => {
+    setNavigatorOnline(true);
+    const fakeCached = { ...baseExercise, id: 'obsolete-seed', thanksCount: 240 };
+    const storage = new MemoryStorage({ exercises: [fakeCached] });
+    const service = new SyncService({
+        storage,
+        apiClient: createMockApi({ fetchExercises: async () => [] }),
+        initialExercises: [fakeCached],
+        initialMutations: []
+    });
+    await service.init();
+    assert.deepEqual(service.getCachedExercises(), []);
+});
+test('surfaces permanent mutation failures and reverts optimistic creates', async () => {
+    setNavigatorOnline(true);
+    const storage = new MemoryStorage();
+    const service = new SyncService({
+        storage,
+        apiClient: createMockApi({
+            createExercise: async () => {
+                throw new ApiError('Contribution refusée', 400);
+            }
+        }),
+        initialExercises: [],
+        initialMutations: []
+    });
+    await service.init();
+    await assert.rejects(service.createExercise({ ...baseExercise, id: 'rejected-local' }), /Contribution refusée/);
+    assert.equal(storage.dumpMutations().length, 0);
+    assert.equal(service.getCachedExercises().some(exercise => exercise.id === 'rejected-local'), false);
+    assert.equal(service.getStatus().lastError, 'Contribution refusée');
 });

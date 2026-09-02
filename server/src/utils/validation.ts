@@ -10,13 +10,15 @@ export const exercisePayloadSchema = z.object({
   duration: z.string().min(1),
   steps: z.array(z.string().min(2)).min(1),
   warning: z.string().optional(),
-  imageUrl: z.string().min(4),
+  imageUrl: z.string().regex(/^\/(?!\/)[A-Za-z0-9/_.,()'%-]+$/, 'Image must be a same-origin path').optional(),
   tags: z.array(z.string().min(1)).default([]),
-  thanksCount: z.number().int().nonnegative().optional(),
-  isCommunitySubmitted: z.boolean().optional(),
-  isPartnerContent: z.boolean().optional(),
   author: z.string().optional()
-});
+}).strict();
+
+export const thankExerciseSchema = z.object({
+  eventId: z.string().uuid(),
+  installationId: z.string().uuid()
+}).strict();
 
 export const moderationSchema = z.object({
   status: z.union([

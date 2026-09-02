@@ -29,7 +29,7 @@ export const createApp = (config: LoadEnvResult = env) => {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", `'nonce-${nonce}'`],
       styleSrc: ["'self'", 'https://fonts.googleapis.com', `'nonce-${nonce}'`],
-      imgSrc: ["'self'", 'data:', 'blob:', 'https://placehold.co'],
+      imgSrc: ["'self'", 'data:', 'blob:'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       connectSrc: ["'self'", 'https://generativelanguage.googleapis.com'],
       manifestSrc: ["'self'"],
@@ -132,12 +132,16 @@ export const createApp = (config: LoadEnvResult = env) => {
 const app = createApp(env);
 
 if (process.env.NODE_ENV !== 'test') {
-  seedDatabaseIfEmpty().catch(error => {
-    console.error('Failed to seed database:', error);
-  });
+  const startServer = async () => {
+    await seedDatabaseIfEmpty();
+    app.listen(env.port, () => {
+      console.log(`API listening on port ${env.port}`);
+    });
+  };
 
-  app.listen(env.port, () => {
-    console.log(`API listening on port ${env.port}`);
+  startServer().catch(error => {
+    console.error('Failed to start server:', error);
+    process.exitCode = 1;
   });
 }
 

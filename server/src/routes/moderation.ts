@@ -9,16 +9,20 @@ router.get('/queue', requireRole('moderator'), async (_req, res, next) => {
   try {
     const [queue, recent] = await Promise.all([
       pool.query<ExerciseRow>(
-        `SELECT * FROM exercises
-         WHERE (moderation_status = 'pending' OR moderation_status IS NULL)
-           AND deleted_at IS NULL
-         ORDER BY created_at ASC`
+        `SELECT e.*,
+                (SELECT COUNT(*)::int FROM exercise_thanks et WHERE et.exercise_id = e.id) AS thanks_count
+         FROM exercises e
+         WHERE (e.moderation_status = 'pending' OR e.moderation_status IS NULL)
+           AND e.deleted_at IS NULL
+         ORDER BY e.created_at ASC`
       ),
       pool.query<ExerciseRow>(
-        `SELECT * FROM exercises
-         WHERE moderation_status IN ('approved','rejected')
-           AND deleted_at IS NULL
-         ORDER BY moderated_at DESC NULLS LAST, updated_at DESC
+        `SELECT e.*,
+                (SELECT COUNT(*)::int FROM exercise_thanks et WHERE et.exercise_id = e.id) AS thanks_count
+         FROM exercises e
+         WHERE e.moderation_status IN ('approved','rejected')
+           AND e.deleted_at IS NULL
+         ORDER BY e.moderated_at DESC NULLS LAST, e.updated_at DESC
          LIMIT 12`
       )
     ]);

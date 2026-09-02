@@ -1,10 +1,12 @@
 {
   "detail": {
-    "peopleHelped": "{{count}} people helped",
+    "peopleFoundHelpful": "{{count}} people found this helpful",
     "instructions": "Instructions",
     "wasItHelpful": "Was this technique helpful?",
     "thanksSent": "Thanks sent!",
-    "sayThanks": "Say Thanks"
+    "sayThanks": "Say thanks",
+    "thanksError": "Your feedback could not be saved right now.",
+    "safetyNote": "These exercises are wellbeing tools, not treatment. If you are in immediate danger or have severe symptoms, contact emergency services or a healthcare professional."
   },
   "creation": {
     "title": "Add a Technique",
@@ -12,6 +14,7 @@
     "communityNote": "Community contributions now go through human review. Your proposal will appear in the grid once validated by the moderation team.",
     "feedback": {
       "success": "Your technique has been submitted for review.",
+      "savedOffline": "Your technique is saved offline and will be submitted when the connection returns.",
       "error": "Unable to submit your technique. Please try again.",
       "missingFields": "Please add a title and description before submitting."
     },
@@ -20,8 +23,6 @@
       "titlePlaceholder": "Ex: Box Breathing",
       "description": "Short Description",
       "descriptionPlaceholder": "What is it for?",
-      "image": "Image / GIF (URL)",
-      "imageHelper": "Leave empty for default image",
       "situation": "Situation (Choose at least 1)",
       "duration": "Duration",
       "durationPlaceholder": "Ex: 2 minutes",

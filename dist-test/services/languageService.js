@@ -3,7 +3,7 @@
  * Manages user language preference with high priority local storage
  * Implements lazy loading strategy - only loads selected language
  */
-import i18n from '../src/i18n';
+import i18n from '../src/i18n.js';
 const LANGUAGE_KEY = 'neurobox_user_language';
 const LANGUAGE_TIMESTAMP_KEY = 'neurobox_user_language_timestamp';
 /**
