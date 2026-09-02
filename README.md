@@ -238,9 +238,9 @@ Les illustrations publiques sont limitées aux ressources de même origine et au
 
 ## Déploiement Coolify
 
-Créez une ressource **Docker Compose** depuis ce dépôt et utilisez `docker-compose.yml`. Le manifeste construit l'application, garde PostgreSQL privé, conserve ses données dans le volume `postgres-data` et route le service `app` vers son port interne `4000`.
+Créez une ressource **Docker Compose** depuis ce dépôt et utilisez `docker-compose.yaml`. Le manifeste construit l'application, garde PostgreSQL privé, conserve ses données dans le volume `postgres-data` et route le service `app` vers son port interne `4000`.
 
-Coolify génère `SERVICE_URL_APP_4000`, `SERVICE_PASSWORD_POSTGRES` et `SERVICE_PASSWORD_64_JWT`. Associez votre domaine au service `app` sur le port `4000`; `GOOGLE_TRANSLATE_API_KEY` reste facultative. Les migrations sont exécutées automatiquement au démarrage du conteneur applicatif.
+Coolify génère `SERVICE_PASSWORD_POSTGRES` et `SERVICE_PASSWORD_64_JWT`. Renseignez `CORS_ORIGINS` avec l'origine publique exacte de l'application (par exemple `https://ndee.example.com`) et associez ce domaine au service `app` sur le port interne `4000`. `GOOGLE_TRANSLATE_API_KEY` reste facultative. Les migrations sont exécutées automatiquement au démarrage du conteneur applicatif.
 
 Consultez `deploy/README.md` pour la configuration, la première mise en production et les contrôles après déploiement.
 

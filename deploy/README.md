@@ -1,16 +1,16 @@
 # Déploiement Coolify
 
-Le dépôt se déploie comme une ressource **Docker Compose**. `docker-compose.yml` est la source de vérité : il construit le frontend et l'API dans une seule image, démarre PostgreSQL sur le réseau privé de la ressource et conserve la base dans `postgres-data`.
+Le dépôt se déploie comme une ressource **Docker Compose**. `docker-compose.yaml` est la source de vérité : il construit le frontend et l'API dans une seule image, démarre PostgreSQL sur le réseau privé de la ressource et conserve la base dans `postgres-data`.
 
 ## Configuration
 
 1. Dans Coolify, créez une ressource à partir du dépôt Git et choisissez **Docker Compose**.
-2. Conservez `docker-compose.yml` comme chemin du manifeste.
+2. Conservez `docker-compose.yaml` comme chemin du manifeste.
 3. Associez le domaine HTTPS au service `app`, port interne `4000`. Aucun port hôte ne doit être publié.
 4. Vérifiez les variables détectées :
    - `SERVICE_PASSWORD_POSTGRES` : mot de passe PostgreSQL généré et réutilisé dans `DATABASE_URL`.
    - `SERVICE_PASSWORD_64_JWT` : secret JWT aléatoire de 64 caractères.
-   - `SERVICE_URL_APP_4000` : URL publique du service, utilisée comme origine CORS.
+   - `CORS_ORIGINS` : origine publique exacte, avec protocole et sans chemin (par exemple `https://ndee.example.com`).
    - `GOOGLE_TRANSLATE_API_KEY` : facultative; laissez-la vide si la traduction automatique n'est pas utilisée.
 5. Déployez. Le conteneur attend PostgreSQL, exécute les migrations puis démarre l'API qui sert aussi le build Vite.
 
@@ -24,7 +24,7 @@ Les variables `SERVICE_*` sont des [variables magiques Coolify](https://coolify.
 - Les services `app` et `postgres` sont sains dans Coolify.
 - Le volume `postgres-data` est présent avant toute mise à jour destructive.
 
-Le healthcheck est défini dans `docker-compose.yml`, conformément au fonctionnement des [healthchecks Compose dans Coolify](https://coolify.io/docs/knowledge-base/health-checks). PostgreSQL n'est pas exposé hors du réseau privé de la ressource.
+Le healthcheck est défini dans `docker-compose.yaml`, conformément au fonctionnement des [healthchecks Compose dans Coolify](https://coolify.io/docs/knowledge-base/health-checks). PostgreSQL n'est pas exposé hors du réseau privé de la ressource.
 
 ## Exploitation
 
