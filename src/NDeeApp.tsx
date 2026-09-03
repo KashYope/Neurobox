@@ -123,7 +123,10 @@ const NDeeApp: React.FC = () => {
   }, []);
 
   const changeLanguage = async (next: SupportedLanguage) => {
+    if (next === resolvedLanguage) return;
+
     await loadLanguageTranslations(next);
+    window.location.reload();
   };
 
   const removeAssessment = async () => { await clearAssessmentProgress(); setAnswers([]); setAssessmentIndex(0); setAssessmentKey(value => value + 1); setStatus(t.cleared); };
