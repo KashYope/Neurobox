@@ -34,6 +34,8 @@ export interface RecommendationProfile {
   source: 'assessment' | 'manual';
   needs: SupportNeedWeight[];
   createdAt: string;
+  catalogVersion?: string;
+  scoringVersion?: string;
 }
 
 export enum Situation {

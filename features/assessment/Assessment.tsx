@@ -1,204 +1,255 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Camera, Check, ChevronLeft, Download, Eraser, LockKeyhole, RotateCcw, Sparkles, X } from 'lucide-react';
-import jsPDF from 'jspdf';
+import { ArrowLeft, Camera, Download, LockKeyhole, Sparkles } from 'lucide-react';
 import QRCode from 'qrcode';
-import { Html5Qrcode } from 'html5-qrcode';
-import {
-  clearAssessmentProgress,
-  saveAssessmentProgress,
-  saveRecommendationProfile
-} from '../../services/storage/offlineDb';
-import {
-  AssessmentLocale,
-  buildRecommendationProfile,
-  calculateReflectionReport,
-  ReflectionAnswer,
-  REFLECTION_QUESTIONS
-} from './model';
+import { useTranslation } from '../../src/i18nContext';
+import { clearAssessmentProgress, getAssessmentProgress, saveAssessmentProgress, getRecommendationProfile, saveRecommendationProfile } from '../../services/storage/offlineDb';
+import { AssessmentLocale, AssessmentModule, REFLECTION_QUESTIONS, CONTEXT_IDS, DOMAINS, QUESTION_BY_ID, calculateReflectionReport, buildRecommendationProfile, answerFingerprint } from './model';
+import { AssessmentProgress, createProgress, beginModule, changeMode, commitAnswer, skipContext, previousQuestion } from './progress';
+import { LEGACY_QUESTIONS, calculateLegacyReport } from './legacyModel';
+import { applyImport, decodeTransfer, encodeTransfer } from './transfer';
+import { getCopy, METHOD_SOURCES, scaleOptions } from './copy';
+import { SUBSCALE_LABELS } from './subscaleLabels';
+import { AssessmentDialog, QrScanner } from './AssessmentDialog';
 
 interface AssessmentProps {
   locale: AssessmentLocale;
-  initialAnswers?: ReflectionAnswer[];
-  initialIndex?: number;
   onBack: () => void;
   onOpenToolbox: () => void;
   onPersonalized: () => void;
 }
+const button = 'ndee-focus min-h-11 rounded-2xl border bg-white/75 px-4 py-3 text-sm font-semibold disabled:opacity-40';
+const primary = `${button} bg-[var(--ndee-primary)] text-white`;
+const surface = 'ndee-surface rounded-3xl p-6 sm:p-8';
 
-const copy = {
-  en: {
-    title: 'Explore your support profile', subtitle: 'A private self-reflection for noticing patterns and choosing practical supports.',
-    privacy: 'Your answers and results stay in this browser. NDee does not upload them, score your health, or provide a diagnosis.',
-    notMedical: 'This is not a medical or risk-assessment tool and does not replace professional care. If you are in immediate danger, contact local emergency services.',
-    acknowledge: 'I understand what this reflection can and cannot do.', start: 'Start reflection', resume: 'Continue reflection',
-    scale: ['Not at all', 'Rarely', 'Sometimes', 'Often', 'Very often'], previous: 'Previous', progress: 'Question',
-    results: 'Your reflection profile', resultsIntro: 'These scores describe patterns in your responses, not conditions or diagnoses.',
-    bands: { lighter: 'Less prominent', somewhat: 'Somewhat prominent', prominent: 'Prominent', veryProminent: 'Very prominent' },
-    domains: { attention: 'Attention & action', sensory: 'Sensory & energy', literacy: 'Reading & writing', coordination: 'Coordination & sequencing', numbers: 'Numbers & time' },
-    personalize: 'Personalize my toolbox', personalized: 'Personalization saved on this device only.', openToolbox: 'Open my toolbox',
-    review: 'Review answers', closeReview: 'Back to results', download: 'Download private PDF', qr: 'Show transfer QR', scan: 'Import transfer QR',
-    reset: 'Delete reflection', resetConfirm: 'Delete all reflection answers from this device?', camera: 'Point the camera at an NDee transfer QR.',
-    cameraError: 'The camera could not be started. Check permission and try again.', invalidQr: 'This is not a compatible NDee transfer QR.',
-    methods: 'How this works', methodsText: 'NDee groups your responses into five reflection areas and turns the most prominent practical needs into optional toolbox preferences. The questionnaire is inspired by lived-experience themes, but it is not a validated clinical instrument.'
-  },
-  fr: {
-    title: 'Explorez votre profil de soutien', subtitle: 'Une auto-réflexion privée pour repérer des tendances et choisir des soutiens pratiques.',
-    privacy: 'Vos réponses et résultats restent dans ce navigateur. NDee ne les envoie pas, n’évalue pas votre santé et ne pose aucun diagnostic.',
-    notMedical: 'Ceci n’est ni un outil médical ni une évaluation des risques et ne remplace pas un accompagnement professionnel. En cas de danger immédiat, contactez les services d’urgence locaux.',
-    acknowledge: 'Je comprends ce que cette réflexion peut et ne peut pas faire.', start: 'Commencer la réflexion', resume: 'Continuer la réflexion',
-    scale: ['Pas du tout', 'Rarement', 'Parfois', 'Souvent', 'Très souvent'], previous: 'Précédent', progress: 'Question',
-    results: 'Votre profil de réflexion', resultsIntro: 'Ces scores décrivent les tendances de vos réponses, pas des troubles ni des diagnostics.',
-    bands: { lighter: 'Peu présent', somewhat: 'Assez présent', prominent: 'Présent', veryProminent: 'Très présent' },
-    domains: { attention: 'Attention et action', sensory: 'Sensoriel et énergie', literacy: 'Lecture et écriture', coordination: 'Coordination et séquençage', numbers: 'Nombres et temps' },
-    personalize: 'Personnaliser ma boîte à outils', personalized: 'Personnalisation enregistrée uniquement sur cet appareil.', openToolbox: 'Ouvrir ma boîte à outils',
-    review: 'Revoir les réponses', closeReview: 'Retour aux résultats', download: 'Télécharger le PDF privé', qr: 'Afficher le QR de transfert', scan: 'Importer un QR de transfert',
-    reset: 'Supprimer la réflexion', resetConfirm: 'Supprimer toutes les réponses de réflexion de cet appareil ?', camera: 'Placez un QR de transfert NDee devant la caméra.',
-    cameraError: 'La caméra n’a pas pu démarrer. Vérifiez l’autorisation puis réessayez.', invalidQr: 'Ce QR de transfert NDee n’est pas compatible.',
-    methods: 'Comment cela fonctionne', methodsText: 'NDee regroupe vos réponses en cinq espaces de réflexion et transforme les besoins pratiques les plus présents en préférences facultatives pour la boîte à outils. Le questionnaire s’inspire de thèmes d’expérience vécue, mais ce n’est pas un instrument clinique validé.'
-  }
-} as const;
-
-const METHOD_SOURCES = [
-  { label: 'ASRS v1.1 information', href: 'https://www.hcp.med.harvard.edu/ncs/asrs.php' },
-  { label: 'Camouflaging Autistic Traits Questionnaire research', href: 'https://molecularautism.biomedcentral.com/articles/10.1186/s13229-019-0274-6' },
-  { label: 'British Dyslexia Association adult checklist', href: 'https://www.bdadyslexia.org.uk/dyslexia/how-is-dyslexia-diagnosed/dyslexia-checklists' },
-  { label: 'CanChild information on developmental coordination', href: 'https://canchild.ca/en/diagnoses/developmental-coordination-disorder' },
-  { label: 'Dyscalculia Network information', href: 'https://www.dyscalculianetwork.com/' }
-];
-
-const encodeTransfer = (answers: ReflectionAnswer[]) =>
-  btoa(unescape(encodeURIComponent(JSON.stringify({ app: 'NDee', version: 1, answers }))));
-
-const decodeTransfer = (value: string): ReflectionAnswer[] => {
-  const parsed = JSON.parse(decodeURIComponent(escape(atob(value)))) as { app?: string; version?: number; answers?: ReflectionAnswer[] };
-  if (parsed.app !== 'NDee' || parsed.version !== 1 || !Array.isArray(parsed.answers)) throw new Error('invalid');
-  const questionIds = new Set(REFLECTION_QUESTIONS.map(question => question.id));
-  return parsed.answers.filter(answer => questionIds.has(answer.questionId) && Number.isInteger(answer.score) && answer.score >= 0 && answer.score <= 4);
-};
-
-const QrScanner: React.FC<{ locale: AssessmentLocale; onClose: () => void; onAnswers: (answers: ReflectionAnswer[]) => void }> = ({ locale, onClose, onAnswers }) => {
-  const t = copy[locale];
-  const scannerRef = useRef<Html5Qrcode | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const scanner = new Html5Qrcode('ndee-qr-reader');
-    scannerRef.current = scanner;
-    void scanner.start(
-      { facingMode: 'environment' },
-      { fps: 8, qrbox: { width: 220, height: 220 } },
-      decoded => {
-        try {
-          onAnswers(decodeTransfer(decoded));
-          void scanner.stop().catch(() => undefined);
-        } catch {
-          setError(t.invalidQr);
-        }
-      },
-      () => undefined
-    ).catch(() => setError(t.cameraError));
-    return () => { void scanner.stop().catch(() => undefined); };
-  }, [onAnswers, t.cameraError, t.invalidQr]);
-
-  return <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#26332f]/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-    <div className="ndee-surface w-full max-w-md rounded-[2rem] p-6">
-      <div className="flex items-center justify-between gap-4"><p className="font-bold text-[var(--ndee-ink)]">{t.camera}</p><button onClick={onClose} className="ndee-focus flex h-11 w-11 items-center justify-center rounded-full" aria-label="Close"><X /></button></div>
-      <div id="ndee-qr-reader" className="mt-5 overflow-hidden rounded-2xl" />
-      {error && <p className="mt-4 text-sm text-rose-700" role="alert">{error}</p>}
-    </div>
-  </div>;
-};
-
-export const Assessment: React.FC<AssessmentProps> = ({ locale, initialAnswers = [], initialIndex = 0, onBack, onOpenToolbox, onPersonalized }) => {
-  const t = copy[locale];
-  const [stage, setStage] = useState<'intro' | 'questions' | 'results' | 'review'>(initialAnswers.length === REFLECTION_QUESTIONS.length ? 'results' : 'intro');
-  const [answers, setAnswers] = useState<ReflectionAnswer[]>(initialAnswers);
-  const [index, setIndex] = useState(Math.min(initialIndex, REFLECTION_QUESTIONS.length - 1));
+export const Assessment: React.FC<AssessmentProps> = ({ locale, onBack, onOpenToolbox, onPersonalized }) => {
+  const t = getCopy(locale);
+  const { t: translate } = useTranslation(['common']);
+  const [progress, setProgress] = useState<AssessmentProgress | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [selection, setSelection] = useState<{ questionId: string; score: number } | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
-  const [personalized, setPersonalized] = useState(false);
-  const [qrData, setQrData] = useState<string | null>(null);
-  const [showScanner, setShowScanner] = useState(false);
-  const report = useMemo(() => calculateReflectionReport(answers), [answers]);
-  const current = REFLECTION_QUESTIONS[index];
-  const currentScore = answers.find(answer => answer.questionId === current?.id)?.score;
+  const [hasProfile, setHasProfile] = useState(false);
+  const [includeContext, setIncludeContext] = useState(false);
+  const [modal, setModal] = useState<'qr' | 'scan' | null>(null);
+  const [qrData, setQrData] = useState('');
+  const [importText, setImportText] = useState('');
+  const [reviewFilter, setReviewFilter] = useState<{ domain?: AssessmentModule; subscale?: string }>({});
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    if (!initialAnswers.length || answers.length) return;
-    setAnswers(initialAnswers);
-    setIndex(Math.min(initialIndex, REFLECTION_QUESTIONS.length - 1));
-    if (initialAnswers.length === REFLECTION_QUESTIONS.length) setStage('results');
-  }, [answers.length, initialAnswers, initialIndex]);
+    let disposed = false;
+    setLoadFailed(false);
+    void Promise.all([getAssessmentProgress(), getRecommendationProfile()]).then(([saved, profile]) => {
+      if (disposed) return;
+      const value = saved ?? createProgress(locale);
+      setProgress(value); setAcknowledged(value.acknowledged); setHasProfile(!!profile);
+    }).catch(() => { if (!disposed) setLoadFailed(true); });
+    return () => { disposed = true; };
+  }, [loadAttempt]);
 
   useEffect(() => {
-    if (!answers.length) return;
-    void saveAssessmentProgress({ version: 1, answers, currentIndex: index, isComplete: answers.length === REFLECTION_QUESTIONS.length, locale, updatedAt: new Date().toISOString() });
-  }, [answers, index, locale]);
+    const refresh = () => { void getRecommendationProfile().then(profile => setHasProfile(!!profile)).catch(() => undefined); };
+    window.addEventListener('ndee-personalization-change', refresh);
+    return () => window.removeEventListener('ndee-personalization-change', refresh);
+  }, []);
 
-  const answerQuestion = (score: number) => {
-    const next = [...answers.filter(answer => answer.questionId !== current.id), { questionId: current.id, score }];
-    setAnswers(next);
-    if (index === REFLECTION_QUESTIONS.length - 1) setStage('results');
-    else setIndex(value => value + 1);
+  const current = progress ? QUESTION_BY_ID.get(progress.currentQuestionId)! : REFLECTION_QUESTIONS[0];
+  const storedScore = progress?.answers.find(answer => answer.questionId === current.id)?.score;
+  // Lier le brouillon à son identifiant dès le rendu : aucune réponse ne fuit vers la question suivante.
+  const selected = selection?.questionId === current.id ? selection.score : storedScore ?? null;
+  useEffect(() => { heading.current?.focus(); }, [progress?.stage, current.id]);
+  const report = useMemo(() => calculateReflectionReport(progress?.answers ?? []), [progress?.answers]);
+  const fingerprint = useMemo(() => answerFingerprint(progress?.answers ?? []), [progress?.answers]);
+
+  const persist = async (next: AssessmentProgress): Promise<boolean> => {
+    if (busyRef.current) return false;
+    busyRef.current = true; setBusy(true); setError(''); setNotice('');
+    try {
+      const value = { ...next, locale, updatedAt: new Date().toISOString() };
+      await saveAssessmentProgress(value);
+      setSelection(null);
+      setProgress(value);
+      return true;
+    } catch { setError(t.storageError); return false; }
+    finally { busyRef.current = false; setBusy(false); }
+  };
+
+  const reset = async () => {
+    if (busyRef.current || !window.confirm(t.resetConfirm)) return;
+    busyRef.current = true; setBusy(true);
+    try {
+      await clearAssessmentProgress(); setProgress(createProgress(locale)); setLoadFailed(false); setAcknowledged(false);
+      setSelection(null); setError(''); setNotice(''); setQrData(''); setIncludeContext(false);
+    } catch { setError(t.storageError); }
+    finally { busyRef.current = false; setBusy(false); }
+  };
+
+  const importValue = async (value: string): Promise<boolean> => {
+    if (!progress || busyRef.current) return false;
+    try {
+      const imported = decodeTransfer(value);
+      const conflicts = imported.kind === 'full' && imported.answers.some(answer => progress.answers.some(local => local.questionId === answer.questionId && local.score !== answer.score));
+      if (conflicts && !window.confirm(t.importConflict)) { setModal(null); return false; }
+      if (await persist(applyImport(progress, imported))) { setModal(null); setImportText(''); setNotice(t.importSuccess); return true; }
+    } catch { setError(t.invalidQr); }
+    return false;
+  };
+
+  const exportQr = async () => {
+    if (!progress) return;
+    setError('');
+    try { setQrData(await QRCode.toDataURL(encodeTransfer(progress.answers, includeContext), { width: 640, margin: 4, errorCorrectionLevel: 'M' })); setModal('qr'); }
+    catch { setError(t.exportError); }
+  };
+  const downloadPdf = async () => {
+    if (!progress || busyRef.current) return;
+    busyRef.current = true; setBusy(true); setError('');
+    try {
+      const { createAssessmentPdf } = await import('./exportPdf');
+      const doc = await createAssessmentPdf(progress.answers, locale, includeContext);
+      doc.save(`ndee-reflection-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch { setError(t.exportError); }
+    finally { busyRef.current = false; setBusy(false); }
   };
 
   const personalize = async () => {
-    await saveRecommendationProfile(buildRecommendationProfile(report));
-    setPersonalized(true);
-    onPersonalized();
+    if (!progress || busyRef.current) return;
+    busyRef.current = true; setBusy(true); setError('');
+    try {
+      await saveRecommendationProfile(buildRecommendationProfile(report));
+      const value = { ...progress, personalizedFingerprint: fingerprint, updatedAt: new Date().toISOString() };
+      await saveAssessmentProgress(value);
+      setProgress(value); setHasProfile(true); onPersonalized(); setNotice(t.personalized);
+    } catch { setError(t.storageError); }
+    finally { busyRef.current = false; setBusy(false); }
   };
 
-  const downloadPdf = async () => {
-    const doc = new jsPDF();
-    doc.setFontSize(22); doc.text('NDee', 20, 24);
-    doc.setFontSize(12); doc.text(t.results, 20, 34);
-    doc.setFontSize(9); doc.text(doc.splitTextToSize(t.resultsIntro, 170), 20, 43);
-    report.domains.forEach((domain, itemIndex) => {
-      const y = 62 + itemIndex * 20;
-      doc.setFontSize(12); doc.text(t.domains[domain.domain], 20, y);
-      doc.setFontSize(10); doc.text(`${domain.score}% — ${t.bands[domain.band]}`, 20, y + 7);
-    });
-    const qr = await QRCode.toDataURL(encodeTransfer(answers), { width: 180, margin: 1 });
-    doc.addImage(qr, 'PNG', 145, 145, 42, 42);
-    doc.setFontSize(8); doc.text(doc.splitTextToSize(`${t.privacy} ${t.notMedical}`, 115), 20, 153);
-    doc.save(`ndee-reflection-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const moduleLabel = (module: AssessmentModule) => module === 'context' ? t.context : t.domains[module];
+  const openReview = (domain?: AssessmentModule, subscale?: string) => {
+    if (!progress) return;
+    setReviewFilter({ domain, subscale }); void persist({ ...progress, stage: 'review' });
+  };
+  const leave = async () => {
+    if (!progress) return;
+    const next = progress.stage === 'questions' && selected !== null && selected !== storedScore ? commitAnswer(progress, selected) : progress;
+    if (await persist(next)) onBack();
   };
 
-  const showQr = async () => setQrData(await QRCode.toDataURL(encodeTransfer(answers), { width: 320, margin: 2 }));
-  const reset = async () => {
-    if (!window.confirm(t.resetConfirm)) return;
-    await clearAssessmentProgress();
-    setAnswers([]); setIndex(0); setStage('intro'); setQrData(null); setPersonalized(false);
+  if (!progress || loadFailed) return <main className="mx-auto max-w-3xl px-4 py-12"><div className={surface}>
+    <h1 className="text-2xl font-bold">{loadFailed ? t.loadError : t.loading}</h1>
+    {loadFailed && <div className="mt-6 flex flex-wrap gap-3"><button className={button} onClick={() => setLoadAttempt(value => value + 1)}>{t.retry}</button><button disabled={busy} className={button} onClick={() => void reset()}>{t.reset}</button></div>}
+    {error && <p role="alert">{error}</p>}
+  </div></main>;
+
+  const personalized = hasProfile && progress.personalizedFingerprint === fingerprint;
+  const answeredIds = new Set(progress.answers.map(answer => answer.questionId));
+  const contextAnswered = CONTEXT_IDS.filter(id => answeredIds.has(id)).length;
+  const contextDone = contextAnswered + progress.skippedContext.length;
+  const sequence = REFLECTION_QUESTIONS.filter(question => progress.mode === 'integral' || question.domain === current.domain);
+  const position = sequence.findIndex(question => question.id === current.id);
+  const moduleQuestions = REFLECTION_QUESTIONS.filter(question => question.domain === current.domain);
+  const moduleAnswered = moduleQuestions.filter(question => answeredIds.has(question.id)).length;
+  const changeJourneyMode = (mode: 'modular' | 'integral') => {
+    // La sélection radio devient une réponse uniquement lors de la validation explicite.
+    void persist(progress.stage === 'intro' ? { ...progress, mode } : changeMode(progress, mode));
   };
 
-  if (stage === 'intro') return <main className="mx-auto max-w-3xl px-4 py-10 sm:py-16">
-    <button onClick={onBack} className="ndee-focus mb-8 inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-[var(--ndee-muted)]"><ArrowLeft className="h-4 w-4" /> NDee</button>
-    <div className="ndee-surface rounded-[2rem] p-7 sm:p-12">
-      <div className="mb-6 inline-flex rounded-2xl bg-[var(--ndee-lilac)] p-3 text-[var(--ndee-primary-strong)]"><Sparkles /></div>
-      <h1 className="text-3xl font-bold text-[var(--ndee-ink)] sm:text-5xl">{t.title}</h1><p className="mt-4 text-lg leading-relaxed text-[var(--ndee-muted)]">{t.subtitle}</p>
-      <div className="mt-8 space-y-3 rounded-2xl bg-[var(--ndee-sage)] p-5 text-sm leading-relaxed text-[var(--ndee-ink)]"><p className="flex gap-3"><LockKeyhole className="mt-0.5 h-5 w-5 shrink-0 text-[var(--ndee-primary-strong)]" />{t.privacy}</p><p>{t.notMedical}</p></div>
-      <details className="mt-5 rounded-2xl border bg-white/55 p-4"><summary className="cursor-pointer font-bold">{t.methods}</summary><p className="mt-3 text-sm leading-relaxed text-[var(--ndee-muted)]">{t.methodsText}</p><ul className="mt-4 space-y-2 text-sm">{METHOD_SOURCES.map(source => <li key={source.href}><a href={source.href} target="_blank" rel="noreferrer" className="font-semibold text-[var(--ndee-primary-strong)] underline">{source.label}</a></li>)}</ul></details>
-      <label className="mt-7 flex cursor-pointer items-start gap-3 text-sm font-semibold"><input type="checkbox" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} className="mt-1 h-4 w-4" />{t.acknowledge}</label>
-      <button disabled={!acknowledged} onClick={() => setStage('questions')} className="ndee-focus mt-6 min-h-12 w-full rounded-2xl bg-[var(--ndee-primary)] px-5 py-4 font-bold text-white disabled:opacity-40">{answers.length ? t.resume : t.start}</button>
-      <button onClick={() => setShowScanner(true)} className="ndee-focus mt-3 min-h-11 w-full rounded-2xl border bg-white/65 px-5 py-3 font-semibold text-[var(--ndee-ink)]"><Camera className="mr-2 inline h-4 w-4" />{t.scan}</button>
+  const method = <details className="mt-5 rounded-2xl border bg-white/55 p-4"><summary className="cursor-pointer font-bold">{t.methods}</summary><p className="mt-3 text-sm leading-relaxed">{t.methodsDetail}</p><ul className="mt-4 space-y-2 text-sm">{METHOD_SOURCES.map(source => <li key={source.href}><a href={source.href} target="_blank" rel="noreferrer" className="underline">{source.label}</a></li>)}</ul></details>;
+  const title = progress.stage === 'intro' ? t.title : progress.stage === 'modules' ? t.overview : progress.stage === 'questions' ? current.text[locale] : progress.stage === 'break' ? t.breakTitle : progress.stage === 'archives' ? t.archiveTitle : progress.stage === 'review' ? t.review : t.results;
+
+  return <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <button disabled={busy} onClick={() => void leave()} className={button}><ArrowLeft className="mr-2 inline h-4 w-4" />{t.leave}</button>
+      <span role="status" className="text-xs text-[var(--ndee-muted)]">{busy ? t.saving : t.saved}</span>
     </div>
-    {showScanner && <QrScanner locale={locale} onClose={() => setShowScanner(false)} onAnswers={value => { setAnswers(value); setIndex(Math.min(value.length, REFLECTION_QUESTIONS.length - 1)); setStage(value.length === REFLECTION_QUESTIONS.length ? 'results' : 'questions'); setShowScanner(false); }} />}
-  </main>;
+    {error && <p role="alert" className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">{error}</p>}
+    {notice && <p role="status" className="mb-5 rounded-2xl bg-[var(--ndee-sage)] p-4">{notice}</p>}
+    <fieldset disabled={busy} className="min-w-0">
+      {(progress.stage === 'intro' || progress.stage === 'modules' || progress.stage === 'questions' || progress.stage === 'break') && <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <label className="text-sm font-semibold">{t.mode}<select className="ndee-focus ml-3 min-h-11 rounded-xl border bg-white px-3" value={progress.mode} onChange={event => changeJourneyMode(event.target.value as 'modular' | 'integral')}><option value="modular">{t.modules}</option><option value="integral">{t.integral}</option></select></label>
+        {progress.stage !== 'intro' && <button className={button} onClick={() => void persist({ ...progress, stage: 'results' })}>{t.summary}</button>}
+      </div>}
+      {progress.stage !== 'intro' && <div className="mb-6">
+        <div className="mb-2 flex flex-wrap justify-between gap-2 text-sm"><span>{t.coreProgress} : {report.answered}/{report.total}</span><span>{t.optionalProgress} : {contextAnswered}/4 · {progress.skippedContext.length} {t.skipped.toLowerCase()}</span></div>
+        <progress aria-label={t.coreProgress} value={report.answered} max={report.total} className="h-2 w-full accent-[var(--ndee-primary)]" />
+      </div>}
+      <h1 ref={heading} tabIndex={-1} className="mb-5 text-2xl font-bold leading-snug outline-none sm:text-3xl">{title}</h1>
 
-  if (stage === 'questions') return <main className="mx-auto flex min-h-[75vh] max-w-3xl flex-col justify-center px-4 py-10">
-    <div className="mb-7 flex items-center justify-between"><button onClick={() => index ? setIndex(index - 1) : setStage('intro')} className="ndee-focus flex h-11 w-11 items-center justify-center rounded-full text-[var(--ndee-muted)]"><ChevronLeft /></button><span className="text-xs font-bold text-[var(--ndee-muted)]">{t.progress} {index + 1}/{REFLECTION_QUESTIONS.length}</span></div>
-    <div className="h-2 overflow-hidden rounded-full bg-[var(--ndee-sage)]"><div className="h-full bg-[var(--ndee-primary)] transition-all" style={{ width: `${((index + 1) / REFLECTION_QUESTIONS.length) * 100}%` }} /></div>
-    <section className="ndee-surface mt-8 rounded-[2rem] p-7 sm:p-10"><h1 className="text-2xl font-bold leading-snug text-[var(--ndee-ink)] sm:text-3xl">{current.text[locale]}</h1><div className="mt-8 grid gap-3 sm:grid-cols-5">{t.scale.map((label, score) => <button key={label} onClick={() => answerQuestion(score)} className={`ndee-focus min-h-20 rounded-2xl border px-3 py-4 text-sm font-semibold transition ${currentScore === score ? 'border-[var(--ndee-primary)] bg-[var(--ndee-sage)] text-[var(--ndee-ink)]' : 'bg-white/60 text-[var(--ndee-muted)] hover:bg-white'}`}><span className="block text-lg">{score}</span>{label}</button>)}</div></section>
-  </main>;
+      {progress.stage === 'intro' && <section className={surface}>
+        <p className="text-lg">{t.subtitle}</p><p className="mt-4 font-semibold">{t.fullHint}</p>
+        <div className="mt-6 space-y-3 rounded-2xl bg-[var(--ndee-sage)] p-5 text-sm"><p><LockKeyhole className="mr-2 inline h-4 w-4" />{t.privacy}</p><p>{t.notMedical}</p></div>
+        {method}
+        <label className="mt-6 flex items-start gap-3"><input type="checkbox" className="mt-1 h-5 w-5" checked={acknowledged} onChange={event => setAcknowledged(event.target.checked)} />{t.acknowledge}</label>
+        <div className="mt-6 flex flex-wrap gap-3"><button disabled={!acknowledged} className={primary} onClick={() => void persist({ ...progress, acknowledged: true, stage: progress.isComplete ? 'results' : progress.mode === 'modular' ? 'modules' : 'questions' })}>{progress.answers.length ? t.resume : t.start}</button><button className={button} onClick={() => setModal('scan')}><Camera className="mr-2 inline h-4 w-4" />{t.scan}</button>{progress.archives.length > 0 && <button className={button} onClick={() => void persist({ ...progress, stage: 'archives' })}>{t.archiveTitle}</button>}</div>
+      </section>}
 
-  if (stage === 'review') return <main className="mx-auto max-w-4xl px-4 py-10"><button onClick={() => setStage('results')} className="ndee-focus mb-6 inline-flex min-h-11 items-center gap-2 rounded-xl px-2 font-semibold"><ArrowLeft className="h-4 w-4" />{t.closeReview}</button><div className="space-y-3">{REFLECTION_QUESTIONS.map((question, questionIndex) => <button key={question.id} onClick={() => { setIndex(questionIndex); setStage('questions'); }} className="ndee-focus ndee-surface flex min-h-16 w-full items-center justify-between gap-4 rounded-2xl p-4 text-left"><span>{question.text[locale]}</span><strong className="rounded-full bg-[var(--ndee-lilac)] px-3 py-1">{answers.find(answer => answer.questionId === question.id)?.score ?? '—'}/4</strong></button>)}</div></main>;
+      {progress.stage === 'modules' && <><p className="mb-6">{t.moduleHint}</p><div className="grid gap-4 sm:grid-cols-2">
+        {(['context', ...DOMAINS] as AssessmentModule[]).map(module => {
+          const result = report.domains.find(domain => domain.domain === module);
+          const completed = result?.complete ?? contextDone === 4;
+          return <button key={module} className={`${surface} ndee-focus text-left`} onClick={() => void persist(beginModule(progress, module))}>
+            <span className="text-lg font-bold">{moduleLabel(module)}</span><span className="mt-3 block text-sm">{result ? `${result.answered}/${result.total}` : `${contextAnswered}/4`} {t.answered} · {completed ? t.complete : (result?.answered ?? contextDone) ? t.partial : t.empty}</span>
+            {module === 'context' && <span className="mt-3 block text-sm text-[var(--ndee-muted)]">{t.contextHint}</span>}
+          </button>;
+        })}
+      </div></>}
 
-  return <main className="mx-auto max-w-5xl px-4 py-10 sm:py-14">
-    <button onClick={onBack} className="ndee-focus mb-7 inline-flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm font-semibold text-[var(--ndee-muted)]"><ArrowLeft className="h-4 w-4" /> NDee</button>
-    <div className="rounded-[2rem] bg-[var(--ndee-lilac)] p-7 sm:p-10"><p className="ndee-eyebrow">NDee</p><h1 className="mt-2 text-3xl font-bold sm:text-5xl">{t.results}</h1><p className="mt-4 max-w-2xl leading-relaxed text-[var(--ndee-muted)]">{t.resultsIntro}</p></div>
-    <div className="mt-7 grid gap-4 md:grid-cols-5">{report.domains.map((domain, domainIndex) => <div key={domain.domain} className={`rounded-2xl p-5 ${['bg-[var(--ndee-sage)]', 'bg-[var(--ndee-sky)]', 'bg-[var(--ndee-peach)]', 'bg-[var(--ndee-lilac)]', 'bg-[var(--ndee-sun)]'][domainIndex]}`}><p className="text-sm font-bold text-[var(--ndee-ink)]">{t.domains[domain.domain]}</p><p className="mt-3 text-3xl font-bold text-[var(--ndee-primary-strong)]">{domain.score}%</p><p className="mt-1 text-xs text-[var(--ndee-muted)]">{t.bands[domain.band]}</p></div>)}</div>
-    <div className="ndee-surface mt-7 rounded-[2rem] p-6 sm:p-8"><h2 className="text-xl font-bold text-[var(--ndee-ink)]">{t.personalize}</h2><p className="mt-2 text-sm leading-relaxed text-[var(--ndee-muted)]">{t.privacy}</p>{personalized ? <p className="mt-5 flex items-center gap-2 font-semibold text-[var(--ndee-primary-strong)]"><Check />{t.personalized}</p> : <button onClick={personalize} className="ndee-focus mt-5 min-h-11 rounded-2xl bg-[var(--ndee-sage)] px-6 py-3 font-bold text-[var(--ndee-ink)]"><Sparkles className="mr-2 inline h-4 w-4" />{t.personalize}</button>}<button onClick={onOpenToolbox} className="ndee-focus mt-3 min-h-12 w-full rounded-2xl bg-[var(--ndee-primary)] px-6 py-4 font-bold text-white">{t.openToolbox}</button></div>
-    <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><button onClick={() => setStage('review')} className="rounded-xl border bg-white p-3 font-semibold">{t.review}</button><button onClick={() => void downloadPdf()} className="rounded-xl border bg-white p-3 font-semibold"><Download className="mr-2 inline h-4 w-4" />{t.download}</button><button onClick={() => void showQr()} className="rounded-xl border bg-white p-3 font-semibold">{t.qr}</button><button onClick={() => setShowScanner(true)} className="rounded-xl border bg-white p-3 font-semibold"><Camera className="mr-2 inline h-4 w-4" />{t.scan}</button><button onClick={() => void reset()} className="rounded-xl border border-rose-200 bg-white p-3 font-semibold text-rose-700"><Eraser className="mr-2 inline h-4 w-4" />{t.reset}</button></div>
-    {qrData && <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#26332f]/45 p-4 backdrop-blur-sm"><div className="ndee-surface rounded-[2rem] p-6 text-center"><button onClick={() => setQrData(null)} className="ndee-focus ml-auto flex h-11 w-11 items-center justify-center rounded-full"><X /></button><img src={qrData} alt="NDee transfer QR" className="mx-auto h-72 w-72" /><p className="max-w-xs text-sm text-[var(--ndee-muted)]">{t.privacy}</p></div></div>}
-    {showScanner && <QrScanner locale={locale} onClose={() => setShowScanner(false)} onAnswers={value => { setAnswers(value); setStage(value.length === REFLECTION_QUESTIONS.length ? 'results' : 'questions'); setShowScanner(false); }} />}
+      {progress.stage === 'questions' && <section className={surface}>
+        <p className="mb-5 text-sm font-semibold">{moduleLabel(current.domain)} · {t.progress} {position + 1}/{sequence.length} · {moduleAnswered}/{moduleQuestions.length} {t.answered}</p>
+        {current.domain === 'context' && <p className="mb-5 rounded-xl bg-[var(--ndee-sage)] p-4 text-sm">{t.contextHint}</p>}
+        {current.id === 'INT_04' && <p className="mb-5 rounded-xl bg-[var(--ndee-peach)] p-4 text-sm">{t.crisisHelp}</p>}
+        <fieldset className="grid gap-3 sm:grid-cols-2"><legend className="sr-only">{current.text[locale]}</legend>{scaleOptions(current.scale, locale).map(option => <label key={option.value} className={`ndee-focus flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border p-4 text-sm font-semibold ${selected === option.value ? 'border-[var(--ndee-primary)] bg-[var(--ndee-sage)]' : 'bg-white/60'}`}>
+          <input type="radio" name={`answer-${current.id}`} value={option.value} checked={selected === option.value} onChange={() => setSelection({ questionId: current.id, score: option.value })} className="h-5 w-5 shrink-0 accent-[var(--ndee-primary)]" />{option.label}
+        </label>)}</fieldset>
+        <div className="mt-7 flex flex-wrap gap-3"><button className={button} onClick={() => void persist(progress.returnToResults ? { ...progress, returnToResults: false, stage: 'results' } : previousQuestion(progress))}>{progress.returnToResults ? t.closeReview : t.previous}</button><button className={primary} disabled={selected === null} onClick={() => selected !== null && void persist(commitAnswer(progress, selected))}>{progress.returnToResults ? t.saveEdit : t.next}</button></div>
+        {current.domain === 'context' && <div className="mt-4 flex flex-wrap gap-3"><button className={button} onClick={() => void persist(commitAnswer(progress, null))}>{t.skip}</button><button className={button} onClick={() => void persist(skipContext(progress))}>{t.skipContext}</button></div>}
+        <button className={`${button} mt-4`} onClick={() => void persist({ ...progress, stage: 'modules' })}>{t.backModules}</button>
+      </section>}
+
+      {progress.stage === 'break' && <section className={surface}><p>{t.breakText}</p><button className={`${primary} mt-6`} onClick={() => void persist({ ...progress, stage: progress.afterBreakStage })}>{t.continue}</button></section>}
+
+      {progress.stage === 'results' && <>
+        <p className="mb-6">{t.resultsIntro} <strong>{report.complete ? t.complete : t.partial}</strong></p>
+        <div className="space-y-4">{report.domains.map(domain => <section key={domain.domain} className={surface}>
+          <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">{t.domains[domain.domain]}</h2><span className="text-2xl font-bold">{domain.score === null ? '—' : `${domain.score}%`}</span></div>
+          <p className="mt-2 text-sm">{domain.answered}/{domain.total} {t.answered} · {domain.score === null ? t.empty : `${t.bands[domain.band!]} · ${domain.complete ? t.complete : t.partial}`}</p>
+          <details className="mt-4"><summary className="cursor-pointer font-semibold">{t.details}</summary><div className="mt-3 space-y-2">{domain.subscales.map(subscale => <button key={subscale.id} className={`${button} flex w-full items-center justify-between gap-4 text-left`} onClick={() => openReview(domain.domain, subscale.id)}><span>{SUBSCALE_LABELS[locale][subscale.id]}<span className="mt-1 block text-xs font-normal">{subscale.answered}/{subscale.total} · {subscale.score === null ? t.empty : subscale.complete ? t.complete : t.partial}</span></span><span className="shrink-0">{subscale.score === null ? '—' : `${subscale.score}%`}</span></button>)}</div></details>
+          <button className={`${button} mt-4`} onClick={() => openReview(domain.domain)}>{t.viewAnswers}</button>
+        </section>)}</div>
+        <section className={`${surface} mt-6`}><h2 className="text-xl font-bold">{t.personalize}</h2><p className="mt-3 text-sm">{t.personalizationHint}</p>
+          {report.needs.length > 0 && <div className="mt-4 flex flex-wrap gap-2">{report.needs.slice(0, 8).map(item => <span key={item.need} className="rounded-full bg-[var(--ndee-sage)] px-3 py-2 text-sm">{translate(`supportNeeds.${item.need}`)} · {item.weight}%</span>)}</div>}
+          {!report.domains.some(domain => domain.complete) ? <p className="mt-4 text-sm">{t.finishModule}</p> : personalized ? <p className="mt-4 font-semibold">{t.personalized}</p> : <><p className="mt-4 text-sm">{hasProfile ? t.changed : t.privacy}</p><button className={`${primary} mt-4`} onClick={() => void personalize()}><Sparkles className="mr-2 inline h-4 w-4" />{hasProfile ? t.updatePersonalization : t.personalize}</button></>}
+          <button className={`${button} mt-4 ml-2`} onClick={onOpenToolbox}>{t.openToolbox}</button>
+        </section>
+        {method}
+        <section className={`${surface} mt-6`}><label className="flex items-start gap-3"><input className="mt-1 h-5 w-5" type="checkbox" checked={includeContext} onChange={event => setIncludeContext(event.target.checked)} />{t.includeContext}</label><p className="mt-3 text-sm">{t.exportHint}</p><div className="mt-5 flex flex-wrap gap-3"><button className={button} onClick={() => void downloadPdf()}><Download className="mr-2 inline h-4 w-4" />{t.download}</button><button className={button} onClick={() => void exportQr()}>{t.qr}</button><button className={button} onClick={() => setModal('scan')}>{t.scan}</button></div></section>
+        <div className="mt-5 flex flex-wrap gap-3"><button className={button} onClick={() => openReview()}>{t.review}</button><button className={button} onClick={() => void persist({ ...progress, stage: 'modules' })}>{t.backModules}</button><button className={button} onClick={() => void persist({ ...progress, stage: 'archives' })}>{t.archiveTitle}</button><button className={button} onClick={() => void reset()}>{t.reset}</button></div>
+      </>}
+
+      {progress.stage === 'review' && <><div className="mb-5 flex flex-wrap gap-3"><button className={button} onClick={() => void persist({ ...progress, stage: 'results' })}>{t.closeReview}</button>{reviewFilter.domain && <button className={button} onClick={() => setReviewFilter({})}>{t.allAnswers}</button>}</div>
+        <div className="space-y-3">{REFLECTION_QUESTIONS.filter(question => (!reviewFilter.domain || question.domain === reviewFilter.domain) && (!reviewFilter.subscale || question.subscale === reviewFilter.subscale)).map(question => {
+          const answer = progress.answers.find(item => item.questionId === question.id);
+          const label = answer ? scaleOptions(question.scale, locale).find(option => option.value === answer.score)!.label : progress.skippedContext.includes(question.id) ? t.skipped : t.empty;
+          return <button key={question.id} className={`${button} flex w-full flex-col gap-3 p-5 text-left sm:flex-row sm:items-center sm:justify-between`} onClick={() => void persist({ ...progress, currentQuestionId: question.id, stage: 'questions', returnToResults: true })}><span>{question.text[locale]}</span><strong className="shrink-0 rounded-xl bg-[var(--ndee-lilac)] p-2 text-sm">{label}</strong></button>;
+        })}</div>
+      </>}
+
+      {progress.stage === 'archives' && <><p className="mb-5">{t.archiveHint}</p><button className={`${button} mb-5`} onClick={() => void persist({ ...progress, stage: progress.acknowledged ? 'results' : 'intro' })}>{progress.acknowledged ? t.closeReview : t.continue}</button>
+        {!progress.archives.length && <p>{t.archiveEmpty}</p>}
+        <div className="space-y-5">{progress.archives.map(archive => <details key={archive.id} className={surface}><summary className="cursor-pointer font-bold">{t.archiveDate} {new Date(archive.updatedAt).toLocaleDateString(locale)} · {archive.answers.length}/30</summary><div className="mt-4 grid gap-3 sm:grid-cols-2">{calculateLegacyReport(archive.answers).domains.map(domain => <p key={domain.domain}>{t.domains[domain.domain]} : {domain.score}% · {t.bands[domain.band]}</p>)}</div><div className="mt-5 space-y-3">{LEGACY_QUESTIONS.map(question => { const answer = archive.answers.find(item => item.questionId === question.id); return <p key={question.id} className="border-t pt-3 text-sm">{question.text[locale]} <strong>{answer ? t.oldScale[answer.score] : t.empty}</strong></p>; })}</div></details>)}</div>
+      </>}
+    </fieldset>
+    {modal && <AssessmentDialog title={modal === 'qr' ? t.qr : t.scan} closeLabel={t.close} onClose={() => setModal(null)}>
+      {modal === 'qr' ? <><img src={qrData} alt={t.qr} className="mx-auto w-full max-w-sm" /><p className="mt-3 text-sm">{includeContext ? t.contextIncluded : t.contextExcluded}</p><p className="mt-3 text-sm">{t.exportHint}</p></> : <>
+        <QrScanner locale={locale} onScan={importValue} />
+        <details className="mt-5"><summary className="cursor-pointer font-semibold">{t.importText}</summary><label className="sr-only" htmlFor="assessment-import">{t.importText}</label><textarea id="assessment-import" className="ndee-focus mt-3 min-h-24 w-full rounded-xl border p-3" value={importText} onChange={event => setImportText(event.target.value)} /><button disabled={busy || !importText.trim()} className={`${button} mt-3`} onClick={() => void importValue(importText.trim())}>{t.importButton}</button></details>
+        {error && <p role="alert" className="mt-4 text-rose-800">{error}</p>}
+      </>}
+    </AssessmentDialog>}
   </main>;
 };

@@ -21,11 +21,9 @@ import ToolboxApp from './App';
 import { useTranslation } from './i18nContext';
 import { BrandLogo } from '../components/BrandLogo';
 import { Situation } from '../types';
-import type { ReflectionAnswer } from '../features/assessment/model';
 import {
   clearAssessmentProgress,
-  clearRecommendationProfile,
-  getAssessmentProgress
+  clearRecommendationProfile
 } from '../services/storage/offlineDb';
 import { clearUser } from '../services/dataService';
 import { apiClient } from '../services/apiClient';
@@ -75,8 +73,6 @@ const NDeeApp: React.FC = () => {
   const [route, setRoute] = useState<PublicRoute>(routeFromPath);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [status, setStatus] = useState('');
-  const [answers, setAnswers] = useState<ReflectionAnswer[]>([]);
-  const [assessmentIndex, setAssessmentIndex] = useState(0);
   const [assessmentKey, setAssessmentKey] = useState(0);
   const [toolboxHeaderActions, setToolboxHeaderActions] = useState<HTMLDivElement | null>(null);
   const language = (i18n.language?.split('-')[0] || 'fr') as keyof typeof shellCopy;
@@ -89,24 +85,6 @@ const NDeeApp: React.FC = () => {
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
-
-  useEffect(() => {
-    void getAssessmentProgress().then(progress => {
-      if (!progress) return;
-      setAnswers(progress.answers);
-      setAssessmentIndex(progress.currentIndex);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (route !== 'assessment') return;
-    void getAssessmentProgress().then(progress => {
-      if (!progress) return;
-      setAnswers(progress.answers);
-      setAssessmentIndex(progress.currentIndex);
-      setAssessmentKey(value => value + 1);
-    });
-  }, [route]);
 
   const navigate = useCallback((next: PublicRoute) => {
     const path = next === 'home' ? '/' : `/${next}`;
@@ -129,7 +107,7 @@ const NDeeApp: React.FC = () => {
     window.location.reload();
   };
 
-  const removeAssessment = async () => { await clearAssessmentProgress(); setAnswers([]); setAssessmentIndex(0); setAssessmentKey(value => value + 1); setStatus(t.cleared); };
+  const removeAssessment = async () => { await clearAssessmentProgress(); setAssessmentKey(value => value + 1); setStatus(t.cleared); };
   const removePersonalization = async () => { await clearRecommendationProfile(); window.dispatchEvent(new Event('ndee-personalization-change')); setStatus(t.cleared); };
   const removeAll = async () => {
     await Promise.all([clearAssessmentProgress(), clearRecommendationProfile()]);
@@ -139,7 +117,7 @@ const NDeeApp: React.FC = () => {
     clearUser();
     localStorage.removeItem('neurosooth_installation_id_v1');
     localStorage.removeItem('neurosooth_helpful_exercises_v1');
-    setAnswers([]); setAssessmentIndex(0); setAssessmentKey(value => value + 1); setStatus(t.cleared);
+    setAssessmentKey(value => value + 1); setStatus(t.cleared);
     window.dispatchEvent(new Event('ndee-personalization-change'));
     window.dispatchEvent(new Event('partner-session-change'));
   };
@@ -159,7 +137,7 @@ const NDeeApp: React.FC = () => {
 
   let content: React.ReactNode;
   if (route === 'toolbox') content = <ToolboxApp embeddedInSiteShell headerActionsContainer={toolboxHeaderActions} />;
-  else if (route === 'assessment' && (resolvedLanguage === 'en' || resolvedLanguage === 'fr')) content = <Suspense fallback={<div className="p-12 text-center font-semibold text-slate-600">NDee…</div>}><Assessment key={assessmentKey} locale={resolvedLanguage} initialAnswers={answers} initialIndex={assessmentIndex} onBack={() => navigate('home')} onOpenToolbox={() => navigate('toolbox')} onPersonalized={() => window.dispatchEvent(new Event('ndee-personalization-change'))} /></Suspense>;
+  else if (route === 'assessment' && (resolvedLanguage === 'en' || resolvedLanguage === 'fr')) content = <Suspense fallback={<div className="p-12 text-center font-semibold text-slate-600">NDee…</div>}><Assessment key={assessmentKey} locale={resolvedLanguage} onBack={() => navigate('home')} onOpenToolbox={() => navigate('toolbox')} onPersonalized={() => window.dispatchEvent(new Event('ndee-personalization-change'))} /></Suspense>;
   else if (route === 'assessment') content = <main className="mx-auto max-w-xl px-4 py-20 text-center"><div className="ndee-surface rounded-[2rem] p-8"><Sparkles className="mx-auto h-10 w-10 text-[var(--ndee-primary)]" /><h1 className="mt-5 text-3xl font-bold">{t.profileTitle}</h1><p className="mt-4 text-[var(--ndee-muted)]">{t.unavailable}</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><button onClick={() => void changeLanguage('en')} className="ndee-focus min-h-11 rounded-2xl bg-[var(--ndee-primary)] px-5 py-3 font-bold text-white">{t.switchEnglish}</button><button onClick={() => void changeLanguage('fr')} className="ndee-focus min-h-11 rounded-2xl border bg-white px-5 py-3 font-bold">{t.switchFrench}</button></div></div></main>;
   else content = <main>
     <section className="mx-auto max-w-6xl px-4 py-10 sm:py-16">

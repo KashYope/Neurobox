@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateReflectionReport, buildRecommendationProfile, REFLECTION_QUESTIONS } from '../features/assessment/model';
+import { calculateReflectionReport, buildRecommendationProfile, REFLECTION_QUESTIONS, SCALE_LIMITS } from '../features/assessment/model';
 import { getRecommendedExercises, getRecommendationReasons } from '../services/dataService';
 import { Exercise, RecommendationProfile, Situation, SupportNeed } from '../types';
 
@@ -19,7 +19,7 @@ const exercise = (id: string, supportNeeds: SupportNeed[], thanksCount = 0): Exe
 });
 
 test('reflection scoring uses neutral bands and produces each support mapping', () => {
-  const report = calculateReflectionReport(REFLECTION_QUESTIONS.map(question => ({ questionId: question.id, score: 4 })));
+  const report = calculateReflectionReport(REFLECTION_QUESTIONS.map(question => ({ questionId: question.id, score: SCALE_LIMITS[question.scale].max })));
   assert.equal(report.domains.length, 5);
   assert.ok(report.domains.every(domain => domain.score === 100 && domain.band === 'veryProminent'));
   const mappedNeeds = new Set(report.needs.map(item => item.need));
@@ -27,7 +27,7 @@ test('reflection scoring uses neutral bands and produces each support mapping', 
 });
 
 test('recommendation profile stores only a bounded derived support profile', () => {
-  const report = calculateReflectionReport(REFLECTION_QUESTIONS.map(question => ({ questionId: question.id, score: 3 })));
+  const report = calculateReflectionReport(REFLECTION_QUESTIONS.map(question => ({ questionId: question.id, score: SCALE_LIMITS[question.scale].max })));
   const profile = buildRecommendationProfile(report);
   assert.equal(profile.source, 'assessment');
   assert.ok(profile.needs.length <= 8);

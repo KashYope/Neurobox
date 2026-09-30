@@ -1,3 +1,6 @@
+import { AssessmentProgress, createProgress, migrateProgress } from '../../features/assessment/progress';
+import { applyImport } from '../../features/assessment/transfer';
+export type { AssessmentProgress } from '../../features/assessment/progress';
 import Dexie from './dexieShim';
 import { INITIAL_EXERCISES } from '../../constants';
 import { Exercise, ModerationStatus, RecommendationProfile, UserProfile } from '../../types';
@@ -45,20 +48,6 @@ export type PendingMutationRecord =
 interface UserRow {
   id: string;
   profile: UserProfile;
-}
-
-export interface AssessmentAnswerRecord {
-  questionId: string;
-  score: number;
-}
-
-export interface AssessmentProgress {
-  version: 1;
-  answers: AssessmentAnswerRecord[];
-  currentIndex: number;
-  isComplete: boolean;
-  locale: 'en' | 'fr';
-  updatedAt: string;
 }
 
 interface AssessmentProgressRow extends AssessmentProgress {
@@ -466,61 +455,51 @@ const getNdeeDb = (adapter: StorageAdapter): OfflineDexieDB =>
 const LEGACY_ASSESSMENT_KEY = 'neuroalign_secure_data_v1';
 const LEGACY_ASSESSMENT_SECRET = 'neuroalign_internal_privacy_key_2025';
 
-const decodeLegacyAssessment = (value: string): Partial<AssessmentProgress> | null => {
-  try {
-    const encoded = atob(value);
-    const decoded = encoded
-      .split('')
-      .map((character, index) => String.fromCharCode(
-        character.charCodeAt(0) ^ LEGACY_ASSESSMENT_SECRET.charCodeAt(index % LEGACY_ASSESSMENT_SECRET.length)
-      ))
-      .join('');
-    return JSON.parse(decoded) as Partial<AssessmentProgress>;
-  } catch {
-    return null;
-  }
+const decodeLegacyAssessment = (value: string): unknown => {
+  const encoded = atob(value);
+  const decoded = encoded.split('').map((character, index) => String.fromCharCode(
+    character.charCodeAt(0) ^ LEGACY_ASSESSMENT_SECRET.charCodeAt(index % LEGACY_ASSESSMENT_SECRET.length)
+  )).join('');
+  return JSON.parse(decoded);
 };
 
-export const getAssessmentProgress = async (): Promise<AssessmentProgress | null> => {
-  const adapter = await getStorageAdapter();
-  const db = getNdeeDb(adapter);
-  let record = await db.assessmentProgress.get('current');
-  if (!record && typeof localStorage !== 'undefined') {
-    const legacy = localStorage.getItem(LEGACY_ASSESSMENT_KEY);
-    if (legacy) {
-      const decoded = decodeLegacyAssessment(legacy);
-      if (decoded?.answers) {
-        record = {
-          id: 'current',
-          version: 1,
-          answers: decoded.answers,
-          currentIndex: Number((decoded as { index?: number }).index ?? decoded.currentIndex ?? 0),
-          isComplete: Boolean(decoded.isComplete),
-          locale: decoded.locale === 'en' ? 'en' : 'fr',
-          updatedAt: new Date().toISOString()
-        };
-        await db.assessmentProgress.put(record);
-      }
-      localStorage.removeItem(LEGACY_ASSESSMENT_KEY);
+// Sérialiser migration, réponses et effacement pour éviter une résurrection après suppression.
+let assessmentOperations: Promise<unknown> = Promise.resolve();
+const withAssessmentStorage = <T>(operation: (db: OfflineDexieDB) => Promise<T>): Promise<T> => {
+  const result = assessmentOperations.then(async () => operation(getNdeeDb(await getStorageAdapter())));
+  assessmentOperations = result.catch(() => undefined);
+  return result;
+};
+
+export const getAssessmentProgress = (): Promise<AssessmentProgress | null> => withAssessmentStorage(async db => {
+  const stored = await db.assessmentProgress.get('current');
+  const legacy = typeof localStorage !== 'undefined' ? localStorage.getItem(LEGACY_ASSESSMENT_KEY) : null;
+  if (!stored && !legacy) return null;
+  let progress = stored ? migrateProgress(stored) : createProgress();
+  if (legacy) {
+    // Toute erreur laisse les sources intactes ; supprimer seulement après l'écriture réussie.
+    const restored = migrateProgress(decodeLegacyAssessment(legacy));
+    const present = new Set(progress.answers.map(answer => answer.questionId));
+    if (!stored) progress = restored;
+    else {
+      progress = applyImport(progress, { kind: 'full', answers: restored.answers.filter(answer => !present.has(answer.questionId)) });
+      for (const archive of restored.archives) progress = applyImport(progress, { kind: 'legacy', answers: archive.answers });
     }
   }
-  if (!record) return null;
-  const { id: _id, ...progress } = record;
+  await db.assessmentProgress.put({ ...progress, id: 'current' });
+  if (legacy && typeof localStorage !== 'undefined') localStorage.removeItem(LEGACY_ASSESSMENT_KEY);
   return progress;
-};
+});
 
-export const saveAssessmentProgress = async (progress: AssessmentProgress): Promise<void> => {
-  const adapter = await getStorageAdapter();
-  const db = getNdeeDb(adapter);
-  await db.assessmentProgress.put({ id: 'current', ...progress });
-};
+export const saveAssessmentProgress = (progress: AssessmentProgress): Promise<void> => withAssessmentStorage(async db => {
+  const valid = migrateProgress(progress);
+  await db.assessmentProgress.put({ ...valid, id: 'current' });
+});
 
-export const clearAssessmentProgress = async (): Promise<void> => {
-  const adapter = await getStorageAdapter();
-  const db = getNdeeDb(adapter);
+export const clearAssessmentProgress = (): Promise<void> => withAssessmentStorage(async db => {
   await db.assessmentProgress.delete('current');
   if (typeof localStorage !== 'undefined') localStorage.removeItem(LEGACY_ASSESSMENT_KEY);
-};
+});
 
 export const getRecommendationProfile = async (): Promise<RecommendationProfile | null> => {
   const adapter = await getStorageAdapter();

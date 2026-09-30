@@ -1,102 +1,134 @@
 import { RecommendationProfile, SupportNeed } from '../../types';
+import { QUESTION_CATALOG, CatalogQuestion, ScaleType } from './catalog';
+import type { ReflectionDomain } from './catalog';
+export type { AssessmentLocale, AssessmentModule, ReflectionDomain, ScaleType } from './catalog';
 
-export type AssessmentLocale = 'en' | 'fr';
-export type ReflectionDomain = 'attention' | 'sensory' | 'literacy' | 'coordination' | 'numbers';
-
-export interface ReflectionQuestion {
-  id: string;
+export const CATALOG_VERSION = 'neuroalign-138-v1';
+export const SCORING_VERSION = 'needs-v2';
+export const DOMAINS: ReflectionDomain[] = ['attention', 'sensory', 'literacy', 'coordination', 'numbers'];
+export interface ReflectionAnswer { questionId: string; score: number }
+export interface ReflectionQuestion extends CatalogQuestion { needs: SupportNeed[] }
+export type Band = 'lighter' | 'somewhat' | 'prominent' | 'veryProminent';
+export interface SectionResult {
+  score: number | null;
+  band: Band | null;
+  answered: number;
+  total: number;
+  complete: boolean;
+}
+export interface DomainResult extends SectionResult {
   domain: ReflectionDomain;
-  need: SupportNeed;
-  text: Record<AssessmentLocale, string>;
+  subscales: Array<SectionResult & { id: string }>;
 }
-
-export interface ReflectionAnswer {
-  questionId: string;
-  score: number;
-}
-
-export interface DomainResult {
-  domain: ReflectionDomain;
-  score: number;
-  band: 'lighter' | 'somewhat' | 'prominent' | 'veryProminent';
-}
-
 export interface ReflectionReport {
+  catalogVersion: typeof CATALOG_VERSION;
+  scoringVersion: typeof SCORING_VERSION;
   domains: DomainResult[];
   needs: Array<{ need: SupportNeed; weight: number }>;
+  answered: number;
+  total: number;
+  complete: boolean;
 }
 
-const q = (
-  id: string,
-  domain: ReflectionDomain,
-  need: SupportNeed,
-  en: string,
-  fr: string
-): ReflectionQuestion => ({ id, domain, need, text: { en, fr } });
-
-export const REFLECTION_QUESTIONS: ReflectionQuestion[] = [
-  q('att-1', 'attention', SupportNeed.Focus, 'I find it hard to stay with a task when it is repetitive.', 'J’ai du mal à rester sur une tâche lorsqu’elle est répétitive.'),
-  q('att-2', 'attention', SupportNeed.TaskInitiation, 'Starting a task can take more effort than doing it.', 'Commencer une tâche peut demander plus d’effort que la réaliser.'),
-  q('att-3', 'attention', SupportNeed.Organization, 'I lose track of priorities when several things compete for attention.', 'Je perds mes priorités lorsque plusieurs choses réclament mon attention.'),
-  q('att-4', 'attention', SupportNeed.WorkingMemory, 'I need information to remain visible so I do not forget it.', 'J’ai besoin que l’information reste visible pour ne pas l’oublier.'),
-  q('att-5', 'attention', SupportNeed.Movement, 'Movement helps me think, listen, or reset.', 'Bouger m’aide à réfléchir, écouter ou repartir.'),
-  q('att-6', 'attention', SupportNeed.TaskSetup, 'Preparing the space and materials is a barrier to beginning.', 'Préparer l’espace et le matériel freine mon démarrage.'),
-
-  q('sen-1', 'sensory', SupportNeed.SensoryRegulation, 'Sounds, light, textures, or smells can become overwhelming.', 'Les sons, lumières, textures ou odeurs peuvent devenir envahissants.'),
-  q('sen-2', 'sensory', SupportNeed.Recovery, 'I need meaningful recovery time after demanding environments.', 'J’ai besoin d’un vrai temps de récupération après un environnement exigeant.'),
-  q('sen-3', 'sensory', SupportNeed.Predictability, 'Unexpected changes use a lot of my energy.', 'Les changements imprévus consomment beaucoup de mon énergie.'),
-  q('sen-4', 'sensory', SupportNeed.Communication, 'Speaking becomes harder when I am overloaded or tired.', 'Parler devient plus difficile lorsque je suis surchargé·e ou fatigué·e.'),
-  q('sen-5', 'sensory', SupportNeed.SensoryRegulation, 'I actively seek particular sensations to feel settled or alert.', 'Je recherche certaines sensations pour me sentir posé·e ou éveillé·e.'),
-  q('sen-6', 'sensory', SupportNeed.Recovery, 'Social adaptation can leave me depleted afterward.', 'L’adaptation sociale peut me laisser épuisé·e ensuite.'),
-
-  q('lit-1', 'literacy', SupportNeed.ReadingWriting, 'Dense text takes repeated reading to absorb.', 'Un texte dense demande plusieurs lectures pour être assimilé.'),
-  q('lit-2', 'literacy', SupportNeed.Sequencing, 'I can lose my place or the order of information while reading.', 'Je peux perdre ma ligne ou l’ordre des informations en lisant.'),
-  q('lit-3', 'literacy', SupportNeed.WorkingMemory, 'Holding verbal instructions in mind is effortful.', 'Garder des consignes verbales en mémoire me demande un effort.'),
-  q('lit-4', 'literacy', SupportNeed.ReadingWriting, 'My ideas are easier to express aloud than in writing.', 'Mes idées sont plus faciles à exprimer oralement que par écrit.'),
-  q('lit-5', 'literacy', SupportNeed.Sequencing, 'Spelling or symbol order is inconsistent even when I know the word.', 'L’orthographe ou l’ordre des symboles varie même lorsque je connais le mot.'),
-  q('lit-6', 'literacy', SupportNeed.TaskSetup, 'Formatting and organizing a document can obscure the main idea.', 'La mise en forme et l’organisation d’un document peuvent masquer l’idée principale.'),
-
-  q('mot-1', 'coordination', SupportNeed.MotorPlanning, 'New movement sequences take conscious planning.', 'Les nouvelles séquences de mouvement demandent une planification consciente.'),
-  q('mot-2', 'coordination', SupportNeed.Sequencing, 'I know what I want to do but lose the order of the steps.', 'Je sais ce que je veux faire mais je perds l’ordre des étapes.'),
-  q('mot-3', 'coordination', SupportNeed.TaskSetup, 'Clutter or an awkward setup makes physical tasks much harder.', 'Le désordre ou une installation peu pratique rendent les tâches physiques bien plus difficiles.'),
-  q('mot-4', 'coordination', SupportNeed.MotorPlanning, 'Fine-motor tasks can be tiring or slower than expected.', 'Les tâches de motricité fine peuvent être fatigantes ou plus lentes que prévu.'),
-  q('mot-5', 'coordination', SupportNeed.Predictability, 'I prefer to rehearse an unfamiliar route or action.', 'Je préfère répéter mentalement un trajet ou une action inconnue.'),
-  q('mot-6', 'coordination', SupportNeed.Movement, 'I bump into objects or misjudge the space my body needs.', 'Je heurte des objets ou j’évalue mal l’espace nécessaire à mon corps.'),
-
-  q('num-1', 'numbers', SupportNeed.NumberSupport, 'Quantities make more sense when I can see or touch them.', 'Les quantités ont plus de sens lorsque je peux les voir ou les manipuler.'),
-  q('num-2', 'numbers', SupportNeed.Confidence, 'Being asked to calculate quickly creates pressure.', 'Devoir calculer rapidement crée de la pression.'),
-  q('num-3', 'numbers', SupportNeed.NumberSupport, 'I rely on a calculator for calculations others may do mentally.', 'Je m’appuie sur une calculatrice pour des calculs que d’autres font mentalement.'),
-  q('num-4', 'numbers', SupportNeed.Sequencing, 'Multi-step calculations are easy to lose track of.', 'Je perds facilement le fil des calculs en plusieurs étapes.'),
-  q('num-5', 'numbers', SupportNeed.Predictability, 'Time, budgets, or measurements are easier with visible references.', 'Le temps, les budgets ou les mesures sont plus faciles avec des repères visibles.'),
-  q('num-6', 'numbers', SupportNeed.Organization, 'I need a consistent layout to keep numbers aligned.', 'J’ai besoin d’une mise en page constante pour garder les nombres alignés.')
-];
-
-export const calculateReflectionReport = (answers: ReflectionAnswer[]): ReflectionReport => {
-  const answerMap = new Map(answers.map(answer => [answer.questionId, Math.min(4, Math.max(0, answer.score))]));
-  const domains = (['attention', 'sensory', 'literacy', 'coordination', 'numbers'] as ReflectionDomain[]).map(domain => {
-    const questions = REFLECTION_QUESTIONS.filter(question => question.domain === domain);
-    const total = questions.reduce((sum, question) => sum + (answerMap.get(question.id) ?? 0), 0);
-    const score = Math.round((total / (questions.length * 4)) * 100);
-    const band: DomainResult['band'] = score < 25 ? 'lighter' : score < 50 ? 'somewhat' : score < 75 ? 'prominent' : 'veryProminent';
-    return { domain, score, band };
-  });
-
-  const needs = Object.values(SupportNeed)
-    .map(need => {
-      const questions = REFLECTION_QUESTIONS.filter(question => question.need === need);
-      if (!questions.length) return { need, weight: 0 };
-      const total = questions.reduce((sum, question) => sum + (answerMap.get(question.id) ?? 0), 0);
-      return { need, weight: Math.round((total / (questions.length * 4)) * 100) };
-    })
-    .filter(item => item.weight > 0)
-    .sort((left, right) => right.weight - left.weight || left.need.localeCompare(right.need));
-
-  return { domains, needs };
+// Correspondances de soutien pratique, sans inférence de diagnostic.
+const SUPPORT_BY_SUBSCALE: Record<string, SupportNeed[]> = {
+  Executive: [SupportNeed.TaskInitiation, SupportNeed.Organization],
+  Sequencing: [SupportNeed.Sequencing], AdhdMemory: [SupportNeed.WorkingMemory],
+  Initiation: [SupportNeed.TaskInitiation, SupportNeed.TaskSetup],
+  MotorAgitation: [SupportNeed.Movement], Restlessness: [SupportNeed.Movement],
+  Attention: [SupportNeed.Focus], AuditoryProc: [SupportNeed.Communication, SupportNeed.SensoryRegulation],
+  Distraction: [SupportNeed.Focus, SupportNeed.TaskSetup], Inhibition: [SupportNeed.Focus],
+  Regulation: [SupportNeed.Recovery], Verbal: [SupportNeed.Communication],
+  Impulsivity: [SupportNeed.Focus], Timing: [SupportNeed.Predictability],
+  Compensation: [SupportNeed.Communication], Masking: [SupportNeed.Communication, SupportNeed.Recovery],
+  Assimilation: [SupportNeed.Communication, SupportNeed.Recovery],
+  Sensory: [SupportNeed.SensoryRegulation], Predictability: [SupportNeed.Predictability], Energy: [SupportNeed.Recovery],
+  Laterality: [SupportNeed.MotorPlanning], Visuospatial: [SupportNeed.MotorPlanning],
+  Phonological: [SupportNeed.ReadingWriting], VisualProc: [SupportNeed.ReadingWriting],
+  DysMemory: [SupportNeed.WorkingMemory, SupportNeed.Sequencing], Effort: [SupportNeed.ReadingWriting],
+  Spelling: [SupportNeed.ReadingWriting], Graphomotor: [SupportNeed.MotorPlanning, SupportNeed.ReadingWriting],
+  Organization: [SupportNeed.Organization], Accuracy: [SupportNeed.ReadingWriting],
+  WrittenLoad: [SupportNeed.ReadingWriting], AdminFriction: [SupportNeed.Organization, SupportNeed.TaskSetup],
+  VerbalPref: [SupportNeed.Communication, SupportNeed.ReadingWriting],
+  child_FineMotor: [SupportNeed.MotorPlanning], child_GrossMotor: [SupportNeed.MotorPlanning],
+  child_Main: [SupportNeed.MotorPlanning], adult_GrossMotor: [SupportNeed.MotorPlanning],
+  adult_Planning: [SupportNeed.MotorPlanning, SupportNeed.Sequencing], adult_FineMotor: [SupportNeed.MotorPlanning],
+  ExecutionGap: [SupportNeed.TaskInitiation, SupportNeed.TaskSetup], PhysicalFatigue: [SupportNeed.Recovery],
+  NumberSense: [SupportNeed.NumberSupport], Subitizing: [SupportNeed.NumberSupport],
+  WorkingMemory: [SupportNeed.WorkingMemory], Estimation: [SupportNeed.NumberSupport],
+  Retrieval: [SupportNeed.WorkingMemory, SupportNeed.NumberSupport], Arithmetic: [SupportNeed.NumberSupport],
+  Symbols: [SupportNeed.NumberSupport], Functional: [SupportNeed.NumberSupport], Anxiety: [SupportNeed.Confidence],
+  MentalMath: [SupportNeed.NumberSupport], MathMemory: [SupportNeed.WorkingMemory],
+  TimeMoney: [SupportNeed.NumberSupport, SupportNeed.Predictability], Financial: [SupportNeed.Organization, SupportNeed.NumberSupport]
 };
 
-export const buildRecommendationProfile = (report: ReflectionReport): RecommendationProfile => ({
-  version: 1,
-  source: 'assessment',
-  needs: report.needs.slice(0, 8),
-  createdAt: new Date().toISOString()
+export const REFLECTION_QUESTIONS: ReflectionQuestion[] = QUESTION_CATALOG.map(question => {
+  const needs = question.domain === 'context' ? [] : SUPPORT_BY_SUBSCALE[question.subscale];
+  if (!needs) throw new Error(`Missing support mapping: ${question.subscale}`);
+  return { ...question, needs };
 });
+export const QUESTION_BY_ID = new Map(REFLECTION_QUESTIONS.map(question => [question.id, question]));
+export const CORE_QUESTIONS = REFLECTION_QUESTIONS.filter(question => question.domain !== 'context');
+export const CONTEXT_IDS = REFLECTION_QUESTIONS.filter(question => question.domain === 'context').map(question => question.id);
+
+export const SCALE_LIMITS: Record<ScaleType, { min: number; max: number }> = {
+  frequency_0_4: { min: 0, max: 4 }, yes_no: { min: 0, max: 1 }, likert_7: { min: 1, max: 7 },
+  frequency_0_3: { min: 0, max: 3 }, frequency_1_5: { min: 1, max: 5 }
+};
+
+export function validateAnswers(value: unknown, catalog: Array<{ id: string; scale?: ScaleType }> = REFLECTION_QUESTIONS): ReflectionAnswer[] {
+  if (!Array.isArray(value)) throw new Error('Invalid answers');
+  const questions = new Map(catalog.map(question => [question.id, question]));
+  const seen = new Set<string>();
+  return value.map(answer => {
+    if (!answer || typeof answer !== 'object') throw new Error('Invalid answer');
+    const question = questions.get(answer.questionId);
+    const { min, max } = question?.scale ? SCALE_LIMITS[question.scale] : SCALE_LIMITS.frequency_0_4;
+    if (!question || seen.has(answer.questionId) || !Number.isInteger(answer.score) || answer.score < min || answer.score > max) {
+      throw new Error('Unknown, duplicate or out-of-range answer');
+    }
+    seen.add(answer.questionId);
+    return { questionId: answer.questionId, score: answer.score };
+  });
+}
+
+export function normalizedScore(question: CatalogQuestion, score: number): number {
+  const { min, max } = SCALE_LIMITS[question.scale];
+  const value = (score - min) / (max - min);
+  return question.isReverse ? 1 - value : value;
+}
+
+export const scoreBand = (score: number): Band => score < 25 ? 'lighter' : score < 50 ? 'somewhat' : score < 75 ? 'prominent' : 'veryProminent';
+
+function sectionResult(questions: ReflectionQuestion[], answers: Map<string, number>): SectionResult {
+  const present = questions.filter(question => answers.has(question.id));
+  const score = present.length ? Math.round(100 * present.reduce((sum, question) => sum + normalizedScore(question, answers.get(question.id)!), 0) / present.length) : null;
+  return { score, band: score === null ? null : scoreBand(score), answered: present.length, total: questions.length, complete: present.length === questions.length };
+}
+
+export function calculateReflectionReport(input: ReflectionAnswer[]): ReflectionReport {
+  const answers = new Map(validateAnswers(input).map(answer => [answer.questionId, answer.score]));
+  const domains = DOMAINS.map(domain => {
+    const questions = REFLECTION_QUESTIONS.filter(question => question.domain === domain);
+    return {
+      domain, ...sectionResult(questions, answers),
+      subscales: [...new Set(questions.map(question => question.subscale))].map(id => ({ id, ...sectionResult(questions.filter(question => question.subscale === id), answers) }))
+    };
+  });
+  const completed = new Set(domains.filter(domain => domain.complete).map(domain => domain.domain));
+  const eligible = CORE_QUESTIONS.filter(question => completed.has(question.domain as ReflectionDomain));
+  const needs = Object.values(SupportNeed).map(need => ({
+    need, weight: sectionResult(eligible.filter(question => question.needs.includes(need)), answers).score ?? 0
+  })).filter(item => item.weight > 0).sort((left, right) => right.weight - left.weight || left.need.localeCompare(right.need));
+  return { catalogVersion: CATALOG_VERSION, scoringVersion: SCORING_VERSION, domains, needs, ...sectionResult(CORE_QUESTIONS, answers) };
+}
+
+export const buildRecommendationProfile = (report: ReflectionReport): RecommendationProfile => ({
+  version: 1, source: 'assessment', needs: report.needs.slice(0, 8), createdAt: new Date().toISOString(),
+  catalogVersion: CATALOG_VERSION, scoringVersion: SCORING_VERSION
+});
+
+// Empreinte locale déterministe : n'est ni un secret ni une signature de sécurité.
+export function answerFingerprint(answers: ReflectionAnswer[]): string {
+  return JSON.stringify(CORE_QUESTIONS.map(question => answers.find(answer => answer.questionId === question.id)?.score ?? -1));
+}

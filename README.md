@@ -387,3 +387,32 @@ Collez ensuite ces jetons dans la section « Jetons API » du tiroir administr
    npx cap sync
    ```
 5. Ouvrir les projets correspondants (`npx cap open ios` / `android`), configurer les certificats stores (App Store / Play Store), puis soumettre les binaires. Les assets PWA (manifest + icônes) sont réutilisés automatiquement.
+
+### Parcours de réflexion complet
+
+Le parcours `/assessment` reprend les **138 questions FR/EN de NeuroAlign**
+(`questions.ts`, révision `93a2f26`) : quatre questions de contexte facultatives et
+134 questions réparties en cinq modules. Les textes, identifiants, sous-dimensions,
+échelles et ordre d'origine sont conservés ; les anciens seuils cliniques ne le sont pas.
+Le mode par modules et le parcours intégral partagent la même progression locale.
+Les réponses se valident explicitement, avec reprise après fermeture et proposition
+de pause toutes les 25 nouvelles réponses.
+
+Chaque réponse renseignée est normalisée selon son échelle puis moyennée à poids
+égal. Les absences ne comptent pas comme zéro. Les résultats sont descriptifs,
+avec sous-dimensions et indicateurs de complétude, sans diagnostic. Seuls les
+modules terminés alimentent la personnalisation volontaire (huit besoins maximum).
+Le contexte ne contribue à aucun score ni recommandation.
+
+Le catalogue porte la version `neuroalign-138-v1`, le calcul `needs-v2` et la
+progression locale la version `2`. Les anciennes réponses NDee à 30 questions sont
+archivées avec leur calcul d'origine. Les réponses NeuroAlign sont récupérées par
+identifiant, jamais par ancien index aléatoire. Une migration invalide ou une
+écriture échouée conserve les sources. Le bouton de suppression efface aussi les
+archives, tandis que la personnalisation dispose de sa propre suppression.
+
+Le transfert QR compact accepte les anciens QR NeuroAlign et archive les QR NDee
+à 30 questions. Le PDF paginé et le QR excluent le contexte par défaut ; son
+inclusion exige une sélection explicite. Aucune réponse n'est envoyée au serveur.
+Les tests du parcours couvrent le catalogue original, les échelles, la progression,
+les migrations, les imports invalides et les exports bilingues.
