@@ -62,7 +62,7 @@ const extra = {
     archiveTitle: 'Archives du questionnaire à 30 questions', archiveHint: 'Ces réponses et cette synthèse conservent le calcul d’origine. Elles ne sont pas converties en réponses au parcours complet.',
     archiveEmpty: 'Aucune archive enregistrée.', archiveDate: 'Archive du', oldScale: ['Pas du tout', 'Rarement', 'Parfois', 'Souvent', 'Très souvent'],
     details: 'Voir les sous-dimensions', viewAnswers: 'Voir les réponses', allAnswers: 'Toutes les réponses', updatePersonalization: 'Actualiser ma personnalisation',
-    personalizationHint: 'Seuls les modules terminés contribuent aux huit besoins proposés au maximum. Les modules incomplets restent visibles dans votre synthèse provisoire.',
+    personalizationHint: 'Les thèmes terminés peuvent guider vos exercices si vous activez la personnalisation. Les thèmes commencés restent visibles dans votre profil provisoire.',
     finishModule: 'Terminez au moins un module pour personnaliser votre boîte à outils.',
     changed: 'Vos réponses ont changé. Vous pouvez actualiser votre personnalisation.',
     methodsDetail: 'Chaque réponse est ramenée entre 0 et 100 selon son échelle, puis les réponses renseignées sont moyennées à poids égal par domaine et sous-dimension. Les réponses absentes ne valent pas zéro. Le contexte est exclu. Ces pourcentages décrivent vos réponses, pas une probabilité de trouble. Les sources ci-dessous sont des inspirations : ce questionnaire adapté n’est pas un instrument clinique validé.',
@@ -114,3 +114,31 @@ export function scaleOptions(scale: ScaleType, locale: AssessmentLocale): Array<
     : fr ? ['Jamais', 'Rarement', 'Parfois', 'Souvent', 'Très souvent'] : ['Never', 'Rarely', 'Sometimes', 'Often', 'Very often'];
   return labels.map((label, index) => ({ value: index + (scale === 'frequency_1_5' ? 1 : 0), label }));
 }
+
+export const getExperienceCopy = (locale: AssessmentLocale, minutes: number, themes: number) => locale === 'fr' ? {
+    profileProgress: 'Votre profil se construit à votre rythme', transfer: 'Exporter ou transférer mon profil', manage: 'Gérer mes réponses',
+    choose: 'Choisir un thème spécifique', options: 'Options', quit: 'Quitter et reprendre plus tard',
+    context: 'Quelques informations sur vous', optional: 'Facultatif · n’influence pas votre résultat',
+    skip: 'Je préfère ne pas répondre', understood: 'J’ai compris', already: 'Vous avez déjà commencé ailleurs ?',
+    import: 'Importer ma progression', saved: '✓ Progression enregistrée', theme: 'Thème',
+    resume: 'Continuer mon profil', start: 'Commencer', minutes: 'min', remaining: 'min restantes',
+    profile: 'Mon profil', complete: 'Terminé', partial: 'En cours', empty: 'À découvrir',
+    retry: 'Réessayer la réponse', introduction: 'Comprendre vos besoins de soutien',
+    help: 'Ce que vous pouvez essayer', next: 'Choisissez une réponse pour continuer automatiquement.',
+    keyboard: 'Au clavier : les flèches sélectionnent, Entrée ou Espace confirme.',
+    keyboardReview: 'Au clavier : les flèches sélectionnent. Utilisez ensuite « Enregistrer et revenir aux résultats ».',
+    duration: `${themes} thèmes · environ ${minutes} minutes · à votre rythme`, results: 'Voici les tendances de vos réponses. Elles ne constituent pas un diagnostic.'
+  } : {
+    profileProgress: 'Build your profile at your own pace', transfer: 'Export or transfer my profile', manage: 'Manage my answers',
+    choose: 'Choose a specific theme', options: 'Options', quit: 'Leave and resume later',
+    context: 'A little about you', optional: 'Optional · does not affect your results',
+    skip: 'I prefer not to answer', understood: 'I understand', already: 'Already started on another device?',
+    import: 'Import my progress', saved: '✓ Progress saved', theme: 'Theme',
+    resume: 'Continue my profile', start: 'Start', minutes: 'min', remaining: 'min remaining',
+    profile: 'My profile', complete: 'Complete', partial: 'In progress', empty: 'Not started',
+    retry: 'Retry this answer', introduction: 'Understand your support needs',
+    help: 'What you can try', next: 'Choose an answer to continue automatically.',
+    keyboard: 'Keyboard: arrows select, Enter or Space confirms.',
+    keyboardReview: 'Keyboard: arrows select. Then use “Save and return to results”.',
+    duration: `${themes} themes · about ${minutes} minutes · at your pace`, results: 'These are patterns in your answers. They do not constitute a diagnosis.'
+  };

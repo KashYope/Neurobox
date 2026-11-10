@@ -1,4 +1,5 @@
 import React from 'react';
+import { situationColors, situationTone } from '../../services/situationPresentation';
 import { Exercise, NeuroType, Situation } from '../../types';
 
 export type IllustrationCategory = Situation | 'General';
@@ -56,7 +57,8 @@ const resolveProfile = (exercise: Exercise): IllustrationProfile =>
 export const getIllustrationModel = (exercise: Exercise): IllustrationModel => {
   const category = resolveCategory(exercise);
   const profile = resolveProfile(exercise);
-  const [primary, secondary, accent] = CATEGORY_PALETTES[category];
+  const [palettePrimary, secondary, accent] = CATEGORY_PALETTES[category];
+  const primary = category === 'General' ? palettePrimary : situationColors[situationTone[category]];
 
   return {
     category,

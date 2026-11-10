@@ -26,7 +26,7 @@
     "start": "Continue"
   },
   "languageSelector": {
-    "label": "Langue / Language"
+    "label": "Language"
   },
   "labels": {
     "name": "Name",
@@ -152,12 +152,26 @@
     "partnerAccessDescription": "Access the partner workspace and administration.",
     "myWorkspace": "My workspace",
     "partnerLogin": "Partner / admin login",
-    "buyCoffee": "Feed a unicorn 🦄",
-    "feedback": "Feedback / Contact",
+    "buyCoffee": "Support NDee",
+    "feedback": "Contact",
     "openSource": "Open Source"
   },
   "supportNeeds": {
-    "Focus": "focus", "TaskInitiation": "getting started", "Organization": "organization", "WorkingMemory": "working memory", "Movement": "movement", "SensoryRegulation": "sensory comfort", "Recovery": "recovery", "Predictability": "predictability", "Communication": "communication", "ReadingWriting": "reading and writing", "Sequencing": "sequencing", "MotorPlanning": "motor planning", "TaskSetup": "task setup", "NumberSupport": "number support", "Confidence": "confidence"
+    "Focus": "focus",
+    "TaskInitiation": "getting started",
+    "Organization": "organization",
+    "WorkingMemory": "working memory",
+    "Movement": "movement",
+    "SensoryRegulation": "sensory comfort",
+    "Recovery": "recovery",
+    "Predictability": "predictability",
+    "Communication": "communication",
+    "ReadingWriting": "reading and writing",
+    "Sequencing": "sequencing",
+    "MotorPlanning": "motor planning",
+    "TaskSetup": "task setup",
+    "NumberSupport": "number support",
+    "Confidence": "confidence"
   },
   "situations": {
     "Crisis": "Crisis / Panic",
@@ -169,5 +183,104 @@
     "Pain": "Pain / Tension",
     "Focus": "Focus",
     "Trauma": "Trauma / Flashback"
+  },
+  "ux": {
+    "now": "Now",
+    "profile": "My profile",
+    "menu": "Menu",
+    "support": "Support NDee",
+    "contact": "Contact",
+    "about": "About",
+    "resume": "Continue my profile",
+    "viewProfile": "View my profile",
+    "complete": "complete",
+    "remaining": "min remaining",
+    "homeExplanation": "Choose what is closest to your situation. We will suggest a few suitable exercises.",
+    "profileInvitation": "Want to understand your support needs?",
+    "profileDuration": "{{themes}} themes · about {{minutes}} min · at your pace",
+    "featured": "Recommended exercise",
+    "others": "Other exercises",
+    "suggestions": "A few exercises to try",
+    "allExercises": "Explore all exercises",
+    "backToolbox": "Back to toolbox",
+    "privacyShort": "Your answers stay on this device.",
+    "noDiagnosis": "This questionnaire does not provide a diagnosis.",
+    "deleteConfirm": "Delete this data from this device?",
+    "toolbox": "Toolbox",
+    "contribute": "Suggest an exercise",
+    "needStress": "To find a little calm",
+    "needCrisis": "To get through an intense moment",
+    "needRumination": "To ease repetitive thoughts",
+    "needFreeze": "To return to the present",
+    "needAnger": "To release tension",
+    "needSleep": "To prepare for rest",
+    "needPain": "To find more comfort",
+    "needFocus": "To return to your task",
+    "needTrauma": "To find a sense of safety",
+    "aboutTitle": "About NDee",
+    "aboutText": "A toolbox and a support profile, usable independently. No account needed.",
+    "privacy": "Privacy",
+    "resumeTheme": "Resume a theme",
+    "adminDenied": "Administrator access required.",
+    "approximately": "About",
+    "minutes": "min",
+    "themes": {
+      "attention": "Attention & action",
+      "sensory": "Communication, sensory & energy",
+      "literacy": "Reading & writing",
+      "coordination": "Coordination & sequencing",
+      "numbers": "Numbers & time"
+    },
+    "exerciseCount": "Showing {{shown}} of {{total}} exercises"
+  },
+  "legal": {
+    "terms": "Terms of use",
+    "notice": "Legal notice",
+    "purpose": {
+      "title": "Purpose",
+      "text": "NDee offers free wellbeing exercises and a personal reflection questionnaire. It does not provide a diagnosis or medical care. In immediate danger, contact local emergency services."
+    },
+    "use": {
+      "title": "Use and availability",
+      "text": "Adapt exercises to your abilities and stop if uncomfortable. Choose your own practices. The service may change or be interrupted. Browser storage may be cleared: keep your exports if you want a copy of your profile."
+    },
+    "contributions": {
+      "title": "Contributions and content",
+      "text": "Only submit content you are entitled to share, without other people’s personal data or illegal content. Exercises are moderated. Respect authors’ rights and applicable content licences."
+    },
+    "external": {
+      "title": "Links and support",
+      "text": "External resources and financial support are optional. Third-party services have their own terms and privacy policies. No payment is required to access exercises or the questionnaire."
+    },
+    "publisher": {
+      "title": "Publisher",
+      "text": "NDee is published privately in Belgium by Kash Hauzeur, responsible for publication."
+    },
+    "hosting": {
+      "title": "Hosting",
+      "text": "The site is hosted by Contabo. Official hosting-provider contact details are available through the link below."
+    },
+    "contact": {
+      "title": "Contact",
+      "text": "For questions about the site, content or your data, contact the publisher:"
+    },
+    "local": {
+      "title": "Questionnaire and local storage",
+      "text": "Answers, results, progress and personalisation preferences stay in this browser. They are not sent to or retained on the NDee server. They remain until you or the browser delete them, with no automatic expiry. Exported PDFs and QR codes are under your control."
+    },
+    "server": {
+      "title": "Community and professional features",
+      "text": "Submitting an exercise sends its content to the server for moderation and publication. Helpful votes retain a pseudonymous identifier to prevent duplicates. Professional accounts store contact details and a hashed password. Local deletion below does not delete these server records. The host also receives technical request data such as IP addresses, without your questionnaire answers. Accounts and contributions are processed at your request to provide these services; vote identifiers prevent abuse. These server records currently have no automatic expiry."
+    },
+    "cookies": {
+      "title": "Cookies and offline use",
+      "text": "The browser remembers language, progress and data needed for offline use. Professional areas use a login cookie valid for 24 hours. NDee includes no advertising trackers. External sites apply their own rules."
+    },
+    "rights": {
+      "title": "Deletion and rights",
+      "text": "The buttons below delete the indicated local data. For requests about accounts, contributions or access, correction and erasure rights, contact Kash Hauzeur below. Where applicable, you may also request restriction or portability, object to processing and complain to the Belgian Data Protection Authority."
+    },
+    "revealEmail": "Show email address",
+    "authority": "Belgian Data Protection Authority — complaints"
   }
 }

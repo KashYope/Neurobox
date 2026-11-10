@@ -7,7 +7,8 @@
     "thanksSent": "¡Gracias enviadas!",
     "sayThanks": "Dar las gracias",
     "thanksError": "No se pudo guardar tu valoración en este momento.",
-    "safetyNote": "Estos ejercicios son herramientas de bienestar, no un tratamiento. Si existe peligro inmediato o síntomas graves, contacta con emergencias o con un profesional sanitario."
+    "safetyNote": "Estos ejercicios son herramientas de bienestar, no un tratamiento. Si existe peligro inmediato o síntomas graves, contacta con emergencias o con un profesional sanitario.",
+    "precautions": "Precauciones"
   },
   "creation": {
     "title": "Aportar una técnica",
@@ -33,5 +34,18 @@
       "addStep": "+ Añadir un paso",
       "submit": "Enviar para revisión"
     }
+  },
+  "warnings": {
+    "resp-478": "Respire sin forzar. Reduzca los tiempos o pare si siente mareo, falta de aire o incomodidad.",
+    "ice-dive": "No sumerja el rostro ni contenga la respiración. Evite esta práctica si tiene problemas cardíacos o circulatorios, sensación de desmayo, intolerancia al frío o una indicación médica en contra.",
+    "wall-push": "Pare si siente dolor, mareo o dificultad para respirar. Adapte el esfuerzo a sus capacidades físicas.",
+    "butterfly-hug": "Reduzca el ritmo o pare si el golpeteo aumenta el malestar, la disociación o los recuerdos difíciles.",
+    "shaking": "Pare si se siente abrumado, disociado, mareado o con dolor. Esta práctica no sustituye el acompañamiento profesional del trauma.",
+    "physio-sigh": "Practique sentado y sin forzar. Pare si siente mareo, dolor o falta de aire.",
+    "voo-sound": "El sonido debe resultar cómodo. Pare si siente mareo, dolor o molestias respiratorias o vocales.",
+    "psoas-release": "Cambie de posición o pare si siente dolor, entumecimiento o incomodidad. Consulte a un profesional si el dolor persiste.",
+    "visual-countdown": "Si cerrar los ojos aumenta la incomodidad o las imágenes difíciles, manténgalos abiertos y elija una referencia visual neutra.",
+    "self-hug": "Reduzca la presión o pare si el contacto resulta incómodo, doloroso o angustiante.",
+    "pmr-jacobson": "No contraiga una zona lesionada o dolorida. Pare si la práctica aumenta el dolor o provoca calambres."
   }
 }

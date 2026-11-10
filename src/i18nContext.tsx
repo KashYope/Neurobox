@@ -9,17 +9,24 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | null>(null);
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [, forceUpdate] = useState(0);
+  const [revision, forceUpdate] = useState(0);
+  const [ready, setReady] = useState(i18n.isInitialized);
 
   useEffect(() => {
     const handleLanguageChange = () => {
+      setReady(i18n.isInitialized);
       forceUpdate(prev => prev + 1);
     };
 
     i18n.on('languageChanged', handleLanguageChange);
+    i18n.on('initialized', handleLanguageChange);
+    i18n.on('loaded', handleLanguageChange);
+    handleLanguageChange();
     
     return () => {
       i18n.off('languageChanged', handleLanguageChange);
+      i18n.off('initialized', handleLanguageChange);
+      i18n.off('loaded', handleLanguageChange);
     };
   }, []);
 
@@ -27,7 +34,9 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return i18n.t(key, options);
   }, []);
 
-  const value = useMemo(() => ({ t, i18n }), [t]);
+  const value = useMemo(() => ({ t, i18n }), [t, revision]);
+
+  if (!ready) return <div role="status" className="p-8 text-center">NDee…</div>;
 
   return (
     <I18nContext.Provider value={value}>

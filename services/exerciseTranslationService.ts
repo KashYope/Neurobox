@@ -68,7 +68,7 @@ class ExerciseTranslationService {
     // Generate string IDs based on the pattern used in seed script
     const titleId = `exercise.${baseId}.title`;
     const descriptionId = `exercise.${baseId}.description`;
-    const warningId = `exercise.${baseId}.warning`;
+    const warningId = exercise.warningStringId || `exercise.${baseId}.warning`;
 
     return {
       ...exercise,
@@ -78,9 +78,7 @@ class ExerciseTranslationService {
         const stepId = `exercise.${baseId}.step_${idx + 1}`;
         return translations[stepId] || step;
       }),
-      warning: exercise.warning && warningId in translations
-        ? translations[warningId]
-        : exercise.warning
+      warning: translations[warningId]?.trim() || exercise.warning
     };
   }
 

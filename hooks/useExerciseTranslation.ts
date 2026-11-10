@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from '../src/i18nContext';
 import { Exercise } from '../types';
+import { INITIAL_EXERCISES } from '../constants';
 import { exerciseTranslationService } from '../services/exerciseTranslationService';
 
 const LOCAL_ENGLISH_EXERCISES: Record<string, Pick<Exercise, 'title' | 'description' | 'steps'>> = {
@@ -74,34 +75,38 @@ const LOCAL_ENGLISH_EXERCISES: Record<string, Pick<Exercise, 'title' | 'descript
  * Automatically fetches and applies translations when language changes
  */
 export function useExerciseTranslation(exercises: Exercise[]): Exercise[] {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation(['exercise']);
   const [translatedExercises, setTranslatedExercises] = useState<Exercise[]>(exercises);
-  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     const currentLang = i18n.language;
+    let active = true;
 
     // Fetch and apply translations for the current language (including French if translations exist)
     const applyTranslations = async () => {
-      setIsTranslating(true);
       try {
         const translations = await exerciseTranslationService.fetchTranslations(currentLang);
         const translated = exerciseTranslationService.translateExercises(exercises, translations).map(exercise => {
           const localEnglish = currentLang.startsWith('en') ? LOCAL_ENGLISH_EXERCISES[exercise.id] : undefined;
           return localEnglish ? { ...exercise, ...localEnglish } : exercise;
         });
-        setTranslatedExercises(translated);
+        if (active) setTranslatedExercises(translated);
       } catch (error) {
         console.error('Failed to apply exercise translations:', error);
         // Fallback to original exercises
-        setTranslatedExercises(exercises);
-      } finally {
-        setIsTranslating(false);
+        if (active) setTranslatedExercises(exercises);
       }
     };
 
     applyTranslations();
+    return () => { active = false; };
   }, [i18n.language, exercises]);
 
-  return translatedExercises;
+  // Le catalogue intégré possède des précautions locales disponibles hors ligne.
+  // Une précaution modifiée ou traduite par le serveur conserve sa priorité.
+  return useMemo(() => translatedExercises.map(exercise => {
+    const original = INITIAL_EXERCISES.find(item => item.id === exercise.id);
+    if (!original?.warning || exercise.warning !== original.warning) return exercise;
+    return { ...exercise, warning: t(`exercise:warnings.${exercise.id}`, { defaultValue: exercise.warning }) };
+  }), [translatedExercises, i18n.language, t]);
 }

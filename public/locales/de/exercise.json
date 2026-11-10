@@ -7,7 +7,8 @@
     "thanksSent": "Danke gesendet!",
     "sayThanks": "Danke sagen",
     "thanksError": "Ihre Rückmeldung konnte gerade nicht gespeichert werden.",
-    "safetyNote": "Diese Übungen sind Hilfen für das Wohlbefinden und keine Behandlung. Wenden Sie sich bei unmittelbarer Gefahr oder schweren Symptomen an den Notdienst oder medizinisches Fachpersonal."
+    "safetyNote": "Diese Übungen sind Hilfen für das Wohlbefinden und keine Behandlung. Wenden Sie sich bei unmittelbarer Gefahr oder schweren Symptomen an den Notdienst oder medizinisches Fachpersonal.",
+    "precautions": "Vorsichtsmaßnahmen"
   },
   "creation": {
     "title": "Eine Technik beitragen",
@@ -33,5 +34,18 @@
       "addStep": "+ Schritt hinzufügen",
       "submit": "Zur Prüfung einreichen"
     }
+  },
+  "warnings": {
+    "resp-478": "Atmen Sie ohne Anstrengung. Verkürzen Sie die Zeiten oder hören Sie bei Schwindel, Atemnot oder Unbehagen auf.",
+    "ice-dive": "Tauchen Sie das Gesicht nicht ein und halten Sie den Atem nicht an. Vermeiden Sie diese Übung bei Herz- oder Kreislaufproblemen, Schwächegefühl, Kälteunverträglichkeit oder wenn medizinisch davon abgeraten wurde.",
+    "wall-push": "Hören Sie bei Schmerzen, Schwindel oder Atembeschwerden auf. Passen Sie die Anstrengung Ihren körperlichen Fähigkeiten an.",
+    "butterfly-hug": "Verlangsamen Sie das Klopfen oder hören Sie auf, wenn es Belastung, Dissoziation oder schwierige Erinnerungen verstärkt.",
+    "shaking": "Hören Sie auf, wenn Sie sich überwältigt, dissoziiert oder schwindelig fühlen oder Schmerzen haben. Diese Übung ersetzt keine professionelle Traumabegleitung.",
+    "physio-sigh": "Üben Sie im Sitzen und ohne Anstrengung. Hören Sie bei Schwindel, Schmerzen oder Atemnot auf.",
+    "voo-sound": "Der Ton soll angenehm bleiben. Hören Sie bei Schwindel, Schmerzen oder Beschwerden beim Atmen oder Sprechen auf.",
+    "psoas-release": "Wechseln Sie die Position oder hören Sie bei Schmerzen, Taubheitsgefühl oder Unbehagen auf. Lassen Sie anhaltende Schmerzen fachlich abklären.",
+    "visual-countdown": "Wenn geschlossene Augen Unbehagen oder belastende Bilder verstärken, lassen Sie sie offen und wählen Sie einen neutralen visuellen Bezugspunkt.",
+    "self-hug": "Lockern Sie den Druck oder hören Sie auf, wenn die Berührung unangenehm oder schmerzhaft ist oder Belastung auslöst.",
+    "pmr-jacobson": "Spannen Sie verletzte oder schmerzhafte Bereiche nicht an. Hören Sie auf, wenn die Übung Schmerzen verstärkt oder Krämpfe verursacht."
   }
 }

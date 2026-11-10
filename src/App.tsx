@@ -1,3 +1,4 @@
+import { exerciseCautions } from '../services/exerciseCautions';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from './i18nContext';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -40,6 +41,7 @@ import { useExerciseTranslation } from '../hooks/useExerciseTranslation';
 import { ExerciseIllustration } from '../components/exercises/ExerciseIllustration';
 import { THANKS_VISIBILITY_THRESHOLD } from '../constants';
 import { hasThankedExercise } from '../services/helpfulVotes';
+import { situationTone } from '../services/situationPresentation';
 import { getSituationFilterFromSearch } from '../services/navigation';
 
 // --- Components ---
@@ -53,11 +55,19 @@ const TagBadge: React.FC<{ text: string }> = ({ text }) => (
 const ExerciseDetail: React.FC<{ 
   exercise: Exercise; 
   onBack: () => void; 
-  onThanks: () => Promise<boolean>
-}> = ({ exercise, onBack, onThanks }) => {
+  onThanks: () => Promise<boolean>;
+  embedded?: boolean;
+  backToProfile?: boolean;
+}> = ({ exercise, onBack, onThanks, embedded = false, backToProfile = false }) => {
   const { t } = useTranslation(['common', 'exercise']);
   const [hasThanked, setHasThanked] = useState(() => hasThankedExercise(exercise.id));
   const [thanksError, setThanksError] = useState<string | null>(null);
+  const detailHeading = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    detailHeading.current?.focus({ preventScroll: true });
+  }, [exercise.id]);
 
   useEffect(() => {
     setHasThanked(hasThankedExercise(exercise.id));
@@ -78,37 +88,40 @@ const ExerciseDetail: React.FC<{
 
   return (
     <div className="min-h-screen pb-20 motion-safe:animate-slide-in">
-      <div className="sticky top-0 z-10 border-b bg-[rgba(248,245,239,0.92)] backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-4xl items-center gap-3 px-4">
-          <Button variant="ghost" size="sm" onClick={onBack} className="!min-h-11 !w-11 !p-0" aria-label={t('buttons.back')}><ArrowLeft className="h-5 w-5" /></Button>
-          <h1 className="truncate text-base font-bold sm:text-lg">{exercise.title}</h1>
+      <div className={embedded ? "ndee-container pt-6" : "sticky top-0 z-10 border-b bg-[rgba(248,245,239,0.92)] backdrop-blur-md"}>
+        <div className="mx-auto flex min-h-14 max-w-[640px] items-center">
+          <Button variant="ghost" size="sm" onClick={onBack} className="!min-h-11 gap-2"><ArrowLeft aria-hidden="true" className="h-5 w-5" />{t(backToProfile ? 'ux.profile' : 'ux.backToolbox')}</Button>
         </div>
       </div>
 
-      <main className="mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
-        <div className="overflow-hidden rounded-[2rem] bg-[var(--ndee-sage)]">
-          <div className="aspect-[16/8] min-h-52"><ExerciseIllustration exercise={exercise} className="h-full w-full object-cover" /></div>
-        </div>
+      <main className="ndee-container py-4 sm:py-6">
+        <div className="mx-auto max-w-[640px]">
+          <header>
+            <div className="flex items-start gap-4 sm:gap-6">
+              <div className="min-w-0 flex-1">
+                <h1 ref={detailHeading} tabIndex={-1} className="text-3xl font-bold leading-tight outline-none sm:text-4xl">{exercise.title}</h1>
+                <p className="mt-4 text-lg leading-relaxed text-[var(--ndee-muted)]">{exercise.description}</p>
+              </div>
+              <div aria-hidden="true" className="hidden h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-[var(--ndee-sage)] sm:block"><ExerciseIllustration exercise={exercise} className="h-full w-full object-cover" /></div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ndee-sun)] px-3 py-1.5 text-sm font-semibold"><Clock aria-hidden="true" className="h-4 w-4" />{exercise.duration}</span>
+              {exercise.situation.map(s => <span key={s} style={{ background: `var(--situation-${situationTone[s]})` }} className="rounded-full px-3 py-1.5 text-sm text-[var(--ndee-ink)]">{t(`situations.${s}`)}</span>)}
+            </div>
+          </header>
 
-        <div className="mx-auto max-w-3xl">
-          <div className="mt-6 flex flex-wrap gap-2">
-            {exercise.situation.map(s => <span key={s} className="rounded-full bg-[var(--ndee-sky)] px-3 py-1.5 text-xs font-semibold text-[var(--ndee-ink)]">{t(`situations.${s}`)}</span>)}
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ndee-sun)] px-3 py-1.5 text-xs font-semibold"><Clock className="h-3.5 w-3.5" />{exercise.duration}</span>
-          </div>
-
-          <h2 className="mt-6 text-3xl font-bold leading-tight sm:text-4xl">{exercise.title}</h2>
-          <p className="mt-4 text-lg leading-relaxed text-[var(--ndee-muted)]">{exercise.description}</p>
-
-          <div className="mt-6 rounded-2xl border bg-white/65 p-4 text-sm leading-relaxed text-[var(--ndee-muted)]" role="note">{t('exercise:detail.safetyNote')}</div>
-          {exercise.warning && <div className="mt-4 flex items-start gap-3 rounded-2xl bg-[var(--ndee-sun)] p-4"><AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#7a632c]" /><p className="text-sm leading-relaxed text-[#5f522f]">{exercise.warning}</p></div>}
+          <aside className="mt-6 rounded-2xl border bg-white/65 p-4" aria-labelledby="exercise-cautions-title">
+            <h2 id="exercise-cautions-title" className="flex items-center gap-2 text-sm font-semibold"><AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0" />{t('exercise:detail.precautions')}</h2>
+            {exerciseCautions(t('exercise:detail.safetyNote'), exercise.warning).map((note, index) => <p key={index} className="mt-3 text-sm leading-relaxed text-[var(--ndee-muted)]">{note}</p>)}
+          </aside>
 
           <section className="mt-10" aria-labelledby="exercise-steps-title">
             <p className="ndee-eyebrow">{t('exercise:detail.takeYourTime')}</p>
-            <h3 id="exercise-steps-title" className="mt-2 text-2xl font-bold">{t('exercise:detail.instructions')}</h3>
-            <ol className="mt-6 space-y-4">{exercise.steps.map((step, idx) => <li key={idx} className="ndee-surface flex gap-4 rounded-2xl p-4 sm:p-5"><span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[var(--ndee-sage)] text-sm font-bold text-[var(--ndee-primary-strong)]">{idx + 1}</span><p className="pt-1.5 leading-relaxed text-[var(--ndee-ink)]">{step}</p></li>)}</ol>
+            <h2 id="exercise-steps-title" className="mt-2 text-2xl font-bold">{t('exercise:detail.instructions')}</h2>
+            <ol className="mt-4 divide-y divide-[var(--ndee-border)]">{exercise.steps.map((step, idx) => <li key={idx} className="flex gap-4 py-5"><span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[var(--ndee-sage)] text-sm font-bold text-[var(--ndee-primary-strong)]">{idx + 1}</span><p className="pt-1.5 leading-relaxed text-[var(--ndee-ink)]">{step}</p></li>)}</ol>
           </section>
 
-          <div className="mt-10 rounded-[2rem] bg-[var(--ndee-peach)] p-6 text-center sm:p-8">
+          <div className="mt-8 border-t border-[var(--ndee-border)] pt-6">
             <p className="mb-4 text-sm text-[var(--ndee-muted)]">{t('exercise:detail.wasItHelpful')}</p>
             <Button size="lg" variant={hasThanked ? 'outline' : 'primary'} onClick={handleThanks} disabled={hasThanked} className={hasThanked ? 'bg-white/65' : ''}><Heart className={`mr-2 h-5 w-5 ${hasThanked ? 'fill-current' : ''}`} />{hasThanked ? t('exercise:detail.thanksSent') : t('exercise:detail.sayThanks')}</Button>
             {exercise.thanksCount >= THANKS_VISIBILITY_THRESHOLD && <p className="mt-3 text-xs text-[var(--ndee-muted)]">{t('exercise:detail.peopleFoundHelpful', { count: exercise.thanksCount })}</p>}
@@ -897,9 +910,10 @@ const isAppView = (value: unknown): value is AppView =>
 interface AppProps {
   embeddedInSiteShell?: boolean;
   headerActionsContainer?: HTMLElement | null;
+  professionalRoute?: 'admin' | 'partner';
 }
 
-const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsContainer = null }) => {
+const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsContainer = null, professionalRoute }) => {
   const { t } = useTranslation(['common']);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [recommendationProfile, setRecommendationProfile] = useState<RecommendationProfile | null>(null);
@@ -911,13 +925,17 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
   const [exercises, setExercises] = useState<Exercise[]>(() =>
     getRecommendedExercises(getExercises(), null, 'All')
   );
-  const [view, setView] = useState<AppView>('dashboard');
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [view, setView] = useState<AppView>(() => professionalRoute === 'admin' ? 'partner' : professionalRoute ?? (window.history.state?.view === 'detail' ? 'detail' : 'dashboard'));
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(() =>
+    window.history.state?.view === 'detail' && typeof window.history.state.exerciseId === 'string'
+      ? window.history.state.exerciseId : null);
+  const selectedExercise = translatedExercises.find(exercise => exercise.id === selectedExerciseId) ?? null;
   const [situationFilter, setSituationFilter] = useState<Situation | 'All'>(() =>
     typeof window === 'undefined' ? 'All' : getSituationFilterFromSearch(window.location.search)
   );
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(syncService.getStatus());
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
   const [partnerSession, setPartnerSession] = useState<PartnerAccount | null>(null);
   const [pendingAdminAction, setPendingAdminAction] = useState<'moderation' | null>(null);
   const [serverModerationData, setServerModerationData] = useState<{
@@ -926,29 +944,22 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
   } | null>(null);
   const [moderationStatusMessage, setModerationStatusMessage] = useState<string | null>(null);
   const applyNavigationState = useCallback((state: NavigationState) => {
-    if (state.view === 'detail') {
-      const exercise = translatedExercises.find(item => item.id === state.exerciseId);
-      if (!exercise) {
-        setSelectedExercise(null);
-        setView('dashboard');
-        return;
-      }
-      setSelectedExercise(exercise);
-    } else {
-      setSelectedExercise(null);
-    }
+    setSelectedExerciseId(state.view === 'detail' ? state.exerciseId ?? null : null);
     setView(state.view);
-  }, [translatedExercises]);
+  }, []);
 
   const navigateTo = useCallback((newView: AppView, exerciseId?: string) => {
     const state: NavigationState = { view: newView, ...(exerciseId ? { exerciseId } : {}) };
-    window.history.pushState(state, '', window.location.pathname);
+    if (newView === 'detail' && exerciseId) {
+      window.history.replaceState({ ...window.history.state, returnExerciseId: exerciseId }, '', window.location.href);
+    }
+    window.history.pushState(state, '', `${window.location.pathname}${window.location.search}`);
     applyNavigationState(state);
   }, [applyNavigationState]);
 
   const replaceView = useCallback((newView: AppView, exerciseId?: string) => {
     const state: NavigationState = { view: newView, ...(exerciseId ? { exerciseId } : {}) };
-    window.history.replaceState(state, '', window.location.pathname);
+    window.history.replaceState(state, '', `${window.location.pathname}${window.location.search}`);
     applyNavigationState(state);
   }, [applyNavigationState]);
 
@@ -967,6 +978,7 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state as Partial<NavigationState> | null;
+      setSituationFilter(getSituationFilterFromSearch(window.location.search));
       applyNavigationState({
         view: isAppView(state?.view) ? state.view : 'dashboard',
         exerciseId: typeof state?.exerciseId === 'string' ? state.exerciseId : undefined
@@ -998,10 +1010,15 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
     };
   }, [applyNavigationState, view]);
 
+  useEffect(() => {
+    const state = window.history.state as Partial<NavigationState> | null;
+    if (state?.view === 'detail' && state.exerciseId) applyNavigationState({ view: 'detail', exerciseId: state.exerciseId });
+  }, [applyNavigationState]);
+
   // Push initial history state
   useEffect(() => {
     const state = window.history.state as Partial<NavigationState> | null;
-    if (!isAppView(state?.view)) window.history.replaceState({ view: 'dashboard' }, '', window.location.pathname);
+    if (!isAppView(state?.view)) window.history.replaceState({ view: professionalRoute ? 'partner' : 'dashboard' }, '', `${window.location.pathname}${window.location.search}`);
   }, []);
 
   useEffect(() => {
@@ -1019,7 +1036,7 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
          });
       } catch {
          setPartnerSession(null);
-      }
+      } finally { setSessionLoaded(true); }
     };
 
     const handleSessionEvent: EventListener = () => {
@@ -1124,13 +1141,7 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
     setExercises(recs);
   }, [translatedExercises, user, situationFilter, recommendationProfile]);
 
-  useEffect(() => {
-    if (!selectedExercise) return;
-    const fresh = translatedExercises.find(ex => ex.id === selectedExercise.id);
-    if (fresh && fresh !== selectedExercise) {
-      setSelectedExercise(fresh);
-    }
-  }, [translatedExercises, selectedExercise]);
+
 
   const handleOnboardingComplete = (newUser: UserProfile) => {
     setUser(newUser);
@@ -1138,7 +1149,6 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
   };
 
   const handleExerciseClick = (ex: Exercise) => {
-    setSelectedExercise(ex);
     navigateTo('detail', ex.id);
   };
 
@@ -1214,6 +1224,14 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
   }, []);
 
   // Render Helpers
+  if (view === 'admin' && (!sessionLoaded || partnerSession?.role !== 'admin')) {
+    return <main className="ndee-container py-10"><p role="status">{t('ux.adminDenied')}</p><PartnerPortal onBack={() => { window.location.assign('/toolbox'); }} /></main>;
+  }
+
+  if (professionalRoute === 'admin' && sessionLoaded && partnerSession && partnerSession.role !== 'admin') {
+    return <main className="ndee-container py-10"><p role="alert">{t('ux.adminDenied')}</p></main>;
+  }
+
   if (view === 'admin') {
       return <AdminDashboard onBack={() => {
         window.history.back();
@@ -1248,7 +1266,9 @@ const App: React.FC<AppProps> = ({ embeddedInSiteShell = false, headerActionsCon
   if (view === 'detail' && selectedExercise) {
     return (
       <ExerciseDetail 
-        exercise={selectedExercise} 
+        exercise={selectedExercise}
+        embedded={embeddedInSiteShell}
+        backToProfile={window.history.state?.fromProfile === true}
         onBack={() => {
           window.history.back();
         }}

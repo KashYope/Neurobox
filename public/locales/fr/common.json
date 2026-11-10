@@ -26,7 +26,7 @@
     "start": "Continuer"
   },
   "languageSelector": {
-    "label": "Langue / Language"
+    "label": "Langue"
   },
   "labels": {
     "name": "Nom",
@@ -152,12 +152,26 @@
     "partnerAccessDescription": "Accédez à l’espace partenaire et à l’administration.",
     "myWorkspace": "Mon espace",
     "partnerLogin": "Connexion partenaire / admin",
-    "buyCoffee": "Nourrir une licorne 🦄",
-    "feedback": "Feedback / Contact",
+    "buyCoffee": "Soutenir NDee",
+    "feedback": "Contact",
     "openSource": "Open Source"
   },
   "supportNeeds": {
-    "Focus": "concentration", "TaskInitiation": "démarrage", "Organization": "organisation", "WorkingMemory": "mémoire de travail", "Movement": "mouvement", "SensoryRegulation": "confort sensoriel", "Recovery": "récupération", "Predictability": "prévisibilité", "Communication": "communication", "ReadingWriting": "lecture et écriture", "Sequencing": "séquençage", "MotorPlanning": "planification motrice", "TaskSetup": "préparation", "NumberSupport": "repères numériques", "Confidence": "confiance"
+    "Focus": "concentration",
+    "TaskInitiation": "démarrage",
+    "Organization": "organisation",
+    "WorkingMemory": "mémoire de travail",
+    "Movement": "mouvement",
+    "SensoryRegulation": "confort sensoriel",
+    "Recovery": "récupération",
+    "Predictability": "prévisibilité",
+    "Communication": "communication",
+    "ReadingWriting": "lecture et écriture",
+    "Sequencing": "séquençage",
+    "MotorPlanning": "planification motrice",
+    "TaskSetup": "préparation",
+    "NumberSupport": "repères numériques",
+    "Confidence": "confiance"
   },
   "situations": {
     "Crisis": "Crise / Panique",
@@ -169,5 +183,104 @@
     "Pain": "Douleurs / Tensions",
     "Focus": "Concentration",
     "Trauma": "Trauma / Flashback"
+  },
+  "ux": {
+    "now": "Maintenant",
+    "profile": "Mon profil",
+    "menu": "Menu",
+    "support": "Soutenir NDee",
+    "contact": "Contact",
+    "about": "À propos",
+    "resume": "Continuer mon profil",
+    "viewProfile": "Voir mon profil",
+    "complete": "terminé",
+    "remaining": "min restantes",
+    "homeExplanation": "Choisissez ce qui ressemble le plus à votre situation. Nous vous proposerons quelques exercices adaptés.",
+    "profileInvitation": "Vous voulez mieux comprendre vos besoins ?",
+    "profileDuration": "{{themes}} thèmes · environ {{minutes}} min · à votre rythme",
+    "featured": "Exercice recommandé",
+    "others": "Autres exercices",
+    "suggestions": "Quelques exercices à essayer",
+    "allExercises": "Explorer tous les exercices",
+    "backToolbox": "Retour à la boîte à outils",
+    "privacyShort": "Vos réponses restent sur cet appareil.",
+    "noDiagnosis": "Ce questionnaire ne fournit aucun diagnostic.",
+    "deleteConfirm": "Supprimer ces données de cet appareil ?",
+    "toolbox": "Boîte à outils",
+    "contribute": "Proposer un exercice",
+    "needStress": "Pour retrouver un peu de calme",
+    "needCrisis": "Pour traverser un moment intense",
+    "needRumination": "Pour apaiser les pensées répétitives",
+    "needFreeze": "Pour revenir au présent",
+    "needAnger": "Pour relâcher la tension",
+    "needSleep": "Pour préparer le repos",
+    "needPain": "Pour trouver plus de confort",
+    "needFocus": "Pour revenir à votre tâche",
+    "needTrauma": "Pour retrouver un sentiment de sécurité",
+    "aboutTitle": "En savoir plus sur NDee",
+    "aboutText": "Une boîte à outils et un profil de soutien, utilisables séparément. Aucun compte requis.",
+    "privacy": "Confidentialité",
+    "resumeTheme": "Reprendre un thème",
+    "adminDenied": "Accès réservé aux administrateurs.",
+    "approximately": "Environ",
+    "minutes": "min",
+    "themes": {
+      "attention": "Attention et action",
+      "sensory": "Communication, sensoriel et énergie",
+      "literacy": "Lecture et écriture",
+      "coordination": "Coordination et séquençage",
+      "numbers": "Nombres et temps"
+    },
+    "exerciseCount": "{{shown}} exercices affichés sur {{total}}"
+  },
+  "legal": {
+    "terms": "Conditions générales d’utilisation",
+    "notice": "Mentions légales",
+    "purpose": {
+      "title": "Objet du service",
+      "text": "NDee propose gratuitement des exercices de bien-être et un questionnaire de réflexion personnelle. Ce service ne fournit ni diagnostic ni prise en charge médicale. En cas de danger immédiat, contactez les services d’urgence locaux."
+    },
+    "use": {
+      "title": "Utilisation et disponibilité",
+      "text": "Adaptez les exercices à vos possibilités et interrompez-les en cas d’inconfort. Vous restez libre de choisir vos pratiques. Le service peut être modifié ou interrompu. Le stockage du navigateur peut être effacé : conservez vos exports si vous souhaitez une copie de votre profil."
+    },
+    "contributions": {
+      "title": "Contributions et contenus",
+      "text": "Ne proposez que des contenus que vous avez le droit de partager, sans données personnelles de tiers ni contenu illégal. Les exercices proposés sont soumis à modération. Les droits des auteurs et les licences applicables aux contenus restent à respecter."
+    },
+    "external": {
+      "title": "Liens et soutien",
+      "text": "Les ressources externes et le soutien financier sont facultatifs. Ils ouvrent des services tiers avec leurs propres conditions et politiques de confidentialité. Aucun paiement n’est nécessaire pour accéder aux exercices ou au questionnaire."
+    },
+    "publisher": {
+      "title": "Éditeur",
+      "text": "NDee est édité à titre personnel en Belgique par Kash Hauzeur, responsable de la publication."
+    },
+    "hosting": {
+      "title": "Hébergement",
+      "text": "Le site est hébergé chez Contabo. Les coordonnées officielles de l’hébergeur sont disponibles via le lien ci-dessous."
+    },
+    "contact": {
+      "title": "Contact",
+      "text": "Pour une question sur le site, ses contenus ou vos données, contactez l’éditeur :"
+    },
+    "local": {
+      "title": "Questionnaire et stockage local",
+      "text": "Vos réponses, résultats, progression et préférences de personnalisation restent dans ce navigateur. Ils ne sont pas envoyés ni conservés sur le serveur NDee. Ils restent sur cet appareil jusqu’à leur suppression par vous ou par le navigateur, sans expiration automatique. Les PDF et QR que vous exportez sont sous votre contrôle."
+    },
+    "server": {
+      "title": "Fonctions communautaires et professionnelles",
+      "text": "Proposer un exercice transmet son contenu au serveur pour modération et publication. Les votes utiles conservent un identifiant pseudonymisé pour éviter les doublons. Les comptes professionnels enregistrent leurs coordonnées et un mot de passe haché. La suppression locale ci-dessous ne supprime pas ces données serveur. L’hébergeur reçoit aussi les données techniques nécessaires aux requêtes, comme l’adresse IP ; celles-ci ne contiennent pas vos réponses au questionnaire. Les comptes et contributions sont traités à votre demande pour fournir ces services ; les identifiants de vote servent à prévenir les abus. Ces données serveur n’ont actuellement pas d’expiration automatique."
+    },
+    "cookies": {
+      "title": "Cookies et fonctionnement hors ligne",
+      "text": "Le navigateur mémorise la langue, la progression et les données nécessaires au fonctionnement hors ligne. Les espaces professionnels utilisent un cookie de connexion valable 24 heures. Aucun traceur publicitaire n’est intégré à NDee. Les sites externes appliquent leurs propres règles."
+    },
+    "rights": {
+      "title": "Suppression et droits",
+      "text": "Les boutons ci-dessous effacent les données locales indiquées. Pour une demande concernant un compte, une contribution ou vos droits d’accès, de rectification et d’effacement, contactez Kash Hauzeur à l’adresse ci-dessous. Vous pouvez également demander la limitation, la portabilité ou vous opposer à un traitement lorsque ces droits s’appliquent, et saisir l’Autorité de protection des données belge."
+    },
+    "revealEmail": "Afficher l’adresse e-mail",
+    "authority": "Autorité de protection des données — recours"
   }
 }

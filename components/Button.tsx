@@ -12,7 +12,7 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  const baseStyles = "inline-flex min-h-11 items-center justify-center rounded-2xl font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ndee-focus)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  const baseStyles = "inline-flex min-h-11 items-center justify-center rounded-xl font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ndee-focus)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
   
   const variants = {
     primary: "bg-[var(--ndee-primary)] text-white shadow-sm hover:bg-[var(--ndee-primary-strong)]",

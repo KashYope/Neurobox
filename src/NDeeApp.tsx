@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Activity,
   ArrowRight,
@@ -19,6 +19,14 @@ import {
 } from 'lucide-react';
 import ToolboxApp from './App';
 import { useTranslation } from './i18nContext';
+import { AnchoredMenu } from '../components/AnchoredMenu';
+import { LegalInformation, type LegalTopic } from '../components/LegalInformation';
+import { getAssessmentProgress } from '../services/storage/offlineDb';
+import { progressSummary } from '../features/assessment/experience';
+import { DOMAINS } from '../features/assessment/model';
+import type { AssessmentProgress } from '../features/assessment/progress';
+import { siteRouteFromPath, sitePath, type SiteRoute } from '../services/navigation';
+import { situationTone } from '../services/situationPresentation';
 import { BrandLogo } from '../components/BrandLogo';
 import { Situation } from '../types';
 import {
@@ -30,15 +38,11 @@ import { apiClient } from '../services/apiClient';
 import { persistToken } from '../services/tokenStore';
 import { getSupportedLanguages, loadLanguageTranslations, type SupportedLanguage } from '../services/languageService';
 
-type PublicRoute = 'home' | 'assessment' | 'toolbox';
+type PublicRoute = SiteRoute;
 
 const Assessment = lazy(() => import('../features/assessment/Assessment').then(module => ({ default: module.Assessment })));
 
-const routeFromPath = (): PublicRoute => {
-  if (window.location.pathname.startsWith('/assessment')) return 'assessment';
-  if (window.location.pathname.startsWith('/toolbox')) return 'toolbox';
-  return 'home';
-};
+const routeFromPath = (): PublicRoute => siteRouteFromPath(window.location.pathname);
 
 const shellCopy = {
   en: { tagline: 'The toolbox for neurodiversity', home: 'Home', profile: 'Profile reflection', toolbox: 'Toolbox', privacy: 'Privacy', hero: 'Understand your patterns. Choose what helps.', intro: 'NDee combines a private self-reflection with practical, everyday exercises. Use either tool on its own—or connect them only when you choose.', profileTitle: 'Explore my profile', profileText: 'Notice attention, sensory, literacy, coordination, and number-processing patterns. Results stay on your device.', toolboxTitle: 'Open the toolbox', toolboxText: 'Browse the full exercise library immediately. No account, name, or assessment required.', local: 'Private by design', localText: 'Reflection data never goes to the NDee server. Personalization is explicit, optional, and removable.', notMedical: 'NDee is a wellbeing and self-reflection tool, not a medical device. It does not diagnose, assess risk, or replace professional care.', clearAssessment: 'Delete reflection data', clearPersonalization: 'Remove personalization', clearAll: 'Erase all personal data', cleared: 'Local data removed.', unavailable: 'The reflection is currently available in English and French.', switchEnglish: 'Continue in English', switchFrench: 'Continuer en français' },
@@ -57,39 +61,62 @@ const experienceCopy = {
 } as const;
 
 const needOptions = [
-  { value: Situation.Stress, icon: Waves, tone: 'bg-[var(--ndee-sage)]' },
-  { value: Situation.Crisis, icon: Activity, tone: 'bg-[var(--ndee-peach)]' },
-  { value: Situation.Rumination, icon: Brain, tone: 'bg-[var(--ndee-lilac)]' },
-  { value: Situation.Freeze, icon: Wind, tone: 'bg-[var(--ndee-sky)]' },
-  { value: Situation.Anger, icon: Flame, tone: 'bg-[var(--ndee-peach)]' },
-  { value: Situation.Sleep, icon: MoonStar, tone: 'bg-[var(--ndee-lilac)]' },
-  { value: Situation.Pain, icon: HandHeart, tone: 'bg-[var(--ndee-sun)]' },
-  { value: Situation.Focus, icon: Focus, tone: 'bg-[var(--ndee-sky)]' },
-  { value: Situation.Trauma, icon: Leaf, tone: 'bg-[var(--ndee-sage)]' }
+  { value: Situation.Stress, icon: Waves },
+  { value: Situation.Crisis, icon: Activity },
+  { value: Situation.Rumination, icon: Brain },
+  { value: Situation.Freeze, icon: Wind },
+  { value: Situation.Anger, icon: Flame },
+  { value: Situation.Sleep, icon: MoonStar },
+  { value: Situation.Pain, icon: HandHeart },
+  { value: Situation.Focus, icon: Focus },
+  { value: Situation.Trauma, icon: Leaf }
 ] as const;
 
 const NDeeApp: React.FC = () => {
   const { i18n, t: translate } = useTranslation(['common']);
   const [route, setRoute] = useState<PublicRoute>(routeFromPath);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [legalTopic, setLegalTopic] = useState<LegalTopic | null>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const [professionalRole, setProfessionalRole] = useState<string | null>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    let disposed = false;
+    void apiClient.getMe().then(({ user }) => { if (!disposed) setProfessionalRole(user.role); }).catch(() => { if (!disposed) setProfessionalRole(null); });
+    return () => { disposed = true; };
+  }, [menuOpen]);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [savedProgress, setSavedProgress] = useState<AssessmentProgress | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [status, setStatus] = useState('');
+  const [resumeAssessment, setResumeAssessment] = useState(false);
   const [assessmentKey, setAssessmentKey] = useState(0);
-  const [toolboxHeaderActions, setToolboxHeaderActions] = useState<HTMLDivElement | null>(null);
   const language = (i18n.language?.split('-')[0] || 'fr') as keyof typeof shellCopy;
   const resolvedLanguage = language in shellCopy ? language : 'fr';
-  const t = shellCopy[resolvedLanguage];
+  const t = { ...shellCopy[resolvedLanguage], home: translate('ux.now'), profileTitle: translate('ux.profile') };
+  const summary = progressSummary(savedProgress);
+  useEffect(() => {
+    let disposed = false;
+    const refresh = () => { void getAssessmentProgress().then(value => { if (!disposed) setSavedProgress(value); }).catch(() => undefined); };
+    refresh();
+    window.addEventListener('ndee-assessment-change', refresh);
+    return () => { disposed = true; window.removeEventListener('ndee-assessment-change', refresh); };
+  }, [route, assessmentKey]);
   const experience = experienceCopy[resolvedLanguage];
 
   useEffect(() => {
-    const onPopState = () => setRoute(routeFromPath());
+    const onPopState = () => { setResumeAssessment(false); setRoute(routeFromPath()); };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const navigate = useCallback((next: PublicRoute) => {
-    const path = next === 'home' ? '/' : `/${next}`;
+  const navigate = useCallback((next: PublicRoute, resume = false) => {
+    setResumeAssessment(resume);
+    const path = sitePath(next);
     window.history.pushState({ ndeeRoute: next }, '', path);
     setRoute(next);
+    setMenuOpen(false);
+    if (next === 'toolbox') window.dispatchEvent(new PopStateEvent('popstate', { state: { ndeeRoute: next } }));
     window.scrollTo(0, 0);
   }, []);
 
@@ -104,12 +131,13 @@ const NDeeApp: React.FC = () => {
     if (next === resolvedLanguage) return;
 
     await loadLanguageTranslations(next);
-    window.location.reload();
+
   };
 
-  const removeAssessment = async () => { await clearAssessmentProgress(); setAssessmentKey(value => value + 1); setStatus(t.cleared); };
-  const removePersonalization = async () => { await clearRecommendationProfile(); window.dispatchEvent(new Event('ndee-personalization-change')); setStatus(t.cleared); };
+  const removeAssessment = async () => { if (!window.confirm(translate('ux.deleteConfirm'))) return; await clearAssessmentProgress(); setAssessmentKey(value => value + 1); setStatus(t.cleared); };
+  const removePersonalization = async () => { if (!window.confirm(translate('ux.deleteConfirm'))) return; await clearRecommendationProfile(); window.dispatchEvent(new Event('ndee-personalization-change')); setStatus(t.cleared); };
   const removeAll = async () => {
+    if (!window.confirm(translate('ux.deleteConfirm'))) return;
     await Promise.all([clearAssessmentProgress(), clearRecommendationProfile()]);
     await apiClient.logout().catch(() => undefined);
     persistToken('partner');
@@ -122,50 +150,63 @@ const NDeeApp: React.FC = () => {
     window.dispatchEvent(new Event('partner-session-change'));
   };
 
-  const header = <header className="sticky top-0 z-40 border-b border-[var(--ndee-border)] bg-[rgba(248,245,239,0.9)] backdrop-blur-md">
-    <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-3 px-4">
-      <button onClick={() => navigate('home')} className="ndee-focus rounded-xl text-left" aria-label={`${t.home} — NDee`}><BrandLogo compact /></button>
-      <nav className="flex items-center gap-1" aria-label={`${t.home} / ${t.toolbox}`}>
-        <button onClick={() => navigate('home')} className="ndee-focus hidden min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ndee-muted)] hover:bg-white/70 sm:block">{t.home}</button>
-        <button onClick={() => navigate('toolbox')} className={`ndee-focus min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ndee-ink)] hover:bg-white/70 ${route === 'toolbox' ? 'hidden sm:block' : ''}`}>{t.toolbox}</button>
-        <button onClick={() => setPrivacyOpen(true)} className="ndee-focus min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ndee-muted)] hover:bg-white/70" aria-label={t.privacy}><LockKeyhole className="inline h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">{t.privacy}</span></button>
-        <div className="ml-1 flex min-h-11 items-center rounded-xl border border-[var(--ndee-border)] bg-white/70 px-1"><Languages className="mx-1 h-4 w-4 text-[var(--ndee-muted)]" /><select aria-label={translate('languageSelector.label')} value={resolvedLanguage} onChange={event => void changeLanguage(event.target.value as SupportedLanguage)} className="min-h-9 border-0 bg-transparent py-1 text-xs font-bold outline-none">{Object.entries(getSupportedLanguages()).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></div>
-        {route === 'toolbox' && <div ref={setToolboxHeaderActions} />}
+  const header = <header className="ndee-header sticky top-0 z-40 border-b bg-[var(--ndee-canvas)]">
+    <div className="ndee-container flex items-center justify-between gap-2 py-3">
+      <a href="/" onClick={event => { if (!event.ctrlKey && !event.metaKey) { event.preventDefault(); navigate('home'); } }} className="ndee-focus rounded-xl" aria-label={`${t.home} — NDee`}><BrandLogo compact /></a>
+      <div className="flex items-center gap-2"><select aria-label={translate('languageSelector.label')} value={resolvedLanguage} onChange={event => void changeLanguage(event.target.value as SupportedLanguage)} className="ndee-focus rounded-xl px-2 text-sm">{Object.entries(getSupportedLanguages()).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select><button ref={menuButton} onClick={() => setMenuOpen(true)} className="ndee-focus flex h-11 w-11 items-center justify-center rounded-xl border" aria-label={translate('ux.menu')} aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls="ndee-secondary-menu">☰</button></div>
+      <nav className="ndee-primary-nav flex gap-1" aria-label={translate('ux.menu')}>
+        {(['home', 'toolbox', 'assessment'] as const).map(destination => <a key={destination} href={sitePath(destination)} aria-current={route === destination ? 'page' : undefined} onClick={event => { if (!event.ctrlKey && !event.metaKey) { event.preventDefault(); navigate(destination); } }} className={`ndee-focus flex min-h-11 flex-1 items-center justify-center rounded-xl px-3 text-sm font-semibold ${route === destination ? 'bg-[var(--ndee-sage)] text-[var(--ndee-ink)]' : 'text-[var(--ndee-muted)] hover:bg-white'}`}>{destination === 'home' ? translate('ux.now') : destination === 'toolbox' ? t.toolbox : translate('ux.profile')}</a>)}
       </nav>
     </div>
   </header>;
 
   let content: React.ReactNode;
-  if (route === 'toolbox') content = <ToolboxApp embeddedInSiteShell headerActionsContainer={toolboxHeaderActions} />;
-  else if (route === 'assessment' && (resolvedLanguage === 'en' || resolvedLanguage === 'fr')) content = <Suspense fallback={<div className="p-12 text-center font-semibold text-slate-600">NDee…</div>}><Assessment key={assessmentKey} locale={resolvedLanguage} onBack={() => navigate('home')} onOpenToolbox={() => navigate('toolbox')} onPersonalized={() => window.dispatchEvent(new Event('ndee-personalization-change'))} /></Suspense>;
-  else if (route === 'assessment') content = <main className="mx-auto max-w-xl px-4 py-20 text-center"><div className="ndee-surface rounded-[2rem] p-8"><Sparkles className="mx-auto h-10 w-10 text-[var(--ndee-primary)]" /><h1 className="mt-5 text-3xl font-bold">{t.profileTitle}</h1><p className="mt-4 text-[var(--ndee-muted)]">{t.unavailable}</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><button onClick={() => void changeLanguage('en')} className="ndee-focus min-h-11 rounded-2xl bg-[var(--ndee-primary)] px-5 py-3 font-bold text-white">{t.switchEnglish}</button><button onClick={() => void changeLanguage('fr')} className="ndee-focus min-h-11 rounded-2xl border bg-white px-5 py-3 font-bold">{t.switchFrench}</button></div></div></main>;
+  if (route === 'toolbox' || route === 'admin' || route === 'partner') content = <ToolboxApp key={route} embeddedInSiteShell professionalRoute={route === 'toolbox' ? undefined : route} />;
+  else if (route === 'assessment' && (resolvedLanguage === 'en' || resolvedLanguage === 'fr')) content = <Suspense fallback={<div className="p-12 text-center font-semibold text-slate-600">NDee…</div>}><Assessment key={assessmentKey} locale={resolvedLanguage} resumeOnOpen={resumeAssessment} onBack={() => navigate('home')} onOpenToolbox={() => navigate('toolbox')} onOpenExercise={id => { setResumeAssessment(false); window.history.pushState({ view: 'detail', exerciseId: id, fromProfile: true }, '', '/toolbox'); setRoute('toolbox'); window.scrollTo(0, 0); }} onPersonalized={() => window.dispatchEvent(new Event('ndee-personalization-change'))} /></Suspense>;
+  else if (route === 'assessment') content = <main className="mx-auto max-w-xl px-4 py-20 text-center"><div className="ndee-surface rounded-[var(--ndee-radius-card)] p-8"><Sparkles className="mx-auto h-10 w-10 text-[var(--ndee-primary)]" /><h1 className="mt-5 text-3xl font-semibold">{t.profileTitle}</h1><p className="mt-4 text-[var(--ndee-muted)]">{t.unavailable}</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><button onClick={() => void changeLanguage('en')} className="ndee-focus min-h-11 rounded-2xl bg-[var(--ndee-primary)] px-5 py-3 font-semibold text-white">{t.switchEnglish}</button><button onClick={() => void changeLanguage('fr')} className="ndee-focus min-h-11 rounded-2xl border bg-white px-5 py-3 font-semibold">{t.switchFrench}</button></div></div></main>;
   else content = <main>
-    <section className="mx-auto max-w-6xl px-4 py-10 sm:py-16">
+    <section className="ndee-container py-10 sm:py-16">
       <div className="max-w-3xl">
         <p className="ndee-eyebrow">{t.tagline}</p>
-        <h1 className="mt-3 text-3xl font-bold leading-tight text-[var(--ndee-ink)] sm:text-5xl">{experience.prompt}</h1>
-        <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--ndee-muted)] sm:text-lg">{experience.promptText}</p>
+        <h1 className="mt-3 text-3xl font-semibold leading-tight text-[var(--ndee-ink)] sm:text-5xl">{experience.prompt}</h1>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--ndee-muted)] sm:text-lg">{translate('ux.homeExplanation')}</p>
       </div>
-      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {needOptions.map(({ value, icon: Icon, tone }) => <button key={value} onClick={() => openSituation(value)} className={`ndee-focus group min-h-32 rounded-3xl border border-white/70 p-4 text-left shadow-[0_8px_28px_rgba(66,77,71,0.06)] transition hover:-translate-y-0.5 ${tone}`}>
+      <div className="mt-8 ndee-needs-grid gap-4">
+        {needOptions.map(({ value, icon: Icon }) => <button key={value} onClick={() => openSituation(value)} style={{ background: `var(--situation-${situationTone[value]})` }} className={`ndee-focus group min-h-[140px] rounded-[var(--ndee-radius-card)] border border-white/70 p-4 text-left shadow-[0_8px_28px_rgba(66,77,71,0.06)] transition hover:-translate-y-0.5`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/75 text-[var(--ndee-primary-strong)]"><Icon className="h-5 w-5" /></span>
-          <span className="mt-5 block text-sm font-bold leading-snug text-[var(--ndee-ink)]">{translate(`situations.${value}`)}</span>
+          <span className="mt-5 block text-sm font-semibold leading-snug text-[var(--ndee-ink)]">{translate(`situations.${value}`)}</span><span className="mt-2 block text-sm leading-relaxed text-[var(--ndee-muted)]">{translate(`ux.need${value}`)}</span>
         </button>)}
-        <button onClick={() => navigate('toolbox')} className="ndee-focus group min-h-32 rounded-3xl border border-[var(--ndee-border)] bg-white/80 p-4 text-left shadow-[0_8px_28px_rgba(66,77,71,0.06)] transition hover:-translate-y-0.5">
+        <button onClick={() => navigate('toolbox')} className="ndee-focus group min-h-32 rounded-[var(--ndee-radius-card)] border border-[var(--ndee-border)] bg-white/80 p-4 text-left shadow-[0_8px_28px_rgba(66,77,71,0.06)] transition hover:-translate-y-0.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--ndee-canvas)] text-[var(--ndee-primary-strong)]"><BookHeart className="h-5 w-5" /></span>
-          <span className="mt-5 block text-sm font-bold leading-snug text-[var(--ndee-ink)]">{experience.allNeeds}</span>
+          <span className="mt-5 block text-sm font-semibold leading-snug text-[var(--ndee-ink)]">{experience.allNeeds}</span>
         </button>
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-[1.15fr_.85fr]">
-        <button onClick={() => navigate('assessment')} className="ndee-focus rounded-[2rem] bg-[var(--ndee-lilac)] p-7 text-left sm:p-8">
-          <p className="ndee-eyebrow">{experience.reflectionLabel}</p><Sparkles className="mt-5 h-7 w-7 text-[var(--ndee-primary-strong)]" /><h2 className="mt-4 text-2xl font-bold">{t.profileTitle}</h2><p className="mt-2 max-w-xl leading-relaxed text-[var(--ndee-muted)]">{t.profileText}</p><span className="mt-5 inline-flex items-center gap-2 font-bold text-[var(--ndee-primary-strong)]">{t.profileTitle}<ArrowRight className="h-4 w-4" /></span>
+        <button onClick={() => navigate('assessment', !!savedProgress?.answers.length && !summary.complete)} className="ndee-focus rounded-[var(--ndee-radius-card)] bg-[var(--ndee-lilac)] p-7 text-left sm:p-8">
+          <p className="ndee-eyebrow">{translate('ux.profileInvitation')}</p><Sparkles className="mt-5 h-7 w-7 text-[var(--ndee-primary-strong)]" /><h2 className="mt-4 text-2xl font-semibold">{t.profileTitle}</h2><p className="mt-2 max-w-xl leading-relaxed text-[var(--ndee-muted)]">{t.profileText}</p><p className="mt-3 text-sm">{savedProgress?.answers.length ? `${summary.percent} % · ${summary.minutes} ${translate('ux.remaining')}` : translate('ux.profileDuration', { themes: DOMAINS.length, minutes: progressSummary(null).minutes })}</p>{savedProgress?.answers.length > 0 && summary.theme && <p className="mt-2 text-sm">{translate('ux.resumeTheme')} : {translate(`ux.themes.${summary.theme}`)}</p>}<span className="mt-5 inline-flex items-center gap-2 font-semibold text-[var(--ndee-primary-strong)]">{translate(summary.complete ? 'ux.viewProfile' : savedProgress?.answers.length ? 'ux.resume' : 'ux.profile')}<ArrowRight className="h-4 w-4" /></span>
         </button>
-        <div className="ndee-surface rounded-[2rem] p-7 sm:p-8"><ShieldCheck className="h-7 w-7 text-[var(--ndee-primary)]" /><h2 className="mt-4 text-xl font-bold">{t.local}</h2><p className="mt-2 text-sm leading-relaxed text-[var(--ndee-muted)]">{experience.privacyShort}</p><p className="mt-4 text-xs leading-relaxed text-[var(--ndee-muted)]">{t.notMedical}</p></div>
+        <div className="ndee-surface rounded-[var(--ndee-radius-card)] p-7 sm:p-8"><ShieldCheck className="h-7 w-7 text-[var(--ndee-primary)]" /><h2 className="mt-4 text-xl font-semibold">{t.local}</h2><p className="mt-2 text-sm leading-relaxed text-[var(--ndee-muted)]">{experience.privacyShort}</p><p className="mt-4 text-xs leading-relaxed text-[var(--ndee-muted)]">{t.notMedical}</p></div>
       </div>
     </section>
   </main>;
 
-  return <div className="min-h-screen text-[var(--ndee-ink)]">{header}{content}{privacyOpen && <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#26332f]/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="ndee-surface w-full max-w-lg rounded-[2rem] p-7"><button onClick={() => setPrivacyOpen(false)} className="ndee-focus ml-auto flex h-11 w-11 items-center justify-center rounded-full" aria-label={translate('buttons.close')}><X /></button><LockKeyhole className="h-8 w-8 text-[var(--ndee-primary)]" /><h2 className="mt-4 text-2xl font-bold">{t.privacy}</h2><p className="mt-3 text-sm leading-relaxed text-[var(--ndee-muted)]">{t.localText}</p><p className="mt-3 text-sm leading-relaxed text-[var(--ndee-muted)]">{t.notMedical}</p><div className="mt-6 grid gap-3"><button onClick={() => void removeAssessment()} className="ndee-focus min-h-11 rounded-2xl border bg-white/70 p-3 font-semibold">{t.clearAssessment}</button><button onClick={() => void removePersonalization()} className="ndee-focus min-h-11 rounded-2xl border bg-white/70 p-3 font-semibold">{t.clearPersonalization}</button><button onClick={() => void removeAll()} className="ndee-focus min-h-11 rounded-2xl bg-[var(--ndee-danger)] p-3 font-semibold text-white">{t.clearAll}</button></div>{status && <p className="mt-4 text-sm font-semibold text-[var(--ndee-primary-strong)]">{status}</p>}</div></div>}</div>;
+  return <div className="min-h-screen text-[var(--ndee-ink)]">{route === 'admin' || route === 'partner' ? null : header}{content}
+    {menuOpen && <AnchoredMenu anchor={menuButton} title={translate('ux.menu')} closeLabel={translate('buttons.close')} onClose={() => setMenuOpen(false)}><div className="grid gap-2">
+      <button className="ndee-menu-item" onClick={() => { setMenuOpen(false); setPrivacyOpen(true); }}>{t.privacy}</button>
+      <button className="ndee-menu-item" onClick={() => { setMenuOpen(false); setLegalTopic('terms'); }}>{translate('legal.terms')}</button>
+      <button className="ndee-menu-item" onClick={() => { setMenuOpen(false); setLegalTopic('notice'); }}>{translate('legal.notice')}</button>
+      <button className="ndee-menu-item" onClick={() => { setMenuOpen(false); setAboutOpen(true); }}>{translate('ux.about')}</button>
+      <button className="ndee-menu-item" onClick={() => { setMenuOpen(false); setLegalTopic('contact'); }}>{translate('ux.contact')}</button>
+      {professionalRole && <button className="ndee-menu-item" onClick={() => navigate(professionalRole === 'admin' ? 'admin' : 'partner')}>{translate(professionalRole === 'admin' ? 'adminMenu.adminSpace' : 'adminMenu.myWorkspace')}</button>}
+      <a className="ndee-menu-item" href="https://buymeacoffee.com/k42h" target="_blank" rel="noopener noreferrer">{translate('ux.support')}</a>
+    </div></AnchoredMenu>}
+    {legalTopic && <AnchoredMenu anchor={menuButton} width={480} title={translate(legalTopic === 'contact' ? 'ux.contact' : `legal.${legalTopic}`)} closeLabel={translate('buttons.close')} onClose={() => setLegalTopic(null)}><LegalInformation topic={legalTopic} /></AnchoredMenu>}
+    {aboutOpen && <AnchoredMenu anchor={menuButton} width={480} title={translate('ux.aboutTitle')} closeLabel={translate('buttons.close')} onClose={() => setAboutOpen(false)}><p className="px-2 pb-3 pt-2 leading-relaxed">{translate('ux.aboutText')}</p></AnchoredMenu>}
+    {privacyOpen && <AnchoredMenu anchor={menuButton} width={480} title={t.privacy} closeLabel={translate('buttons.close')} onClose={() => setPrivacyOpen(false)}><div className="px-2 pb-3 pt-2">
+      <LegalInformation topic="privacy" />
+      <div className="mt-6 grid gap-3"><button onClick={() => void removeAssessment()} className="ndee-menu-item">{t.clearAssessment}</button><button onClick={() => void removePersonalization()} className="ndee-menu-item">{t.clearPersonalization}</button><button onClick={() => void removeAll()} className="ndee-menu-item bg-[var(--ndee-danger)] text-white">{t.clearAll}</button></div>{status && <p role="status" className="mt-4 text-sm">{status}</p>}
+    </div></AnchoredMenu>}
+  </div>;
 };
 
 export default NDeeApp;

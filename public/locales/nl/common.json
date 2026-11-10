@@ -149,12 +149,26 @@
     "partnerAccessDescription": "Open de partneromgeving en het beheer.",
     "myWorkspace": "Mijn werkruimte",
     "partnerLogin": "Partner-/adminlogin",
-    "buyCoffee": "Voer een eenhoorn 🦄",
-    "feedback": "Feedback / Contact",
+    "buyCoffee": "Steun NDee",
+    "feedback": "Contact",
     "openSource": "Open source"
   },
   "supportNeeds": {
-    "Focus": "focus", "TaskInitiation": "beginnen", "Organization": "organisatie", "WorkingMemory": "werkgeheugen", "Movement": "beweging", "SensoryRegulation": "sensorisch comfort", "Recovery": "herstel", "Predictability": "voorspelbaarheid", "Communication": "communicatie", "ReadingWriting": "lezen en schrijven", "Sequencing": "volgorde", "MotorPlanning": "motorische planning", "TaskSetup": "voorbereiding", "NumberSupport": "getallensteun", "Confidence": "vertrouwen"
+    "Focus": "focus",
+    "TaskInitiation": "beginnen",
+    "Organization": "organisatie",
+    "WorkingMemory": "werkgeheugen",
+    "Movement": "beweging",
+    "SensoryRegulation": "sensorisch comfort",
+    "Recovery": "herstel",
+    "Predictability": "voorspelbaarheid",
+    "Communication": "communicatie",
+    "ReadingWriting": "lezen en schrijven",
+    "Sequencing": "volgorde",
+    "MotorPlanning": "motorische planning",
+    "TaskSetup": "voorbereiding",
+    "NumberSupport": "getallensteun",
+    "Confidence": "vertrouwen"
   },
   "situations": {
     "Crisis": "Crisis / Paniek",
@@ -168,6 +182,105 @@
     "Trauma": "Trauma / Flashback"
   },
   "languageSelector": {
-    "label": "Langue / Language"
+    "label": "Taal"
+  },
+  "ux": {
+    "now": "Nu",
+    "profile": "Mijn profiel",
+    "menu": "Menu",
+    "support": "Steun NDee",
+    "contact": "Contact",
+    "about": "Over NDee",
+    "resume": "Mijn profiel voortzetten",
+    "viewProfile": "Mijn profiel bekijken",
+    "complete": "voltooid",
+    "remaining": "min resterend",
+    "homeExplanation": "Kies wat het dichtst bij je situatie komt. We stellen passende oefeningen voor.",
+    "profileInvitation": "Wil je je ondersteuningsbehoeften begrijpen?",
+    "profileDuration": "{{themes}} thema’s · ongeveer {{minutes}} min · op je eigen tempo",
+    "featured": "Aanbevolen oefening",
+    "others": "Andere oefeningen",
+    "suggestions": "Een paar oefeningen om te proberen",
+    "allExercises": "Alle oefeningen bekijken",
+    "backToolbox": "Terug naar de toolbox",
+    "privacyShort": "Je antwoorden blijven op dit apparaat.",
+    "noDiagnosis": "Deze vragenlijst geeft geen diagnose.",
+    "deleteConfirm": "Deze gegevens van dit apparaat verwijderen?",
+    "toolbox": "Toolbox",
+    "contribute": "Een oefening voorstellen",
+    "needStress": "Om wat rust te vinden",
+    "needCrisis": "Om een intens moment door te komen",
+    "needRumination": "Om herhalende gedachten te verzachten",
+    "needFreeze": "Om terug te keren naar het heden",
+    "needAnger": "Om spanning los te laten",
+    "needSleep": "Om rust voor te bereiden",
+    "needPain": "Om meer comfort te vinden",
+    "needFocus": "Om naar je taak terug te keren",
+    "needTrauma": "Om veiligheid te voelen",
+    "aboutTitle": "Meer over NDee",
+    "aboutText": "Een toolbox en ondersteuningsprofiel, afzonderlijk te gebruiken. Geen account nodig.",
+    "privacy": "Privacy",
+    "resumeTheme": "Een thema hervatten",
+    "adminDenied": "Beheerderstoegang vereist.",
+    "approximately": "Ongeveer",
+    "minutes": "min",
+    "themes": {
+      "attention": "Aandacht en actie",
+      "sensory": "Communicatie, zintuigen en energie",
+      "literacy": "Lezen en schrijven",
+      "coordination": "Coördinatie en volgorde",
+      "numbers": "Getallen en tijd"
+    },
+    "exerciseCount": "{{shown}} van {{total}} oefeningen weergegeven"
+  },
+  "legal": {
+    "terms": "Gebruiksvoorwaarden",
+    "notice": "Juridische informatie",
+    "purpose": {
+      "title": "Doel",
+      "text": "NDee biedt gratis welzijnsoefeningen en een vragenlijst voor zelfreflectie. Het biedt geen diagnose of medische zorg. Neem bij direct gevaar contact op met de lokale hulpdiensten."
+    },
+    "use": {
+      "title": "Gebruik en beschikbaarheid",
+      "text": "Pas oefeningen aan uw mogelijkheden aan en stop bij ongemak. De dienst kan veranderen of worden onderbroken. Browsergegevens kunnen worden gewist: bewaar exports als u een profielkopie wilt."
+    },
+    "contributions": {
+      "title": "Bijdragen en inhoud",
+      "text": "Deel alleen inhoud die u mag delen, zonder persoonsgegevens van anderen of illegale inhoud. Oefeningen worden gemodereerd. Respecteer auteursrechten en toepasselijke licenties."
+    },
+    "external": {
+      "title": "Links en ondersteuning",
+      "text": "Externe bronnen en financiële steun zijn optioneel. Diensten van derden hebben eigen voorwaarden en privacyregels. Oefeningen en de vragenlijst vereisen geen betaling."
+    },
+    "publisher": {
+      "title": "Uitgever",
+      "text": "NDee wordt in België op persoonlijke titel uitgegeven door Kash Hauzeur, verantwoordelijk voor de publicatie."
+    },
+    "hosting": {
+      "title": "Hosting",
+      "text": "De site wordt gehost bij Contabo. Officiële contactgegevens van de host vindt u via de onderstaande link."
+    },
+    "contact": {
+      "title": "Contact",
+      "text": "Neem voor vragen over de site, inhoud of uw gegevens contact op met de uitgever:"
+    },
+    "local": {
+      "title": "Vragenlijst en lokale opslag",
+      "text": "Antwoorden, resultaten, voortgang en personalisatie blijven in deze browser. Ze worden niet naar de NDee-server gestuurd of daar bewaard. Ze blijven tot u of de browser ze verwijdert, zonder automatische vervaldatum. Geëxporteerde PDFs en QR-codes zijn onder uw controle."
+    },
+    "server": {
+      "title": "Community en professionele functies",
+      "text": "Een ingezonden oefening wordt naar de server gestuurd voor moderatie en publicatie. Nuttig-stemmen bewaren een pseudonieme identificatie om dubbelen te voorkomen. Professionele accounts bewaren contactgegevens en een wachtwoordhash. Lokale verwijdering wist deze servergegevens niet. De host ontvangt technische aanvraaggegevens zoals IP-adressen, zonder vragenlijstantwoorden. Accounts en bijdragen worden op uw verzoek verwerkt om deze diensten te leveren; stemidentificaties voorkomen misbruik. Deze servergegevens verlopen momenteel niet automatisch."
+    },
+    "cookies": {
+      "title": "Cookies en offline gebruik",
+      "text": "De browser bewaart taal, voortgang en gegevens voor offline gebruik. Professionele omgevingen gebruiken een inlogcookie die 24 uur geldig is. NDee bevat geen advertentietrackers. Externe sites hebben eigen regels."
+    },
+    "rights": {
+      "title": "Verwijdering en rechten",
+      "text": "De onderstaande knoppen wissen de aangegeven lokale gegevens. Neem voor verzoeken over accounts, bijdragen of inzage-, correctie- en verwijderingsrechten contact op met Kash Hauzeur: Waar van toepassing kunt u ook beperking of overdraagbaarheid vragen, bezwaar maken en een klacht indienen bij de Belgische Gegevensbeschermingsautoriteit."
+    },
+    "revealEmail": "E-mailadres tonen",
+    "authority": "Gegevensbeschermingsautoriteit — klachten"
   }
 }

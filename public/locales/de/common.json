@@ -149,12 +149,26 @@
     "partnerAccessDescription": "Zum Partnerbereich und zur Verwaltung.",
     "myWorkspace": "Mein Arbeitsbereich",
     "partnerLogin": "Partner-/Admin-Anmeldung",
-    "buyCoffee": "Ein Einhorn füttern 🦄",
-    "feedback": "Feedback / Kontakt",
+    "buyCoffee": "NDee unterstützen",
+    "feedback": "Kontakt",
     "openSource": "Open Source"
   },
   "supportNeeds": {
-    "Focus": "Fokus", "TaskInitiation": "Start", "Organization": "Organisation", "WorkingMemory": "Arbeitsgedächtnis", "Movement": "Bewegung", "SensoryRegulation": "sensorischer Komfort", "Recovery": "Erholung", "Predictability": "Vorhersehbarkeit", "Communication": "Kommunikation", "ReadingWriting": "Lesen und Schreiben", "Sequencing": "Reihenfolge", "MotorPlanning": "Bewegungsplanung", "TaskSetup": "Vorbereitung", "NumberSupport": "Zahlenhilfe", "Confidence": "Sicherheit"
+    "Focus": "Fokus",
+    "TaskInitiation": "Start",
+    "Organization": "Organisation",
+    "WorkingMemory": "Arbeitsgedächtnis",
+    "Movement": "Bewegung",
+    "SensoryRegulation": "sensorischer Komfort",
+    "Recovery": "Erholung",
+    "Predictability": "Vorhersehbarkeit",
+    "Communication": "Kommunikation",
+    "ReadingWriting": "Lesen und Schreiben",
+    "Sequencing": "Reihenfolge",
+    "MotorPlanning": "Bewegungsplanung",
+    "TaskSetup": "Vorbereitung",
+    "NumberSupport": "Zahlenhilfe",
+    "Confidence": "Sicherheit"
   },
   "situations": {
     "Crisis": "Krise / Panik",
@@ -168,6 +182,105 @@
     "Trauma": "Trauma / Flashback"
   },
   "languageSelector": {
-    "label": "Langue / Language"
+    "label": "Sprache"
+  },
+  "ux": {
+    "now": "Jetzt",
+    "profile": "Mein Profil",
+    "menu": "Menü",
+    "support": "NDee unterstützen",
+    "contact": "Kontakt",
+    "about": "Über NDee",
+    "resume": "Mein Profil fortsetzen",
+    "viewProfile": "Mein Profil ansehen",
+    "complete": "abgeschlossen",
+    "remaining": "Min. verbleibend",
+    "homeExplanation": "Wählen Sie, was Ihrer Situation am nächsten kommt. Wir schlagen passende Übungen vor.",
+    "profileInvitation": "Möchten Sie Ihren Unterstützungsbedarf verstehen?",
+    "profileDuration": "{{themes}} Themen · etwa {{minutes}} Min. · in Ihrem Tempo",
+    "featured": "Empfohlene Übung",
+    "others": "Weitere Übungen",
+    "suggestions": "Einige Übungen zum Ausprobieren",
+    "allExercises": "Alle Übungen entdecken",
+    "backToolbox": "Zurück zur Toolbox",
+    "privacyShort": "Ihre Antworten bleiben auf diesem Gerät.",
+    "noDiagnosis": "Dieser Fragebogen stellt keine Diagnose.",
+    "deleteConfirm": "Diese Daten von diesem Gerät löschen?",
+    "toolbox": "Toolbox",
+    "contribute": "Übung vorschlagen",
+    "needStress": "Um etwas Ruhe zu finden",
+    "needCrisis": "Für einen intensiven Moment",
+    "needRumination": "Um wiederkehrende Gedanken zu beruhigen",
+    "needFreeze": "Um ins Hier und Jetzt zurückzukehren",
+    "needAnger": "Um Anspannung zu lösen",
+    "needSleep": "Um sich auf Ruhe vorzubereiten",
+    "needPain": "Um mehr Wohlbefinden zu finden",
+    "needFocus": "Um zur Aufgabe zurückzukehren",
+    "needTrauma": "Um Sicherheit zu finden",
+    "aboutTitle": "Mehr über NDee",
+    "aboutText": "Eine Toolbox und ein Unterstützungsprofil, unabhängig nutzbar. Kein Konto nötig.",
+    "privacy": "Datenschutz",
+    "resumeTheme": "Ein Thema fortsetzen",
+    "adminDenied": "Administratorzugang erforderlich.",
+    "approximately": "Etwa",
+    "minutes": "Min.",
+    "themes": {
+      "attention": "Aufmerksamkeit und Handeln",
+      "sensory": "Kommunikation, Sensorik und Energie",
+      "literacy": "Lesen und Schreiben",
+      "coordination": "Koordination und Abfolgen",
+      "numbers": "Zahlen und Zeit"
+    },
+    "exerciseCount": "{{shown}} von {{total}} Übungen angezeigt"
+  },
+  "legal": {
+    "terms": "Nutzungsbedingungen",
+    "notice": "Impressum",
+    "purpose": {
+      "title": "Zweck",
+      "text": "NDee bietet kostenlose Wohlbefindensübungen und einen Fragebogen zur Selbstreflexion. Der Dienst stellt keine Diagnosen und bietet keine medizinische Versorgung. Bei unmittelbarer Gefahr wenden Sie sich an den örtlichen Notdienst."
+    },
+    "use": {
+      "title": "Nutzung und Verfügbarkeit",
+      "text": "Passen Sie Übungen an Ihre Möglichkeiten an und beenden Sie sie bei Unwohlsein. Der Dienst kann geändert oder unterbrochen werden. Browserdaten können gelöscht werden; behalten Sie Ihre Exporte als Profilkopie."
+    },
+    "contributions": {
+      "title": "Beiträge und Inhalte",
+      "text": "Teilen Sie nur Inhalte, zu deren Weitergabe Sie berechtigt sind, ohne personenbezogene Daten Dritter oder rechtswidrige Inhalte. Übungen werden moderiert. Beachten Sie Urheberrechte und Inhaltslizenzen."
+    },
+    "external": {
+      "title": "Links und Unterstützung",
+      "text": "Externe Ressourcen und finanzielle Unterstützung sind freiwillig. Drittanbieter haben eigene Bedingungen und Datenschutzregeln. Übungen und Fragebogen erfordern keine Zahlung."
+    },
+    "publisher": {
+      "title": "Herausgeber",
+      "text": "NDee wird privat in Belgien von Kash Hauzeur herausgegeben, der für die Veröffentlichung verantwortlich ist."
+    },
+    "hosting": {
+      "title": "Hosting",
+      "text": "Die Website wird bei Contabo gehostet. Offizielle Kontaktdaten des Anbieters finden Sie über den folgenden Link."
+    },
+    "contact": {
+      "title": "Kontakt",
+      "text": "Bei Fragen zur Website, zu Inhalten oder Ihren Daten kontaktieren Sie den Herausgeber:"
+    },
+    "local": {
+      "title": "Fragebogen und lokale Speicherung",
+      "text": "Antworten, Ergebnisse, Fortschritt und Personalisierung bleiben in diesem Browser. Sie werden nicht an den NDee-Server gesendet oder dort gespeichert. Sie bleiben bis zur Löschung durch Sie oder den Browser, ohne automatischen Ablauf. Exportierte PDFs und QR-Codes liegen in Ihrer Verantwortung."
+    },
+    "server": {
+      "title": "Community und professionelle Funktionen",
+      "text": "Übungsbeiträge werden zur Moderation und Veröffentlichung an den Server gesendet. Hilfreich-Stimmen speichern eine pseudonyme Kennung gegen Mehrfachabstimmungen. Professionelle Konten speichern Kontaktdaten und einen Passwort-Hash. Die lokale Löschung entfernt diese Serverdaten nicht. Der Hoster erhält technische Anfragedaten wie IP-Adressen, ohne Fragebogenantworten. Konten und Beiträge werden auf Ihre Anfrage zur Bereitstellung dieser Dienste verarbeitet; Stimmkennungen verhindern Missbrauch. Diese Serverdaten haben derzeit keinen automatischen Ablauf."
+    },
+    "cookies": {
+      "title": "Cookies und Offline-Nutzung",
+      "text": "Der Browser speichert Sprache, Fortschritt und für die Offline-Nutzung notwendige Daten. Professionelle Bereiche nutzen ein 24 Stunden gültiges Anmelde-Cookie. NDee enthält keine Werbetracker. Externe Websites haben eigene Regeln."
+    },
+    "rights": {
+      "title": "Löschung und Rechte",
+      "text": "Die folgenden Schaltflächen löschen die angegebenen lokalen Daten. Für Anliegen zu Konten, Beiträgen oder Auskunfts-, Berichtigungs- und Löschungsrechten kontaktieren Sie Kash Hauzeur: Soweit anwendbar können Sie auch Einschränkung oder Übertragbarkeit verlangen, der Verarbeitung widersprechen und sich bei der belgischen Datenschutzbehörde beschweren."
+    },
+    "revealEmail": "E-Mail-Adresse anzeigen",
+    "authority": "Belgische Datenschutzbehörde — Beschwerden"
   }
 }

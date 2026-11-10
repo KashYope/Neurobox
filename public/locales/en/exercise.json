@@ -7,7 +7,8 @@
     "thanksSent": "Thanks sent!",
     "sayThanks": "Say thanks",
     "thanksError": "Your feedback could not be saved right now.",
-    "safetyNote": "These exercises are wellbeing tools, not treatment. If you are in immediate danger or have severe symptoms, contact emergency services or a healthcare professional."
+    "safetyNote": "These exercises are wellbeing tools, not treatment. If you are in immediate danger or have severe symptoms, contact emergency services or a healthcare professional.",
+    "precautions": "Precautions"
   },
   "creation": {
     "title": "Add a Technique",
@@ -33,5 +34,18 @@
       "addStep": "+ Add a step",
       "submit": "Publish Technique"
     }
+  },
+  "warnings": {
+    "resp-478": "Breathe without forcing. Shorten the counts or stop if you feel dizzy, short of breath, or uncomfortable.",
+    "ice-dive": "Do not immerse your face or hold your breath. Avoid this practice if you have heart or circulation problems, feel faint, cannot tolerate cold, or have been advised against it by a healthcare professional.",
+    "wall-push": "Stop if you feel pain, dizziness, or difficulty breathing. Adjust the effort to your physical abilities.",
+    "butterfly-hug": "Slow down or stop if tapping increases distress, dissociation, or difficult memories.",
+    "shaking": "Stop if you feel overwhelmed, dissociated, dizzy, or in pain. This practice does not replace professional trauma support.",
+    "physio-sigh": "Practise seated and without forcing. Stop if you feel dizzy, in pain, or short of breath.",
+    "voo-sound": "Keep the sound comfortable. Stop if you feel dizzy, in pain, or experience breathing or voice discomfort.",
+    "psoas-release": "Change position or stop if you feel pain, numbness, or discomfort. Seek professional advice for persistent pain.",
+    "visual-countdown": "If closing your eyes increases discomfort or difficult images, keep them open and choose a neutral visual reference.",
+    "self-hug": "Release the pressure or stop if contact feels uncomfortable, painful, or distressing.",
+    "pmr-jacobson": "Do not tense an injured or painful area. Stop if the practice increases pain or causes cramps."
   }
 }

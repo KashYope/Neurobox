@@ -149,12 +149,26 @@
     "partnerAccessDescription": "Accede al espacio de socios y a la administración.",
     "myWorkspace": "Mi espacio",
     "partnerLogin": "Acceso de socio / administrador",
-    "buyCoffee": "Alimentar a un unicornio 🦄",
-    "feedback": "Comentarios / Contacto",
+    "buyCoffee": "Apoyar NDee",
+    "feedback": "Contacto",
     "openSource": "Código abierto"
   },
   "supportNeeds": {
-    "Focus": "concentración", "TaskInitiation": "inicio", "Organization": "organización", "WorkingMemory": "memoria de trabajo", "Movement": "movimiento", "SensoryRegulation": "comodidad sensorial", "Recovery": "recuperación", "Predictability": "previsibilidad", "Communication": "comunicación", "ReadingWriting": "lectura y escritura", "Sequencing": "secuenciación", "MotorPlanning": "planificación motora", "TaskSetup": "preparación", "NumberSupport": "apoyo numérico", "Confidence": "confianza"
+    "Focus": "concentración",
+    "TaskInitiation": "inicio",
+    "Organization": "organización",
+    "WorkingMemory": "memoria de trabajo",
+    "Movement": "movimiento",
+    "SensoryRegulation": "comodidad sensorial",
+    "Recovery": "recuperación",
+    "Predictability": "previsibilidad",
+    "Communication": "comunicación",
+    "ReadingWriting": "lectura y escritura",
+    "Sequencing": "secuenciación",
+    "MotorPlanning": "planificación motora",
+    "TaskSetup": "preparación",
+    "NumberSupport": "apoyo numérico",
+    "Confidence": "confianza"
   },
   "situations": {
     "Crisis": "Crisis / Pánico",
@@ -168,6 +182,105 @@
     "Trauma": "Trauma / Flashback"
   },
   "languageSelector": {
-    "label": "Langue / Language"
+    "label": "Idioma"
+  },
+  "ux": {
+    "now": "Ahora",
+    "profile": "Mi perfil",
+    "menu": "Menú",
+    "support": "Apoyar NDee",
+    "contact": "Contacto",
+    "about": "Acerca de",
+    "resume": "Continuar mi perfil",
+    "viewProfile": "Ver mi perfil",
+    "complete": "completado",
+    "remaining": "min restantes",
+    "homeExplanation": "Elige lo que más se acerque a tu situación. Te propondremos ejercicios adaptados.",
+    "profileInvitation": "¿Quieres comprender tus necesidades de apoyo?",
+    "profileDuration": "{{themes}} temas · unos {{minutes}} min · a tu ritmo",
+    "featured": "Ejercicio recomendado",
+    "others": "Otros ejercicios",
+    "suggestions": "Algunos ejercicios para probar",
+    "allExercises": "Explorar todos los ejercicios",
+    "backToolbox": "Volver a las herramientas",
+    "privacyShort": "Tus respuestas permanecen en este dispositivo.",
+    "noDiagnosis": "Este cuestionario no ofrece un diagnóstico.",
+    "deleteConfirm": "¿Eliminar estos datos de este dispositivo?",
+    "toolbox": "Herramientas",
+    "contribute": "Proponer un ejercicio",
+    "needStress": "Para encontrar un poco de calma",
+    "needCrisis": "Para atravesar un momento intenso",
+    "needRumination": "Para calmar pensamientos repetitivos",
+    "needFreeze": "Para volver al presente",
+    "needAnger": "Para liberar tensión",
+    "needSleep": "Para preparar el descanso",
+    "needPain": "Para encontrar más comodidad",
+    "needFocus": "Para volver a tu tarea",
+    "needTrauma": "Para sentir seguridad",
+    "aboutTitle": "Más sobre NDee",
+    "aboutText": "Herramientas y un perfil de apoyo que puedes usar por separado. Sin cuenta.",
+    "privacy": "Privacidad",
+    "resumeTheme": "Retomar un tema",
+    "adminDenied": "Se requiere acceso de administrador.",
+    "approximately": "Unos",
+    "minutes": "min",
+    "themes": {
+      "attention": "Atención y acción",
+      "sensory": "Comunicación, percepción sensorial y energía",
+      "literacy": "Lectura y escritura",
+      "coordination": "Coordinación y secuencias",
+      "numbers": "Números y tiempo"
+    },
+    "exerciseCount": "Se muestran {{shown}} de {{total}} ejercicios"
+  },
+  "legal": {
+    "terms": "Condiciones de uso",
+    "notice": "Aviso legal",
+    "purpose": {
+      "title": "Finalidad",
+      "text": "NDee ofrece gratuitamente ejercicios de bienestar y un cuestionario de reflexión personal. No proporciona diagnósticos ni atención médica. En caso de peligro inmediato, contacte con los servicios de emergencia locales."
+    },
+    "use": {
+      "title": "Uso y disponibilidad",
+      "text": "Adapte los ejercicios a sus posibilidades y deténgase si siente molestias. El servicio puede cambiar o interrumpirse. El navegador puede borrar sus datos: conserve sus exportaciones si desea una copia del perfil."
+    },
+    "contributions": {
+      "title": "Contribuciones y contenido",
+      "text": "Comparta solo contenido que tenga derecho a compartir, sin datos personales ajenos ni contenido ilegal. Los ejercicios se moderan. Respete los derechos de autor y las licencias aplicables."
+    },
+    "external": {
+      "title": "Enlaces y apoyo",
+      "text": "Los recursos externos y el apoyo económico son opcionales. Los servicios de terceros tienen sus propias condiciones y políticas de privacidad. No se exige pago para usar los ejercicios o el cuestionario."
+    },
+    "publisher": {
+      "title": "Editor",
+      "text": "Kash Hauzeur edita NDee a título personal en Bélgica y es responsable de su publicación."
+    },
+    "hosting": {
+      "title": "Alojamiento",
+      "text": "El sitio está alojado en Contabo. Las coordenadas oficiales del proveedor están disponibles en el enlace siguiente."
+    },
+    "contact": {
+      "title": "Contacto",
+      "text": "Para preguntas sobre el sitio, su contenido o sus datos, contacte con el editor:"
+    },
+    "local": {
+      "title": "Cuestionario y almacenamiento local",
+      "text": "Sus respuestas, resultados, progreso y preferencias permanecen en este navegador. No se envían ni se conservan en el servidor NDee. Permanecen hasta que usted o el navegador los eliminen, sin caducidad automática. Los PDF y QR exportados están bajo su control."
+    },
+    "server": {
+      "title": "Funciones comunitarias y profesionales",
+      "text": "Proponer un ejercicio envía su contenido al servidor para moderación y publicación. Los votos útiles conservan un identificador seudónimo para evitar duplicados. Las cuentas profesionales almacenan datos de contacto y una contraseña cifrada mediante hash. El borrado local no elimina estos registros del servidor. El proveedor recibe datos técnicos de solicitudes, como la IP, sin respuestas del cuestionario. Las cuentas y contribuciones se tratan a petición suya para prestar estos servicios; los identificadores de voto previenen abusos. Estos registros del servidor no tienen caducidad automática actualmente."
+    },
+    "cookies": {
+      "title": "Cookies y uso sin conexión",
+      "text": "El navegador recuerda el idioma, el progreso y los datos necesarios para uso sin conexión. Los espacios profesionales utilizan una cookie de acceso válida durante 24 horas. NDee no incorpora rastreadores publicitarios. Los sitios externos tienen sus propias reglas."
+    },
+    "rights": {
+      "title": "Borrado y derechos",
+      "text": "Los botones siguientes eliminan los datos locales indicados. Para solicitudes sobre cuentas, contribuciones o derechos de acceso, rectificación y supresión, contacte con Kash Hauzeur: Cuando proceda, también puede solicitar limitación o portabilidad, oponerse al tratamiento y reclamar ante la autoridad belga de protección de datos."
+    },
+    "revealEmail": "Mostrar dirección de correo",
+    "authority": "Autoridad belga de protección de datos — reclamaciones"
   }
 }

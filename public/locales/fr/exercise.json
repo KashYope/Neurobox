@@ -7,7 +7,8 @@
     "thanksSent": "Merci envoyé !",
     "sayThanks": "Dire merci",
     "thanksError": "Impossible d’enregistrer votre retour pour le moment.",
-    "safetyNote": "Ces exercices sont des outils de bien-être, pas un traitement. En cas de danger immédiat ou de symptômes sévères, contactez les services d’urgence ou un professionnel de santé."
+    "safetyNote": "Ces exercices sont des outils de bien-être, pas un traitement. En cas de danger immédiat ou de symptômes sévères, contactez les services d’urgence ou un professionnel de santé.",
+    "precautions": "Précautions"
   },
   "creation": {
     "title": "Ajouter une technique",
@@ -33,5 +34,18 @@
       "addStep": "+ Ajouter une étape",
       "submit": "Publier la technique"
     }
+  },
+  "warnings": {
+    "resp-478": "Respirez sans forcer. Réduisez les temps ou arrêtez en cas de vertige, d’essoufflement ou d’inconfort.",
+    "ice-dive": "N’immergez pas le visage et ne bloquez pas votre respiration. Évitez cette pratique en cas de problème cardiaque ou circulatoire, de malaise, d’intolérance au froid ou d’avis médical contraire.",
+    "wall-push": "Arrêtez en cas de douleur, de vertige ou de difficulté à respirer. Adaptez l’effort à vos capacités physiques.",
+    "butterfly-hug": "Ralentissez ou arrêtez si le tapotement augmente la détresse, la dissociation ou des souvenirs difficiles.",
+    "shaking": "Arrêtez si vous vous sentez submergé, dissocié, étourdi ou douloureux. Cette pratique ne remplace pas un accompagnement professionnel du trauma.",
+    "physio-sigh": "Pratiquez assis et sans forcer. Arrêtez en cas de vertige, de douleur ou d’essoufflement.",
+    "voo-sound": "Le son doit rester confortable. Arrêtez en cas de vertige, de douleur, de gêne respiratoire ou vocale.",
+    "psoas-release": "Changez de position ou arrêtez en cas de douleur, d’engourdissement ou d’inconfort. Demandez un avis professionnel pour une douleur persistante.",
+    "visual-countdown": "Si fermer les yeux augmente l’inconfort ou les images difficiles, gardez-les ouverts et choisissez un repère visuel neutre.",
+    "self-hug": "Relâchez la pression ou arrêtez si le contact est inconfortable, douloureux ou déclenche une détresse.",
+    "pmr-jacobson": "Ne contractez pas une zone blessée ou douloureuse. Arrêtez si la pratique augmente la douleur ou provoque des crampes."
   }
 }

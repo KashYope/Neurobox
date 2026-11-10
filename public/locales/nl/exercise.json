@@ -7,7 +7,8 @@
     "thanksSent": "Bedankt verstuurd!",
     "sayThanks": "Bedanken",
     "thanksError": "Je feedback kon nu niet worden opgeslagen.",
-    "safetyNote": "Deze oefeningen zijn hulpmiddelen voor welzijn, geen behandeling. Neem bij direct gevaar of ernstige klachten contact op met de hulpdiensten of een zorgverlener."
+    "safetyNote": "Deze oefeningen zijn hulpmiddelen voor welzijn, geen behandeling. Neem bij direct gevaar of ernstige klachten contact op met de hulpdiensten of een zorgverlener.",
+    "precautions": "Voorzorgsmaatregelen"
   },
   "creation": {
     "title": "Een techniek bijdragen",
@@ -33,5 +34,18 @@
       "addStep": "+ Stap toevoegen",
       "submit": "Ter beoordeling indienen"
     }
+  },
+  "warnings": {
+    "resp-478": "Adem zonder te forceren. Verkort de tijden of stop bij duizeligheid, kortademigheid of ongemak.",
+    "ice-dive": "Dompel uw gezicht niet onder en houd uw adem niet in. Vermijd deze oefening bij hart- of bloedsomloopproblemen, een gevoel van flauwvallen, koude-intolerantie of als een zorgverlener ze heeft afgeraden.",
+    "wall-push": "Stop bij pijn, duizeligheid of moeite met ademhalen. Pas de inspanning aan uw lichamelijke mogelijkheden aan.",
+    "butterfly-hug": "Vertraag of stop als het tikken spanning, dissociatie of moeilijke herinneringen versterkt.",
+    "shaking": "Stop als u zich overweldigd, gedissocieerd of duizelig voelt, of pijn heeft. Deze oefening vervangt geen professionele traumabegeleiding.",
+    "physio-sigh": "Oefen zittend en zonder te forceren. Stop bij duizeligheid, pijn of kortademigheid.",
+    "voo-sound": "Het geluid moet comfortabel blijven. Stop bij duizeligheid, pijn of ongemak bij het ademen of stemgebruik.",
+    "psoas-release": "Verander van houding of stop bij pijn, gevoelloosheid of ongemak. Vraag professioneel advies bij aanhoudende pijn.",
+    "visual-countdown": "Als het sluiten van uw ogen ongemak of moeilijke beelden versterkt, houd ze open en kies een neutraal visueel herkenningspunt.",
+    "self-hug": "Verminder de druk of stop als aanraking onprettig of pijnlijk is, of spanning oproept.",
+    "pmr-jacobson": "Span een geblesseerd of pijnlijk gebied niet aan. Stop als de oefening de pijn versterkt of kramp veroorzaakt."
   }
 }
